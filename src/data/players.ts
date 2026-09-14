@@ -373,7 +373,7 @@ export const players: Player[] = [
   },
   {
     id: 'harden',
-    name: 'James Harden（詹姆斯·哈登）',
+    name: 'James Harden',
     initials: 'JH',
     peakSeason: '2018–19',
     peakTeam: 'Houston',
@@ -401,7 +401,7 @@ export const players: Player[] = [
   },
   {
     id: 'leonard',
-    name: 'Kawhi Leonard（科怀·伦纳德）',
+    name: 'Kawhi Leonard',
     initials: 'KL',
     peakSeason: '2016–17',
     peakTeam: 'San Antonio',
@@ -429,7 +429,7 @@ export const players: Player[] = [
   },
   {
     id: 'kerr',
-    name: 'Steve Kerr（史蒂夫·科尔）',
+    name: 'Steve Kerr',
     initials: 'SK',
     peakSeason: '1995–96',
     peakTeam: 'Chicago',
@@ -458,7 +458,7 @@ export const players: Player[] = [
   },
   {
     id: 'miller',
-    name: 'Reggie Miller（雷吉·米勒）',
+    name: 'Reggie Miller',
     initials: 'RM',
     peakSeason: '1993–94',
     peakTeam: 'Indiana',
@@ -487,7 +487,7 @@ export const players: Player[] = [
   },
   {
     id: 'allen',
-    name: 'Ray Allen（雷·阿伦）',
+    name: 'Ray Allen',
     initials: 'RA',
     peakSeason: '2000–01',
     peakTeam: 'Milwaukee',
@@ -516,7 +516,7 @@ export const players: Player[] = [
   },
   {
     id: 'thompson',
-    name: 'Klay Thompson（克莱·汤普森）',
+    name: 'Klay Thompson',
     initials: 'KT',
     peakSeason: '2015–16',
     peakTeam: 'Golden State',
@@ -545,7 +545,7 @@ export const players: Player[] = [
   },
   {
     id: 'jokic',
-    name: 'Nikola Jokić（约基奇）',
+    name: 'Nikola Jokić',
     initials: 'NJ',
     peakSeason: '2022–23',
     peakTeam: 'Denver',
