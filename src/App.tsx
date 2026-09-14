@@ -13,6 +13,7 @@ type View = 'players' | 'lineups' | 'battle';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
+const starterDisplayOrder: Position[] = ['C', 'PF', 'SF', 'SG', 'PG'];
 
 // 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
 const initialLineups = bootstrapLineups();
@@ -326,6 +327,22 @@ function LineupWorkbench({
     ...m,
     player: players.find((p) => p.id === m.playerId)!,
   }));
+  // 仅改变编辑表格的显示顺序，不改写阵容成员的存储顺序，避免排序影响数据本身。
+  const displayMembers = members
+    .map((member, index) => ({ ...member, index }))
+    .sort((left, right) => {
+      const leftIsStarter = left.starter && !left.inactive;
+      const rightIsStarter = right.starter && !right.inactive;
+
+      if (leftIsStarter !== rightIsStarter) return leftIsStarter ? -1 : 1;
+      if (leftIsStarter && rightIsStarter) {
+        return (
+          starterDisplayOrder.indexOf(left.position) - starterDisplayOrder.indexOf(right.position)
+        );
+      }
+
+      return left.index - right.index;
+    });
   const {
     activeCount,
     starterCount,
@@ -499,7 +516,7 @@ function LineupWorkbench({
             <span>状态</span>
             <span />
           </div>
-          {members.map(({ player, ...m }, idx) => (
+          {displayMembers.map(({ player, index, ...m }) => (
             <div className="roster-row" key={m.playerId}>
               <span className="name-cell">
                 <i style={{ background: player.accent }}>{player.initials}</i>
@@ -513,7 +530,7 @@ function LineupWorkbench({
               <span>
                 <select
                   value={m.position}
-                  onChange={(e) => changeMember(idx, { position: e.target.value as Position })}
+                  onChange={(e) => changeMember(index, { position: e.target.value as Position })}
                 >
                   {positions.map((p) => (
                     <option key={p}>{p}</option>
@@ -523,7 +540,7 @@ function LineupWorkbench({
               <span>
                 <button
                   className={'tag ' + (m.starter ? 'on' : '')}
-                  onClick={() => toggleStarter(idx)}
+                  onClick={() => toggleStarter(index)}
                 >
                   {m.starter ? '首发' : '替补'}
                 </button>
@@ -532,7 +549,7 @@ function LineupWorkbench({
                 <button
                   className={'tag ' + (m.inactive ? 'off' : '')}
                   onClick={() =>
-                    changeMember(idx, {
+                    changeMember(index, {
                       inactive: !m.inactive,
                       starter: m.inactive ? m.starter : false,
                     })
@@ -543,7 +560,7 @@ function LineupWorkbench({
               </span>
               <button
                 className="remove"
-                onClick={() => update({ members: selected.members.filter((_, i) => i !== idx) })}
+                onClick={() => update({ members: selected.members.filter((_, i) => i !== index) })}
               >
                 ×
               </button>
