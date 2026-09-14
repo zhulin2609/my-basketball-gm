@@ -50,8 +50,8 @@
 ## Components
 
 - Existing components to reuse: `primary`、`ghost`、`search`、`tag`、`portrait`、`roster-row`。
-- New/changed components: 阵容页内嵌球员选择器，包含搜索、候选条目、已入选和名单已满状态。
-- Variants and states: 默认、搜索无结果、已加入隐藏、15 人满编禁用。
+- New/changed components: 阵容页内嵌球员选择器，以及首发位置规则提示，包含搜索、候选条目、已入选和名单已满状态。
+- Variants and states: 默认、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐。
 - Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`。
 
 ## Accessibility
@@ -74,7 +74,7 @@
 - Empty: 无候选时说明可能已全部加入或搜索无结果。
 - Error: 当前本地操作不吞没错误；后端接入时显示可恢复错误。
 - Success: 单击候选球员立即进入名单，候选项随即消失。
-- Disabled: 达到 15 人时禁用加入并说明原因。
+- Disabled: 达到 15 人时禁用加入并说明原因；对战前高亮缺失的首发位置。
 - Offline/slow network, if applicable: 离线 MVP 使用 localStorage，不依赖网络。
 
 ## Content voice

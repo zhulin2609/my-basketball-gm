@@ -338,6 +338,13 @@ function LineupWorkbench({
   const starterOK = positions.every((pos) =>
     selected.members.some((m) => m.starter && !m.inactive && m.position === pos),
   );
+  // 缺失位置直接展示给用户，避免“按钮不可点击”却不知道下一步该做什么。
+  const missingStarterPositions = positions.filter(
+    (position) =>
+      !selected.members.some(
+        (member) => member.starter && !member.inactive && member.position === position,
+      ),
+  );
   // 这些规则同时控制“开始梦幻对战”按钮，后端接入时也应复用同样的校验。
   const valid =
     selected.members.length >= 5 &&
@@ -407,6 +414,21 @@ function LineupWorkbench({
         <div className="rule-note">
           <span>编制规则</span>
           <p>5–15 人 · 最多 13 人激活 · 首发必须各有一位 PG / SG / SF / PF / C · 可自由错位</p>
+        </div>
+        <div className={'starter-rule-alert ' + (starterOK ? 'complete' : '')} role="status">
+          <strong>
+            {starterOK
+              ? '首发位置已配齐：可以开始对战。'
+              : '开始对战前，请手动将 5 名球员设为“首发”，并分配 1–5 号位。'}
+          </strong>
+          {!starterOK && (
+            <span>
+              当前还缺：
+              {missingStarterPositions.map((position) => (
+                <b key={position}>{position}</b>
+              ))}
+            </span>
+          )}
         </div>
         <section className="inline-player-picker" aria-label="添加球员">
           <div className="picker-heading">

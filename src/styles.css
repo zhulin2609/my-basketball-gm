@@ -476,6 +476,46 @@ nav button.active:after {
 .rule-note p {
   margin: 0;
 }
+.starter-rule-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 13px 15px;
+  border: 1px solid #9c744d;
+  border-left: 4px solid #e5a55f;
+  background: #30271d;
+  color: #f5d6ae;
+}
+.starter-rule-alert.complete {
+  border-color: #6c9561;
+  border-left-color: #c3ec8b;
+  background: #1e3023;
+  color: #d2efb3;
+}
+.starter-rule-alert strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+.starter-rule-alert span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #c8b194;
+  font: 10px 'DM Mono';
+  white-space: nowrap;
+}
+.starter-rule-alert.complete span {
+  color: #b7d5a6;
+}
+.starter-rule-alert span b {
+  padding: 3px 5px;
+  border: 1px solid #a98258;
+  border-radius: 2px;
+  color: #ffe0b7;
+  font: 10px 'DM Mono';
+}
 .roster-table {
   margin-top: 13px;
 }
@@ -816,6 +856,10 @@ footer {
   }
   .picker-results {
     grid-template-columns: 1fr;
+  }
+  .starter-rule-alert {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .filters {
     flex-wrap: wrap;
