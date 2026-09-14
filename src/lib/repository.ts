@@ -1,10 +1,12 @@
 import { players } from '@/data/players';
 import type { Lineup, Position, Simulation } from '@/types';
 
+// key 带版本号，未来本地存档结构升级时可执行迁移，而不是覆盖旧数据。
 const LINEUPS_KEY = 'dream-court.lineups.v1';
 const GAMES_KEY = 'dream-court.games.v1';
 
 export const lineupRepository = {
+  // repository 是 UI 和浏览器存储之间的边界；组件不直接访问 localStorage。
   list(): Lineup[] {
     return JSON.parse(localStorage.getItem(LINEUPS_KEY) || '[]');
   },
@@ -66,10 +68,12 @@ export function classicLineup(): Lineup {
 }
 
 export function bootstrapLineups() {
+  // 仅在第一次使用时写入示例阵容，后续刷新不会覆盖用户编辑过的存档。
   if (!lineupRepository.list().length) {
     lineupRepository.save(classicLineup());
     lineupRepository.save(starterLineup());
   }
   return lineupRepository.list();
 }
+// 暂时从内嵌数据导出，后端上线后可改为 api.listPlayers 的异步数据源。
 export { players };

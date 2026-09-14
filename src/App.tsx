@@ -9,8 +9,14 @@ import { simulate } from '@/lib/simulator';
 import type { Lineup, LineupMember, Player, Position, Simulation } from '@/types';
 
 type View = 'players' | 'lineups' | 'battle';
+
+// 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+// 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
 const initialLineups = bootstrapLineups();
+
+// V1 的综合能力仅用于列表排序和展示，不参与比赛引擎的具体计算。
 const average = (p: Player) =>
   Math.round(
     (p.threePoint +
@@ -66,16 +72,19 @@ interface StatTableProps {
 }
 
 export function App() {
+  // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const [view, setView] = useState<View>('players');
   const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
   const [selected, setSelected] = useState<Lineup>(initialLineups[0]);
   const [game, setGame] = useState<Simulation | null>(simulationRepository.list()[0] ?? null);
+  // 阵容的唯一写入口：更新内存状态前先写入 localStorage，日后可替换为 api.saveLineup。
   const persist = (next: Lineup) => {
     const saved = { ...next, updatedAt: new Date().toISOString() };
     lineupRepository.save(saved);
     setLineups(lineupRepository.list());
     setSelected(saved);
   };
+  // 新建空阵容后立刻进入编辑页，避免用户还要额外导航一次。
   const newLineup = () => {
     const now = new Date().toISOString();
     const next: Lineup = {
@@ -89,6 +98,7 @@ export function App() {
     persist(next);
     setView('lineups');
   };
+  // 模拟引擎是无 UI 依赖的纯逻辑；页面负责保存比赛记录并跳转到战报。
   const play = (home: Lineup, away: Lineup) => {
     const next = simulate(home, away, players);
     simulationRepository.save(next);
@@ -164,6 +174,7 @@ function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
   const [pos, setPos] = useState<'ALL' | Position>('ALL');
   const [sort, setSort] = useState<'overall' | 'threePoint' | 'salaryUsd'>('overall');
   const [focus, setFocus] = useState<Player>(players[0]);
+  // 过滤和排序是派生数据，不应再放进 state，避免搜索条件变化时出现两份数据不同步。
   const list = useMemo(
     () =>
       players
@@ -316,9 +327,11 @@ function LineupWorkbench({
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
+  // 只有首发必须覆盖五个位置；替补允许任意位置组合。
   const starterOK = positions.every((pos) =>
     selected.members.some((m) => m.starter && !m.inactive && m.position === pos),
   );
+  // 这些规则同时控制“开始梦幻对战”按钮，后端接入时也应复用同样的校验。
   const valid =
     selected.members.length >= 5 &&
     selected.members.length <= 15 &&
@@ -465,6 +478,7 @@ function Battle({ lineups, game, onPlay }: BattleProps) {
   const [awayId, setAwayId] = useState(lineups[1]?.id || '');
   const home = lineups.find((x) => x.id === homeId);
   const away = lineups.find((x) => x.id === awayId);
+  // 历史战报需按其保存的阵容 ID 展示，不能误用选择器当前选择的阵容。
   const matchup =
     game &&
     lineups.find((l) => l.id === game.homeLineupId) &&
@@ -512,6 +526,7 @@ function Battle({ lineups, game, onPlay }: BattleProps) {
 }
 
 function GameResult({ game, home, away }: GameResultProps) {
+  // 模拟层只返回统计值；展示层在这里把 playerId 关联回球员昵称和抽象头像颜色。
   const rows = (stats: Simulation['homeStats']) =>
     stats.map((s) => {
       const p = players.find((x) => x.id === s.playerId)!;

@@ -1,9 +1,11 @@
 import type { Lineup, Player, PlayerStat, Simulation } from '@/types';
 
+// 线性同余随机数：相同 seed 会产生相同随机序列，因此战报可以被复现与分享。
 const seeded = (seed: number) => {
   let n = seed >>> 0;
   return () => (n = (n * 1664525 + 1013904223) >>> 0) / 4294967296;
 };
+// 非激活球员不会获得分钟数，也不会出现在技术统计中。
 const active = (lineup: Lineup) => lineup.members.filter((item) => !item.inactive);
 
 function makeStats(
@@ -11,6 +13,7 @@ function makeStats(
   playerMap: Map<string, Player>,
   rand: () => number,
 ): PlayerStat[] {
+  // 统计模型 V1：按出手倾向分配球队出手，再用能力值和随机数生成个人数据。
   const members = active(lineup);
   const totalUsage = members.reduce(
     (sum, m) => sum + (playerMap.get(m.playerId)?.shotTendency ?? 70),
@@ -61,12 +64,14 @@ export function simulate(
   source: Player[],
   seed = Math.floor(Math.random() * 2 ** 31),
 ): Simulation {
+  // playerMap 将多次按 ID 查找从数组扫描降为常数时间；两队共享同一随机序列。
   const map = new Map(source.map((p) => [p.id, p]));
   const rand = seeded(seed);
   const homeStats = makeStats(home, map, rand);
   const awayStats = makeStats(away, map, rand);
   let homeScore = homeStats.reduce((sum, stat) => sum + stat.points, 0);
   let awayScore = awayStats.reduce((sum, stat) => sum + stat.points, 0);
+  // V1 不提供加时战报，因此平局时用一次可复现的随机选择决出 3 分胜者。
   if (homeScore === awayScore) {
     if (rand() > 0.5) homeScore += 3;
     else awayScore += 3;

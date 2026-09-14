@@ -3,6 +3,7 @@ import { players } from '@/data/players';
 import type { Lineup } from '@/types';
 import { simulate } from '@/lib/simulator';
 
+// 测试夹具只构造模拟所需的最小合规首发阵容，避免依赖浏览器 localStorage。
 const createLineup = (id: string, playerIds: string[]): Lineup => ({
   id,
   name: id,
