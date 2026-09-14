@@ -479,6 +479,100 @@ nav button.active:after {
 .roster-table {
   margin-top: 13px;
 }
+.inline-player-picker {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #35443b;
+  background: #16211c;
+}
+.picker-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.picker-heading .eyebrow {
+  margin-bottom: 5px;
+}
+.picker-heading h2 {
+  margin: 0;
+  font: 700 18px 'Playfair Display';
+  color: #f5f0e7;
+}
+.picker-heading > span {
+  color: #a4b1a5;
+  font: 10px 'DM Mono';
+}
+.picker-search {
+  width: 100%;
+  max-width: 360px;
+}
+.picker-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+.picker-player {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border: 1px solid #304037;
+  border-radius: 3px;
+  background: #1c2922;
+  color: #e8eee6;
+  text-align: left;
+}
+.picker-player:hover:not(:disabled) {
+  border-color: #88a478;
+  background: #23342a;
+}
+.picker-player:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.picker-player i {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #122017;
+  font: 700 8px 'DM Mono';
+  font-style: normal;
+}
+.picker-player span {
+  min-width: 0;
+}
+.picker-player b,
+.picker-player small {
+  display: block;
+}
+.picker-player b {
+  font-size: 10px;
+}
+.picker-player small {
+  overflow: hidden;
+  color: #9eada1;
+  font-size: 8px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.picker-player strong {
+  margin-left: auto;
+  color: #c3ec8b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.picker-empty {
+  grid-column: 1 / -1;
+  margin: 4px 0;
+  color: #9eada1;
+  font-size: 11px;
+}
 .roster-row {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) 85px 75px 75px 24px;
@@ -718,6 +812,9 @@ footer {
     grid-template-columns: 1fr;
   }
   .player-grid {
+    grid-template-columns: 1fr;
+  }
+  .picker-results {
     grid-template-columns: 1fr;
   }
   .filters {

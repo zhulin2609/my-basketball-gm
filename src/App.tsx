@@ -319,11 +319,18 @@ function LineupWorkbench({
   onPlay,
 }: LineupWorkbenchProps) {
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
+  const [playerQuery, setPlayerQuery] = useState('');
   const members = selected.members.map((m) => ({
     ...m,
     player: players.find((p) => p.id === m.playerId)!,
   }));
   const active = members.filter((m) => !m.inactive);
+  // 在当前编辑上下文内提供候选球员；已入选者不重复显示，避免用户添加后再手动处理重复项。
+  const availablePlayers = players.filter(
+    (player) =>
+      !selected.members.some((member) => member.playerId === player.id) &&
+      `${player.name} ${player.archetype}`.toLowerCase().includes(playerQuery.toLowerCase()),
+  );
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
@@ -337,6 +344,24 @@ function LineupWorkbench({
     selected.members.length <= 15 &&
     starterOK &&
     active.length <= 13;
+  const rosterIsFull = selected.members.length >= 15;
+
+  const addPlayer = (player: Player) => {
+    if (rosterIsFull) return;
+
+    update({
+      members: [
+        ...selected.members,
+        {
+          playerId: player.id,
+          position: player.defaultPosition,
+          starter: false,
+          inactive: false,
+        },
+      ],
+    });
+    setPlayerQuery('');
+  };
   return (
     <section className="page lineup-page">
       <div className="lineup-sidebar">
@@ -383,6 +408,50 @@ function LineupWorkbench({
           <span>编制规则</span>
           <p>5–15 人 · 最多 13 人激活 · 首发必须各有一位 PG / SG / SF / PF / C · 可自由错位</p>
         </div>
+        <section className="inline-player-picker" aria-label="添加球员">
+          <div className="picker-heading">
+            <div>
+              <p className="eyebrow">ADD TO ROSTER</p>
+              <h2>直接添加球员</h2>
+            </div>
+            <span>
+              {rosterIsFull ? '阵容已满（15/15）' : `还可加入 ${15 - selected.members.length} 人`}
+            </span>
+          </div>
+          <label className="search picker-search">
+            ⌕{' '}
+            <input
+              value={playerQuery}
+              onChange={(event) => setPlayerQuery(event.target.value)}
+              placeholder="搜索未加入的球员或打法"
+              aria-label="搜索未加入的球员"
+            />
+          </label>
+          <div className="picker-results">
+            {availablePlayers.map((player) => (
+              <button
+                className="picker-player"
+                key={player.id}
+                onClick={() => addPlayer(player)}
+                disabled={rosterIsFull}
+              >
+                <i style={{ background: player.accent }}>{player.initials}</i>
+                <span>
+                  <b>{player.name}</b>
+                  <small>
+                    {player.defaultPosition} · {average(player)} OVR · {player.archetype}
+                  </small>
+                </span>
+                <strong>+ 加入</strong>
+              </button>
+            ))}
+            {!availablePlayers.length && (
+              <p className="picker-empty">
+                {rosterIsFull ? '阵容已满，请先移除一名球员。' : '没有匹配的未加入球员。'}
+              </p>
+            )}
+          </div>
+        </section>
         <div className="roster-table">
           <div className="roster-row header">
             <span>球员</span>
