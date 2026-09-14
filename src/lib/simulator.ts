@@ -7,7 +7,9 @@ function makeStats(lineup: Lineup, playerMap: Map<string, Player>, rand: () => n
   const members = active(lineup); const totalUsage = members.reduce((sum, m) => sum + (playerMap.get(m.playerId)?.shotTendency ?? 70), 0)
   return members.map((member, index) => {
     const p = playerMap.get(member.playerId)!; const minutes = Math.max(10, Math.round((member.starter ? 32 : 18) + (rand() - .5) * 8))
-    const share = p.shotTendency / totalUsage; const attempts = Math.max(3, Math.round(83 * share * (minutes / 25) + rand() * 4))
+    // 48 is a team-level shot budget distributed by offensive role; the remainder is
+    // represented by the small random term and free throws, keeping V1 scores credible.
+    const share = p.shotTendency / totalUsage; const attempts = Math.max(3, Math.round(48 * share * (minutes / 30) + rand() * 3))
     const threeAttempted = Math.min(attempts, Math.round(attempts * (.13 + p.threePoint / 180) * (0.8 + rand() * .4)))
     const threeMade = Math.min(threeAttempted, Math.round(threeAttempted * (.24 + p.threePoint / 210) * (.88 + rand() * .24)))
     const twoAttempted = attempts - threeAttempted; const twoMade = Math.min(twoAttempted, Math.round(twoAttempted * (.31 + p.twoPoint / 260) * (.9 + rand() * .2)))
