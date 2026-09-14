@@ -5,13 +5,14 @@ import {
   lineupRepository,
   simulationRepository,
 } from '@/lib/repository';
+import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { simulate } from '@/lib/simulator';
 import type { Lineup, LineupMember, Player, Position, Simulation } from '@/types';
 
 type View = 'players' | 'lineups' | 'battle';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
-const positions: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
+const positions = STARTER_POSITIONS;
 
 // 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
 const initialLineups = bootstrapLineups();
@@ -320,11 +321,18 @@ function LineupWorkbench({
 }: LineupWorkbenchProps) {
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
   const [playerQuery, setPlayerQuery] = useState('');
+  const [starterLimitMessage, setStarterLimitMessage] = useState<string | null>(null);
   const members = selected.members.map((m) => ({
     ...m,
     player: players.find((p) => p.id === m.playerId)!,
   }));
-  const active = members.filter((m) => !m.inactive);
+  const {
+    activeCount,
+    starterCount,
+    missingStarterPositions,
+    isStarterFormationValid,
+    isEligibleForSimulation,
+  } = validateLineup(selected);
   // 在当前编辑上下文内提供候选球员；已入选者不重复显示，避免用户添加后再手动处理重复项。
   const availablePlayers = players.filter(
     (player) =>
@@ -334,24 +342,31 @@ function LineupWorkbench({
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
-  // 只有首发必须覆盖五个位置；替补允许任意位置组合。
-  const starterOK = positions.every((pos) =>
-    selected.members.some((m) => m.starter && !m.inactive && m.position === pos),
-  );
-  // 缺失位置直接展示给用户，避免“按钮不可点击”却不知道下一步该做什么。
-  const missingStarterPositions = positions.filter(
-    (position) =>
-      !selected.members.some(
-        (member) => member.starter && !member.inactive && member.position === position,
-      ),
-  );
   // 这些规则同时控制“开始梦幻对战”按钮，后端接入时也应复用同样的校验。
-  const valid =
-    selected.members.length >= 5 &&
-    selected.members.length <= 15 &&
-    starterOK &&
-    active.length <= 13;
+  const valid = isEligibleForSimulation;
   const rosterIsFull = selected.members.length >= 15;
+
+  const toggleStarter = (index: number) => {
+    const member = selected.members[index];
+
+    if (!member.starter && starterCount >= positions.length) {
+      setStarterLimitMessage('首发最多只能有 5 人，请先将一名首发改为替补。');
+      return;
+    }
+
+    setStarterLimitMessage(null);
+    changeMember(index, { starter: !member.starter, inactive: false });
+  };
+
+  const starterStatus =
+    starterLimitMessage ??
+    (starterCount > positions.length
+      ? `当前已有 ${starterCount} 名首发，首发只能有 5 名。`
+      : starterCount < positions.length
+        ? `当前首发 ${starterCount}/5 人，请设为 5 名首发并分配 1–5 号位。`
+        : missingStarterPositions.length > 0
+          ? '5 名首发的位置重复，请调整为 1–5 号位各一位。'
+          : '首发位置已配齐：可以开始对战。');
 
   const addPlayer = (player: Player) => {
     if (rosterIsFull) return;
@@ -407,7 +422,7 @@ function LineupWorkbench({
           <div className={'rule-state ' + (valid ? 'good' : '')}>
             <b>{valid ? '阵容合规' : '需要完善'}</b>
             <span>
-              {selected.members.length}/15 · {active.length}/13 激活
+              {selected.members.length}/15 · {activeCount}/13 激活
             </span>
           </div>
         </div>
@@ -415,13 +430,15 @@ function LineupWorkbench({
           <span>编制规则</span>
           <p>5–15 人 · 最多 13 人激活 · 首发必须各有一位 PG / SG / SF / PF / C · 可自由错位</p>
         </div>
-        <div className={'starter-rule-alert ' + (starterOK ? 'complete' : '')} role="status">
-          <strong>
-            {starterOK
-              ? '首发位置已配齐：可以开始对战。'
-              : '开始对战前，请手动将 5 名球员设为“首发”，并分配 1–5 号位。'}
-          </strong>
-          {!starterOK && (
+        <div
+          className={
+            'starter-rule-alert ' +
+            (isStarterFormationValid ? 'complete' : starterCount > positions.length ? 'error' : '')
+          }
+          role="status"
+        >
+          <strong>{starterStatus}</strong>
+          {!isStarterFormationValid && missingStarterPositions.length > 0 && (
             <span>
               当前还缺：
               {missingStarterPositions.map((position) => (
@@ -506,7 +523,7 @@ function LineupWorkbench({
               <span>
                 <button
                   className={'tag ' + (m.starter ? 'on' : '')}
-                  onClick={() => changeMember(idx, { starter: !m.starter, inactive: false })}
+                  onClick={() => toggleStarter(idx)}
                 >
                   {m.starter ? '首发' : '替补'}
                 </button>

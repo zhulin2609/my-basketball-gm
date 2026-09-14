@@ -494,6 +494,12 @@ nav button.active:after {
   background: #1e3023;
   color: #d2efb3;
 }
+.starter-rule-alert.error {
+  border-color: #b75c58;
+  border-left-color: #ef7770;
+  background: #352020;
+  color: #ffd1cc;
+}
 .starter-rule-alert strong {
   font-size: 12px;
   font-weight: 800;
@@ -508,6 +514,9 @@ nav button.active:after {
 }
 .starter-rule-alert.complete span {
   color: #b7d5a6;
+}
+.starter-rule-alert.error span {
+  color: #f4aaa3;
 }
 .starter-rule-alert span b {
   padding: 3px 5px;
