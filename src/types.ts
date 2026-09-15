@@ -30,10 +30,15 @@ export interface Player extends Ratings {
   peakSeason: string;
   peakTeam: string;
   defaultPosition: Position;
+  heightFeet: number;
+  heightInches: number;
+  weightLbs: number;
   salaryUsd: number;
   archetype: string;
   bio: string;
   accent: string;
+  /** 自定义球员或对默认档案的本地覆盖；服务端以当前登录用户判定归属。 */
+  isCustom?: boolean;
 }
 
 export interface LineupMember {

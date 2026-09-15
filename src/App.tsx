@@ -1,19 +1,71 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
-  players,
   bootstrapLineups,
   lineupRepository,
+  listPlayers,
+  playerRepository,
   simulationRepository,
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { simulate } from '@/lib/simulator';
-import type { Lineup, LineupMember, Player, Position, Simulation } from '@/types';
+import type { Lineup, LineupMember, Player, Position, Ratings, Simulation } from '@/types';
 
 type View = 'players' | 'lineups' | 'battle';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
 const starterDisplayOrder: Position[] = ['C', 'PF', 'SF', 'SG', 'PG'];
+
+interface RatingField {
+  key: keyof Ratings;
+  label: string;
+}
+
+const ratingFields: RatingField[] = [
+  { key: 'threePoint', label: '三分' },
+  { key: 'layup', label: '上篮' },
+  { key: 'midRange', label: '中投' },
+  { key: 'insideScoring', label: '内线进攻' },
+  { key: 'dunk', label: '扣篮' },
+  { key: 'offensiveRebound', label: '进攻篮板' },
+  { key: 'defensiveRebound', label: '防守篮板' },
+  { key: 'handling', label: '运球' },
+  { key: 'passing', label: '传球' },
+  { key: 'defensiveIQ', label: '防守意识' },
+  { key: 'offensiveIQ', label: '进攻意识' },
+  { key: 'block', label: '盖帽' },
+  { key: 'steal', label: '抢断' },
+  { key: 'freeThrow', label: '罚篮' },
+  { key: 'speed', label: '速度' },
+  { key: 'agility', label: '敏捷' },
+  { key: 'strength', label: '力量' },
+  { key: 'vertical', label: '弹跳' },
+  { key: 'stamina', label: '耐力' },
+  { key: 'shotTendency', label: '投篮倾向' },
+];
+
+const defaultRatings: Ratings = {
+  threePoint: 75,
+  layup: 75,
+  midRange: 75,
+  insideScoring: 75,
+  dunk: 75,
+  offensiveRebound: 75,
+  defensiveRebound: 75,
+  handling: 75,
+  passing: 75,
+  defensiveIQ: 75,
+  offensiveIQ: 75,
+  speed: 75,
+  agility: 75,
+  vertical: 75,
+  strength: 75,
+  freeThrow: 75,
+  steal: 75,
+  block: 75,
+  stamina: 75,
+  shotTendency: 75,
+};
 
 // 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
 const initialLineups = bootstrapLineups();
@@ -41,16 +93,26 @@ const currency = new Intl.NumberFormat('en-US', {
 });
 
 interface PlayerLibraryProps {
+  players: Player[];
   onAdd: (player: Player) => void;
+  onSavePlayer: (player: Player) => void;
   onOpenLineup: () => void;
 }
 
 interface PlayerDetailProps {
   player: Player;
   onAdd: () => void;
+  onEdit: () => void;
+}
+
+interface PlayerEditorProps {
+  player: Player;
+  onCancel: () => void;
+  onSave: (player: Player) => void;
 }
 
 interface LineupWorkbenchProps {
+  players: Player[];
   lineups: Lineup[];
   selected: Lineup;
   onSelect: (lineup: Lineup) => void;
@@ -60,6 +122,7 @@ interface LineupWorkbenchProps {
 }
 
 interface BattleProps {
+  players: Player[];
   lineups: Lineup[];
   game: Simulation | null;
   onPlay: (home: Lineup, away: Lineup) => void;
@@ -69,6 +132,7 @@ interface GameResultProps {
   game: Simulation;
   home: Lineup;
   away: Lineup;
+  players: Player[];
 }
 
 interface StatTableProps {
@@ -80,6 +144,7 @@ export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const [view, setView] = useState<View>('players');
   const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
+  const [players, setPlayers] = useState<Player[]>(listPlayers);
   const [selected, setSelected] = useState<Lineup>(initialLineups[0]);
   const [game, setGame] = useState<Simulation | null>(simulationRepository.list()[0] ?? null);
   // 阵容的唯一写入口：更新内存状态前先写入 localStorage，日后可替换为 api.saveLineup。
@@ -88,6 +153,11 @@ export function App() {
     lineupRepository.save(saved);
     setLineups(lineupRepository.list());
     setSelected(saved);
+  };
+  // 本地 MVP 的球员写入边界；接入后端时可在这里改为 api.createPlayer / api.updatePlayer。
+  const persistPlayer = (player: Player) => {
+    playerRepository.save(player);
+    setPlayers(listPlayers());
   };
   // 新建空阵容后立刻进入编辑页，避免用户还要额外导航一次。
   const newLineup = () => {
@@ -138,6 +208,7 @@ export function App() {
       </header>
       {view === 'players' && (
         <PlayerLibrary
+          players={players}
           onAdd={(player) => {
             const member: LineupMember = {
               playerId: player.id,
@@ -152,11 +223,13 @@ export function App() {
               return;
             persist({ ...selected, members: [...selected.members, member] });
           }}
+          onSavePlayer={persistPlayer}
           onOpenLineup={() => setView('lineups')}
         />
       )}
       {view === 'lineups' && (
         <LineupWorkbench
+          players={players}
           lineups={lineups}
           selected={selected}
           onSelect={setSelected}
@@ -165,7 +238,9 @@ export function App() {
           onPlay={play}
         />
       )}
-      {view === 'battle' && <Battle lineups={lineups} game={game} onPlay={play} />}
+      {view === 'battle' && (
+        <Battle players={players} lineups={lineups} game={game} onPlay={play} />
+      )}
       <footer>
         独立爱好者原型 · 不隶属于任何联盟、球队或球员工会 ·
         使用原创示例数值，不含照片、标志或球衣设计
@@ -174,11 +249,12 @@ export function App() {
   );
 }
 
-function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
+function PlayerLibrary({ players, onAdd, onSavePlayer, onOpenLineup }: PlayerLibraryProps) {
   const [query, setQuery] = useState('');
   const [pos, setPos] = useState<'ALL' | Position>('ALL');
   const [sort, setSort] = useState<'overall' | 'threePoint' | 'salaryUsd'>('overall');
   const [focus, setFocus] = useState<Player>(players[0]);
+  const [editing, setEditing] = useState<Player | null>(null);
   // 过滤和排序是派生数据，不应再放进 state，避免搜索条件变化时出现两份数据不同步。
   const list = useMemo(
     () =>
@@ -189,8 +265,32 @@ function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
             (pos === 'ALL' || p.defaultPosition === pos),
         )
         .sort((a, b) => (sort === 'overall' ? average(b) - average(a) : b[sort] - a[sort])),
-    [query, pos, sort],
+    [players, query, pos, sort],
   );
+  const createCustomPlayer = () => {
+    setEditing({
+      id: crypto.randomUUID(),
+      name: 'Custom Player',
+      initials: 'CP',
+      peakSeason: 'Custom',
+      peakTeam: 'Free Agent',
+      defaultPosition: 'PG',
+      heightFeet: 6,
+      heightInches: 6,
+      weightLbs: 210,
+      salaryUsd: 0,
+      archetype: 'Custom player',
+      bio: 'A player created for this roster.',
+      accent: '#c3ec8b',
+      isCustom: true,
+      ...defaultRatings,
+    });
+  };
+  const savePlayer = (player: Player) => {
+    onSavePlayer(player);
+    setFocus(player);
+    setEditing(null);
+  };
   return (
     <section className="page player-page">
       <div className="page-heading">
@@ -199,9 +299,14 @@ function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
           <h1>巅峰球员库</h1>
           <p>为每位球员保留一个巅峰赛季的原创能力档案。</p>
         </div>
-        <button className="ghost" onClick={onOpenLineup}>
-          查看当前阵容 →
-        </button>
+        <div className="page-heading-actions">
+          <button className="ghost" onClick={onOpenLineup}>
+            查看当前阵容 →
+          </button>
+          <button className="primary compact" onClick={createCustomPlayer}>
+            + 自定义球员
+          </button>
+        </div>
       </div>
       <div className="filters">
         <label className="search">
@@ -256,34 +361,21 @@ function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
             </button>
           ))}
         </div>
-        <PlayerDetail player={focus} onAdd={() => onAdd(focus)} />
+        {editing ? (
+          <PlayerEditor player={editing} onCancel={() => setEditing(null)} onSave={savePlayer} />
+        ) : (
+          <PlayerDetail
+            player={focus}
+            onAdd={() => onAdd(focus)}
+            onEdit={() => setEditing(focus)}
+          />
+        )}
       </div>
     </section>
   );
 }
 
-function PlayerDetail({ player, onAdd }: PlayerDetailProps) {
-  const ratings = [
-    ['三分', player.threePoint],
-    ['上篮', player.layup],
-    ['中投', player.midRange],
-    ['内线进攻', player.insideScoring],
-    ['扣篮', player.dunk],
-    ['进攻篮板', player.offensiveRebound],
-    ['防守篮板', player.defensiveRebound],
-    ['运球', player.handling],
-    ['传球', player.passing],
-    ['防守意识', player.defensiveIQ],
-    ['进攻意识', player.offensiveIQ],
-    ['盖帽', player.block],
-    ['抢断', player.steal],
-    ['罚篮', player.freeThrow],
-    ['速度', player.speed],
-    ['敏捷', player.agility],
-    ['力量', player.strength],
-    ['弹跳', player.vertical],
-    ['耐力', player.stamina],
-  ];
+function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
   return (
     <aside className="detail-panel">
       <div className="detail-top">
@@ -305,15 +397,23 @@ function PlayerDetail({ player, onAdd }: PlayerDetailProps) {
         <small>/ 99</small>
       </div>
       <div className="ratings">
-        {ratings.map(([label, value]) => (
-          <div key={label as string}>
+        {ratingFields.map(({ key, label }) => (
+          <div key={key}>
             <span>{label}</span>
             <i>
-              <b style={{ width: `${value}%` }} />
+              <b style={{ width: `${player[key]}%` }} />
             </i>
-            <strong>{value}</strong>
+            <strong>{player[key]}</strong>
           </div>
         ))}
+      </div>
+      <div className="detail-meta">
+        <span>身高</span>
+        <b>
+          {player.heightFeet}' {player.heightInches}"
+        </b>
+        <span>体重</span>
+        <b>{player.weightLbs} lb</b>
       </div>
       <div className="detail-meta">
         <span>巅峰赛季薪资</span>
@@ -322,11 +422,199 @@ function PlayerDetail({ player, onAdd }: PlayerDetailProps) {
       <button className="primary wide" onClick={onAdd}>
         加入当前阵容
       </button>
+      <button className="ghost wide player-edit-button" onClick={onEdit}>
+        编辑球员属性
+      </button>
+    </aside>
+  );
+}
+
+function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
+  // 编辑草稿与已保存数据分离，取消时不会污染当前球员档案或阵容中的能力值。
+  const [draft, setDraft] = useState<Player>(player);
+  const [error, setError] = useState<string | null>(null);
+  const setText = (
+    key: keyof Pick<
+      Player,
+      'name' | 'initials' | 'peakSeason' | 'peakTeam' | 'archetype' | 'bio' | 'accent'
+    >,
+    value: string,
+  ) => {
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const setNumber = (
+    key: 'salaryUsd' | 'heightFeet' | 'heightInches' | 'weightLbs' | keyof Ratings,
+    value: number,
+  ) => {
+    // 数字输入是逐字符组成的：例如 210 会依次经过 2、21、210，不能在中途强行改为 80。
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+  const submit = () => {
+    if (!draft.name.trim()) {
+      setError('请填写球员名称。');
+      return;
+    }
+    if (!draft.initials.trim()) {
+      setError('请填写球员缩写。');
+      return;
+    }
+    const isIntegerWithin = (value: number, min: number, max: number) =>
+      Number.isInteger(value) && value >= min && value <= max;
+    if (!isIntegerWithin(draft.heightFeet, 4, 8)) {
+      setError('身高英尺必须是 4–8 之间的整数。');
+      return;
+    }
+    if (!isIntegerWithin(draft.heightInches, 0, 11)) {
+      setError('身高英寸必须是 0–11 之间的整数。');
+      return;
+    }
+    if (!isIntegerWithin(draft.weightLbs, 80, 500)) {
+      setError('体重必须是 80–500 磅之间的整数。');
+      return;
+    }
+    if (ratingFields.some(({ key }) => !isIntegerWithin(draft[key], 0, 99))) {
+      setError('所有能力值必须是 0–99 之间的整数。');
+      return;
+    }
+    onSave({ ...draft, name: draft.name.trim(), initials: draft.initials.trim().slice(0, 4) });
+  };
+  return (
+    <aside className="detail-panel player-editor">
+      <div className="editor-heading">
+        <div>
+          <p className="eyebrow">PLAYER EDITOR</p>
+          <h2>{player.isCustom ? '新建自定义球员' : '编辑球员属性'}</h2>
+        </div>
+        <button className="ghost" onClick={onCancel}>
+          取消
+        </button>
+      </div>
+      <div className="editor-grid">
+        <label>
+          名称
+          <input value={draft.name} onChange={(event) => setText('name', event.target.value)} />
+        </label>
+        <label>
+          缩写
+          <input
+            value={draft.initials}
+            maxLength={4}
+            onChange={(event) => setText('initials', event.target.value)}
+          />
+        </label>
+        <label>
+          默认位置
+          <select
+            value={draft.defaultPosition}
+            onChange={(event) =>
+              setDraft((current) => ({
+                ...current,
+                defaultPosition: event.target.value as Position,
+              }))
+            }
+          >
+            {positions.map((position) => (
+              <option key={position}>{position}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          身高（英尺）
+          <input
+            type="number"
+            min="4"
+            max="8"
+            value={draft.heightFeet}
+            onChange={(event) => setNumber('heightFeet', Number(event.target.value))}
+          />
+        </label>
+        <label>
+          身高（英寸）
+          <input
+            type="number"
+            min="0"
+            max="11"
+            value={draft.heightInches}
+            onChange={(event) => setNumber('heightInches', Number(event.target.value))}
+          />
+        </label>
+        <label>
+          体重（磅）
+          <input
+            type="number"
+            min="80"
+            max="500"
+            value={draft.weightLbs}
+            onChange={(event) => setNumber('weightLbs', Number(event.target.value))}
+          />
+        </label>
+        <label>
+          巅峰赛季
+          <input
+            value={draft.peakSeason}
+            onChange={(event) => setText('peakSeason', event.target.value)}
+          />
+        </label>
+        <label>
+          所属球队
+          <input
+            value={draft.peakTeam}
+            onChange={(event) => setText('peakTeam', event.target.value)}
+          />
+        </label>
+        <label>
+          巅峰薪资（USD）
+          <input
+            type="number"
+            min="0"
+            value={draft.salaryUsd}
+            onChange={(event) => setNumber('salaryUsd', Number(event.target.value))}
+          />
+        </label>
+        <label>
+          打法标签
+          <input
+            value={draft.archetype}
+            onChange={(event) => setText('archetype', event.target.value)}
+          />
+        </label>
+        <label>
+          头像颜色
+          <input value={draft.accent} onChange={(event) => setText('accent', event.target.value)} />
+        </label>
+      </div>
+      <label className="editor-bio">
+        简介
+        <textarea value={draft.bio} onChange={(event) => setText('bio', event.target.value)} />
+      </label>
+      <div className="rating-editor">
+        {ratingFields.map(({ key, label }) => (
+          <label key={key}>
+            <span>{label}</span>
+            <input
+              type="number"
+              min="0"
+              max="99"
+              value={draft[key]}
+              onChange={(event) => setNumber(key, Number(event.target.value))}
+            />
+          </label>
+        ))}
+      </div>
+      {error && (
+        <p className="editor-error" role="alert">
+          {error}
+        </p>
+      )}
+      <button className="primary wide" onClick={submit}>
+        保存球员
+      </button>
     </aside>
   );
 }
 
 function LineupWorkbench({
+  players,
   lineups,
   selected,
   onSelect,
@@ -612,7 +900,7 @@ function LineupWorkbench({
   );
 }
 
-function Battle({ lineups, game, onPlay }: BattleProps) {
+function Battle({ players, lineups, game, onPlay }: BattleProps) {
   const [homeId, setHomeId] = useState(lineups[0]?.id || '');
   const [awayId, setAwayId] = useState(lineups[1]?.id || '');
   const home = lineups.find((x) => x.id === homeId);
@@ -656,7 +944,7 @@ function Battle({ lineups, game, onPlay }: BattleProps) {
         </div>
       </div>
       {game && showHome && showAway ? (
-        <GameResult game={game} home={showHome} away={showAway} />
+        <GameResult game={game} home={showHome} away={showAway} players={players} />
       ) : (
         <div className="empty large">选择两套不同阵容，开始第一场梦幻对战。</div>
       )}
@@ -664,7 +952,7 @@ function Battle({ lineups, game, onPlay }: BattleProps) {
   );
 }
 
-function GameResult({ game, home, away }: GameResultProps) {
+function GameResult({ game, home, away, players }: GameResultProps) {
   // 模拟层只返回统计值；展示层在这里把 playerId 关联回球员昵称和抽象头像颜色。
   const rows = (stats: Simulation['homeStats']) =>
     stats.map((s) => {

@@ -37,6 +37,9 @@ const rating = (
   block: 65,
   stamina: 88,
   shotTendency: 75,
+  heightFeet: 6,
+  heightInches: 6,
+  weightLbs: 210,
   ...overrides,
 });
 

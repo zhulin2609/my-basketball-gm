@@ -15,14 +15,14 @@
 
 ## Product goals
 
-- Goals: 让用户快速浏览历史球员、组建阵容并进行对战模拟。
+- Goals: 让用户快速浏览或创建球员、调整能力档案、组建阵容并进行对战模拟。
 - Non-goals: 复刻真实联赛、提供实时数据或社交功能。
 - Success signals: 用户无需切换页面即可完成阵容增删与位置设置。
 
 ## Personas and jobs
 
 - Primary personas: 熟悉篮球历史、想搭配理想阵容的桌面端用户。
-- User jobs: 找到球员、把他放进当前阵容、调整角色、查看模拟结果。
+- User jobs: 找到或创建球员、调整能力属性、把他放进当前阵容、调整角色、查看模拟结果。
 - Key contexts of use: PC 浏览器中的探索和反复比较。
 
 ## Information architecture
@@ -50,9 +50,9 @@
 ## Components
 
 - Existing components to reuse: `primary`、`ghost`、`search`、`tag`、`portrait`、`roster-row`。
-- New/changed components: 阵容页内嵌球员选择器、首发位置规则提示，以及球员详情中的独立上篮、中投、内线进攻、扣篮、进攻篮板、防守篮板、盖帽、抢断、罚篮、速度、敏捷、力量、弹跳和耐力能力值。
-- Variants and states: 默认、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐。
-- Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`。
+- New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示，以及球员详情中的独立上篮、中投、内线进攻、扣篮、进攻篮板、防守篮板、盖帽、抢断、罚篮、速度、敏捷、力量、弹跳和耐力能力值。
+- Variants and states: 默认、编辑中、输入校验失败、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐。
+- Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`，本地球员覆盖在 `src/lib/repository.ts`。
 
 ## Accessibility
 
@@ -72,10 +72,10 @@
 
 - Loading: 离线 MVP 立即显示；后端接入时在候选列表显示加载状态。
 - Empty: 无候选时说明可能已全部加入或搜索无结果。
-- Error: 当前本地操作不吞没错误；后端接入时显示可恢复错误。
-- Success: 单击候选球员立即进入名单，候选项随即消失。
+- Error: 球员名称和缩写为空时阻止保存并提示；身高限制为 4–8 英尺和 0–11 英寸，体重限制为 80–500 磅；后端接入时显示可恢复错误。
+- Success: 保存球员后立即更新球员库、阵容选择器和模拟数据源；单击候选球员立即进入名单，候选项随即消失。
 - Disabled: 达到 15 人时禁用加入并说明原因；对战前高亮缺失的首发位置。
-- Offline/slow network, if applicable: 离线 MVP 使用 localStorage，不依赖网络。
+- Offline/slow network, if applicable: 离线 MVP 将自定义球员和对默认档案的覆盖写入 localStorage，不依赖网络；云端版本以当前登录用户归属自定义球员，并以用户覆盖档案合并预置球员的调节值。
 
 ## Content voice
 

@@ -131,6 +131,10 @@ nav button.active:after {
   align-items: end;
   margin-bottom: 37px;
 }
+.page-heading-actions {
+  display: flex;
+  gap: 10px;
+}
 .eyebrow {
   font: 11px 'DM Mono';
   letter-spacing: 1.8px;
@@ -377,6 +381,96 @@ nav button.active:after {
 .detail-meta b {
   color: #e9eee6;
   font: 11px 'DM Mono';
+}
+.player-edit-button {
+  margin-top: 9px;
+}
+.player-editor {
+  max-height: calc(100vh - 122px);
+  overflow: auto;
+}
+.editor-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #304036;
+  padding-bottom: 16px;
+}
+.editor-heading h2 {
+  margin: 0;
+  color: #f5f0e7;
+  font: 800 21px 'Playfair Display';
+}
+.editor-heading .ghost {
+  padding: 7px 9px;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+  padding: 17px 0;
+}
+.editor-grid label,
+.editor-bio,
+.rating-editor label {
+  color: #9eaaa0;
+  font: 10px 'DM Mono';
+}
+.editor-grid input,
+.editor-grid select,
+.editor-bio textarea,
+.rating-editor input {
+  display: block;
+  width: 100%;
+  border: 1px solid #3b4a40;
+  border-radius: 3px;
+  background: #111a16;
+  color: #edf2eb;
+  outline: 0;
+}
+.editor-grid input,
+.editor-grid select {
+  height: 32px;
+  margin-top: 5px;
+  padding: 6px 8px;
+  font: 11px Manrope;
+}
+.editor-bio {
+  display: block;
+  border-top: 1px solid #304036;
+  padding-top: 15px;
+}
+.editor-bio textarea {
+  height: 56px;
+  resize: vertical;
+  margin-top: 5px;
+  padding: 8px;
+  font: 11px Manrope;
+}
+.rating-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin: 17px 0;
+}
+.rating-editor label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rating-editor label span {
+  flex: 1;
+}
+.rating-editor input {
+  width: 57px;
+  padding: 5px 7px;
+  font: 11px 'DM Mono';
+}
+.editor-error {
+  margin: -8px 0 12px;
+  color: #ffd1cc;
+  font-size: 11px;
 }
 .lineup-page {
   display: grid;
