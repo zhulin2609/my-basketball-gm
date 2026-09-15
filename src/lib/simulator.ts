@@ -36,16 +36,22 @@ function makeStats(
         Math.round(threeAttempted * (0.24 + p.threePoint / 210) * (0.88 + rand() * 0.24)),
       );
       const twoAttempted = attempts - threeAttempted;
+      const finishing = (p.layup + p.midRange + p.insideScoring) / 3;
       const twoMade = Math.min(
         twoAttempted,
-        Math.round(twoAttempted * (0.31 + p.twoPoint / 260) * (0.9 + rand() * 0.2)),
+        Math.round(twoAttempted * (0.31 + finishing / 260) * (0.9 + rand() * 0.2)),
       );
       const freeThrows = Math.round((p.shotTendency / 26 + rand() * 3) * (p.freeThrow / 100));
       return {
         playerId: p.id,
         minutes,
         points: twoMade * 2 + threeMade * 3 + freeThrows,
-        rebounds: Math.max(0, Math.round((p.rebounding / 12) * (minutes / 30) * (0.55 + rand()))),
+        rebounds: Math.max(
+          0,
+          Math.round(
+            ((p.offensiveRebound + p.defensiveRebound) / 2 / 12) * (minutes / 30) * (0.55 + rand()),
+          ),
+        ),
         assists: Math.max(0, Math.round((p.passing / 18) * (minutes / 30) * (0.5 + rand()))),
         steals: Math.max(0, Math.round((p.steal / 62) * (minutes / 30) * (0.4 + rand()))),
         blocks: Math.max(0, Math.round((p.block / 56) * (minutes / 30) * (0.3 + rand()))),

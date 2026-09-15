@@ -2,14 +2,18 @@ export type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 
 export interface Ratings {
   threePoint: number;
-  twoPoint: number;
-  rebounding: number;
+  layup: number;
+  midRange: number;
+  insideScoring: number;
+  dunk: number;
+  offensiveRebound: number;
+  defensiveRebound: number;
   handling: number;
   passing: number;
-  defense: number;
   defensiveIQ: number;
   offensiveIQ: number;
   speed: number;
+  agility: number;
   vertical: number;
   strength: number;
   freeThrow: number;

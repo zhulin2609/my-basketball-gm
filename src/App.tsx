@@ -22,14 +22,17 @@ const initialLineups = bootstrapLineups();
 const average = (p: Player) =>
   Math.round(
     (p.threePoint +
-      p.twoPoint +
-      p.rebounding +
+      p.layup +
+      p.midRange +
+      p.insideScoring +
+      p.dunk +
+      p.offensiveRebound +
+      p.defensiveRebound +
       p.handling +
       p.passing +
-      p.defense +
       p.defensiveIQ +
       p.offensiveIQ) /
-      8,
+      11,
   );
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -262,13 +265,24 @@ function PlayerLibrary({ onAdd, onOpenLineup }: PlayerLibraryProps) {
 function PlayerDetail({ player, onAdd }: PlayerDetailProps) {
   const ratings = [
     ['三分', player.threePoint],
-    ['两分', player.twoPoint],
-    ['篮板', player.rebounding],
+    ['上篮', player.layup],
+    ['中投', player.midRange],
+    ['内线进攻', player.insideScoring],
+    ['扣篮', player.dunk],
+    ['进攻篮板', player.offensiveRebound],
+    ['防守篮板', player.defensiveRebound],
     ['运球', player.handling],
     ['传球', player.passing],
-    ['防守', player.defense],
     ['防守意识', player.defensiveIQ],
     ['进攻意识', player.offensiveIQ],
+    ['盖帽', player.block],
+    ['抢断', player.steal],
+    ['罚篮', player.freeThrow],
+    ['速度', player.speed],
+    ['敏捷', player.agility],
+    ['力量', player.strength],
+    ['弹跳', player.vertical],
+    ['耐力', player.stamina],
   ];
   return (
     <aside className="detail-panel">
