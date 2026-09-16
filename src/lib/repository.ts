@@ -26,7 +26,24 @@ export const lineupRepository = {
 
 export const simulationRepository = {
   list(): Simulation[] {
-    return JSON.parse(localStorage.getItem(GAMES_KEY) || '[]');
+    const reports = JSON.parse(localStorage.getItem(GAMES_KEY) || '[]') as Array<
+      Omit<Simulation, 'expiresAt'> & { expiresAt?: string }
+    >;
+    const now = Date.now();
+    const activeReports = reports
+      .map((report) => ({
+        ...report,
+        expiresAt:
+          report.expiresAt ??
+          new Date(new Date(report.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      }))
+      .filter((report) => new Date(report.expiresAt).getTime() > now);
+
+    // Reading also removes expired offline-demo reports; API mode never writes this repository.
+    if (activeReports.length !== reports.length) {
+      localStorage.setItem(GAMES_KEY, JSON.stringify(activeReports));
+    }
+    return activeReports;
   },
   save(game: Simulation) {
     localStorage.setItem(GAMES_KEY, JSON.stringify([game, ...this.list()].slice(0, 20)));

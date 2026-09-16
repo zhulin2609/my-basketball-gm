@@ -1,0 +1,24 @@
+-- Keep the database directory aligned with the browser's original local catalog.
+insert into players (
+  id, catalog_key, is_custom, name, initials, peak_season, peak_team, default_position,
+  height_feet, height_inches, weight_lbs, salary_usd, archetype, bio, accent,
+  three_point, layup, mid_range, inside_scoring, dunk, offensive_rebound, defensive_rebound,
+  handling, passing, defensive_iq, offensive_iq, speed, agility, vertical, strength,
+  free_throw, steal, block, stamina, shot_tendency
+)
+values
+  ('00000000-0000-0000-0000-000000000006', 'magic', false, 'Magic Johnson', 'MJ', '1986–87', 'Los Angeles', 'PG', 6, 6, 210, 2500000, 'Floor general', 'A six-foot-nine playmaker who turned transition into art.', '#dcab55', 72, 92, 88, 85, 75, 72, 84, 94, 99, 87, 82, 82, 80, 72, 83, 85, 78, 65, 88, 83),
+  ('00000000-0000-0000-0000-000000000007', 'bird', false, 'Larry Bird', 'LB', '1985–86', 'Boston', 'SF', 6, 6, 210, 1800000, 'Shooting savant', 'Surgical shot creation and anticipatory playmaking.', '#72b58a', 94, 82, 95, 78, 55, 83, 90, 78, 94, 96, 82, 66, 80, 63, 78, 91, 82, 70, 88, 90),
+  ('00000000-0000-0000-0000-000000000008', 'olajuwon', false, 'Hakeem Olajuwon', 'HO', '1993–94', 'Houston', 'C', 6, 6, 210, 3500000, 'Two-way center', 'A graceful post scorer and one of basketball’s great rim protectors.', '#d9696b', 42, 82, 92, 97, 85, 94, 96, 76, 70, 98, 82, 76, 80, 87, 88, 77, 86, 99, 88, 88),
+  ('00000000-0000-0000-0000-000000000009', 'kobe', false, 'Kobe Bryant', 'KB', '2005–06', 'Los Angeles', 'SG', 6, 6, 210, 17718000, 'Shot maker', 'Difficult-shot craft, footwork, and high-volume scoring.', '#8060bf', 86, 96, 96, 85, 96, 60, 78, 95, 82, 92, 82, 89, 80, 91, 78, 85, 89, 76, 88, 99),
+  ('00000000-0000-0000-0000-000000000010', 'garnett', false, 'Kevin Garnett', 'KG', '2003–04', 'Minnesota', 'PF', 6, 6, 210, 28000000, 'Defensive engine', 'Mobile, vocal, and extraordinarily versatile on both ends.', '#4fada2', 65, 78, 88, 90, 85, 95, 98, 73, 80, 99, 82, 79, 80, 88, 88, 79, 88, 97, 88, 79),
+  ('00000000-0000-0000-0000-000000000011', 'durant', false, 'Kevin Durant', 'KD', '2013–14', 'Oklahoma City', 'SF', 6, 6, 210, 17832627, 'Three-level scorer', 'A seven-footer with guard skills and effortless range.', '#688fcb', 92, 88, 96, 84, 85, 70, 80, 86, 79, 86, 82, 82, 80, 82, 77, 87, 75, 85, 88, 96),
+  ('00000000-0000-0000-0000-000000000012', 'rodman', false, 'Dennis Rodman', 'DR', '1995–96', 'Chicago', 'PF', 6, 6, 210, 2500000, 'Rebound specialist', 'Possession-winner whose defense and rebounding alter a game.', '#e67b9f', 39, 55, 55, 62, 75, 99, 99, 62, 68, 96, 82, 78, 80, 84, 86, 58, 82, 85, 88, 28),
+  ('00000000-0000-0000-0000-000000000013', 'harden', false, 'James Harden', 'JH', '2018–19', 'Houston', 'PG', 6, 6, 210, 30431780, 'Isolation playmaker', 'High-volume scoring guard with elite pick-and-roll creation.', '#c96c57', 94, 96, 92, 76, 70, 60, 75, 98, 97, 80, 98, 84, 80, 80, 82, 95, 79, 58, 88, 99),
+  ('00000000-0000-0000-0000-000000000014', 'leonard', false, 'Kawhi Leonard', 'KL', '2016–17', 'San Antonio', 'SF', 6, 6, 210, 17638635, 'Two-way wing', 'Efficient wing scorer who can erase an opponent’s best option.', '#758f74', 88, 88, 90, 84, 90, 75, 82, 84, 78, 98, 91, 86, 80, 80, 84, 88, 96, 80, 88, 82),
+  ('00000000-0000-0000-0000-000000000015', 'kerr', false, 'Steve Kerr', 'SK', '1995–96', 'Chicago', 'PG', 6, 6, 210, 2500000, 'Spot-up specialist', 'Low-usage connector with historically accurate catch-and-shoot range.', '#d6ae6b', 96, 60, 82, 50, 25, 35, 45, 72, 78, 81, 89, 70, 80, 56, 55, 92, 64, 35, 88, 52),
+  ('00000000-0000-0000-0000-000000000016', 'miller', false, 'Reggie Miller', 'RM', '1993–94', 'Indiana', 'SG', 6, 6, 210, 9000000, 'Movement shooter', 'Constant off-ball movement and nerve-proof perimeter shot making.', '#d9b146', 97, 82, 88, 60, 40, 40, 55, 78, 73, 82, 94, 83, 80, 72, 66, 94, 72, 48, 88, 84),
+  ('00000000-0000-0000-0000-000000000017', 'allen', false, 'Ray Allen', 'RA', '2000–01', 'Milwaukee', 'SG', 6, 6, 210, 9000000, 'Three-level shooter', 'A polished scorer whose shooting translated on and off the ball.', '#65a9a3', 96, 88, 90, 72, 70, 50, 65, 82, 76, 84, 91, 85, 80, 82, 70, 92, 76, 54, 88, 86),
+  ('00000000-0000-0000-0000-000000000018', 'thompson', false, 'Klay Thompson', 'KT', '2015–16', 'Golden State', 'SG', 6, 6, 210, 15501000, '3-and-D shooter', 'Fast-release shooting with the size to defend elite perimeter scorers.', '#5b91cb', 96, 78, 82, 70, 65, 45, 60, 72, 66, 88, 87, 80, 80, 78, 73, 87, 75, 65, 88, 81),
+  ('00000000-0000-0000-0000-000000000019', 'jokic', false, 'Nikola Jokić', 'NJ', '2022–23', 'Denver', 'C', 6, 6, 210, 33047803, 'Playmaking center', 'A hub center who creates efficient looks for every teammate.', '#ad8a63', 86, 84, 92, 96, 75, 92, 97, 84, 99, 93, 99, 63, 80, 58, 88, 83, 82, 72, 88, 78)
+on conflict (catalog_key) do nothing;

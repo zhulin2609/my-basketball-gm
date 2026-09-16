@@ -1,5 +1,8 @@
 node_modules
 dist
 .env
+.env.local
+.omx
 .DS_Store
 *.tsbuildinfo
+backend/target

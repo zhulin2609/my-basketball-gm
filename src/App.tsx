@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { api, isApiEnabled } from '@/lib/api';
 import {
   bootstrapLineups,
   lineupRepository,
@@ -69,6 +70,7 @@ const defaultRatings: Ratings = {
 
 // 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
 const initialLineups = bootstrapLineups();
+const initialGames = isApiEnabled ? [] : simulationRepository.list();
 
 // V1 的综合能力仅用于列表排序和展示，不参与比赛引擎的具体计算。
 const average = (p: Player) =>
@@ -91,11 +93,19 @@ const currency = new Intl.NumberFormat('en-US', {
   currency: 'USD',
   maximumFractionDigits: 0,
 });
+const reportDateTime = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 interface PlayerLibraryProps {
   players: Player[];
   onAdd: (player: Player) => void;
-  onSavePlayer: (player: Player) => void;
+  onSavePlayer: (player: Player) => Promise<Player>;
   onOpenLineup: () => void;
 }
 
@@ -108,7 +118,7 @@ interface PlayerDetailProps {
 interface PlayerEditorProps {
   player: Player;
   onCancel: () => void;
-  onSave: (player: Player) => void;
+  onSave: (player: Player) => Promise<void>;
 }
 
 interface LineupWorkbenchProps {
@@ -118,21 +128,25 @@ interface LineupWorkbenchProps {
   onSelect: (lineup: Lineup) => void;
   onSave: (lineup: Lineup) => void;
   onNew: () => void;
-  onPlay: (home: Lineup, away: Lineup) => void;
+  onPlay: (home: Lineup, away: Lineup) => Promise<void>;
+  syncError: string | null;
 }
 
 interface BattleProps {
   players: Player[];
   lineups: Lineup[];
+  games: Simulation[];
   game: Simulation | null;
-  onPlay: (home: Lineup, away: Lineup) => void;
+  onSelectGame: (game: Simulation) => void;
+  onPlay: (home: Lineup, away: Lineup) => Promise<void>;
+  isSimulating: boolean;
+  simulationError: string | null;
 }
 
 interface GameResultProps {
   game: Simulation;
-  home: Lineup;
-  away: Lineup;
   players: Player[];
+  isCloudReport: boolean;
 }
 
 interface StatTableProps {
@@ -145,19 +159,112 @@ export function App() {
   const [view, setView] = useState<View>('players');
   const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
   const [players, setPlayers] = useState<Player[]>(listPlayers);
+  const [playerLoadError, setPlayerLoadError] = useState<string | null>(null);
+  const [lineupSyncError, setLineupSyncError] = useState<string | null>(null);
+  const [simulationError, setSimulationError] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
   const [selected, setSelected] = useState<Lineup>(initialLineups[0]);
-  const [game, setGame] = useState<Simulation | null>(simulationRepository.list()[0] ?? null);
-  // 阵容的唯一写入口：更新内存状态前先写入 localStorage，日后可替换为 api.saveLineup。
+  const [games, setGames] = useState<Simulation[]>(initialGames);
+  const [game, setGame] = useState<Simulation | null>(initialGames[0] ?? null);
+  // 同一阵容的请求串行化，防止用户连续输入名称时较早的网络请求覆盖较晚的修改。
+  const lineupSaveQueues = useRef<Map<string, Promise<void>>>(new Map());
+  // 阵容的唯一写入口：离线模式写 localStorage；API 模式乐观更新并排队写入 PostgreSQL。
   const persist = (next: Lineup) => {
     const saved = { ...next, updatedAt: new Date().toISOString() };
-    lineupRepository.save(saved);
-    setLineups(lineupRepository.list());
-    setSelected(saved);
+    if (!isApiEnabled) {
+      lineupRepository.save(saved);
+      setLineups(lineupRepository.list());
+      setSelected(saved);
+      return;
+    }
+
+    setLineups((current) => {
+      const index = current.findIndex((lineup) => lineup.id === saved.id);
+      return index < 0
+        ? [saved, ...current]
+        : current.map((lineup) => (lineup.id === saved.id ? saved : lineup));
+    });
+    setSelected((current) => (current.id === saved.id ? saved : current));
+
+    const previous = lineupSaveQueues.current.get(saved.id) ?? Promise.resolve();
+    const request = previous
+      .catch(() => undefined)
+      .then(() => api.saveLineup(saved))
+      .then((remoteLineup) => {
+        setLineups((current) =>
+          current.map((lineup) => (lineup.id === remoteLineup.id ? remoteLineup : lineup)),
+        );
+        setSelected((current) => (current.id === remoteLineup.id ? remoteLineup : current));
+        setLineupSyncError(null);
+      });
+    lineupSaveQueues.current.set(saved.id, request);
+    void request.catch((error: unknown) => {
+      setLineupSyncError(error instanceof Error ? error.message : '阵容保存失败。');
+    });
   };
-  // 本地 MVP 的球员写入边界；接入后端时可在这里改为 api.createPlayer / api.updatePlayer。
-  const persistPlayer = (player: Player) => {
+  // API 模式下，球员和阵容都从 PostgreSQL 读取；没有远端阵容时迁移本机示例阵容。
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void api
+      .listPlayers()
+      .then((remotePlayers) => {
+        setPlayers(remotePlayers);
+        setPlayerLoadError(null);
+      })
+      .catch((error: unknown) => {
+        setPlayerLoadError(error instanceof Error ? error.message : '球员库加载失败。');
+      });
+  }, []);
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void api
+      .listSimulations()
+      .then((remoteGames) => {
+        setGames(remoteGames);
+        setGame((current) => current ?? remoteGames[0] ?? null);
+        setSimulationError(null);
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : '未知错误';
+        setSimulationError(`无法加载云端战报：${message}`);
+      });
+  }, []);
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void api
+      .listLineups()
+      .then(async (remoteLineups) => {
+        const savedLineups = remoteLineups.length
+          ? remoteLineups
+          : await Promise.all(initialLineups.map((lineup) => api.saveLineup(lineup)));
+        setLineups(savedLineups);
+        setSelected(
+          (current) =>
+            savedLineups.find((lineup) => lineup.id === current.id) ?? savedLineups[0] ?? current,
+        );
+        setLineupSyncError(null);
+      })
+      .catch((error: unknown) => {
+        setLineupSyncError(error instanceof Error ? error.message : '阵容库加载失败。');
+      });
+  }, []);
+  const persistPlayer = async (player: Player): Promise<Player> => {
+    if (isApiEnabled) {
+      const { id: _id, isCustom: _isCustom, ...payload } = player;
+      const saved = player.isCustom
+        ? await api.createPlayer(payload)
+        : await api.updatePlayer(player.id, payload);
+      setPlayers((current) => {
+        const index = current.findIndex((item) => item.id === saved.id);
+        return index < 0
+          ? [saved, ...current]
+          : current.map((item) => (item.id === saved.id ? saved : item));
+      });
+      return saved;
+    }
     playerRepository.save(player);
     setPlayers(listPlayers());
+    return player;
   };
   // 新建空阵容后立刻进入编辑页，避免用户还要额外导航一次。
   const newLineup = () => {
@@ -173,12 +280,34 @@ export function App() {
     persist(next);
     setView('lineups');
   };
-  // 模拟引擎是无 UI 依赖的纯逻辑；页面负责保存比赛记录并跳转到战报。
-  const play = (home: Lineup, away: Lineup) => {
-    const next = simulate(home, away, players);
-    simulationRepository.save(next);
-    setGame(next);
+  // 云端模式先等待阵容同步，再由 Java 引擎计算并原子保存；离线演示继续使用纯 TS 引擎。
+  const play = async (home: Lineup, away: Lineup): Promise<void> => {
     setView('battle');
+    setIsSimulating(true);
+    setSimulationError(null);
+
+    try {
+      let next: Simulation;
+      if (isApiEnabled) {
+        const pendingSaves = [
+          lineupSaveQueues.current.get(home.id),
+          lineupSaveQueues.current.get(away.id),
+        ].filter((request): request is Promise<void> => Boolean(request));
+        await Promise.all(pendingSaves);
+        next = await api.simulate(home.id, away.id);
+      } else {
+        next = simulate(home, away, players);
+        simulationRepository.save(next);
+      }
+
+      setGames((current) => [next, ...current.filter((report) => report.id !== next.id)]);
+      setGame(next);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '未知错误';
+      setSimulationError(`比赛未完成或战报未能保存：${message}`);
+    } finally {
+      setIsSimulating(false);
+    }
   };
   return (
     <main className="app-shell">
@@ -225,6 +354,16 @@ export function App() {
           }}
           onSavePlayer={persistPlayer}
           onOpenLineup={() => setView('lineups')}
+          loadError={playerLoadError}
+          onRetry={() => {
+            void api
+              .listPlayers()
+              .then(setPlayers)
+              .then(() => setPlayerLoadError(null))
+              .catch((error: unknown) =>
+                setPlayerLoadError(error instanceof Error ? error.message : '球员库加载失败。'),
+              );
+          }}
         />
       )}
       {view === 'lineups' && (
@@ -236,10 +375,20 @@ export function App() {
           onSave={persist}
           onNew={newLineup}
           onPlay={play}
+          syncError={lineupSyncError}
         />
       )}
       {view === 'battle' && (
-        <Battle players={players} lineups={lineups} game={game} onPlay={play} />
+        <Battle
+          players={players}
+          lineups={lineups}
+          games={games}
+          game={game}
+          onSelectGame={setGame}
+          onPlay={play}
+          isSimulating={isSimulating}
+          simulationError={simulationError}
+        />
       )}
       <footer>
         独立爱好者原型 · 不隶属于任何联盟、球队或球员工会 ·
@@ -249,7 +398,14 @@ export function App() {
   );
 }
 
-function PlayerLibrary({ players, onAdd, onSavePlayer, onOpenLineup }: PlayerLibraryProps) {
+function PlayerLibrary({
+  players,
+  onAdd,
+  onSavePlayer,
+  onOpenLineup,
+  loadError,
+  onRetry,
+}: PlayerLibraryProps & { loadError: string | null; onRetry: () => void }) {
   const [query, setQuery] = useState('');
   const [pos, setPos] = useState<'ALL' | Position>('ALL');
   const [sort, setSort] = useState<'overall' | 'threePoint' | 'salaryUsd'>('overall');
@@ -286,9 +442,9 @@ function PlayerLibrary({ players, onAdd, onSavePlayer, onOpenLineup }: PlayerLib
       ...defaultRatings,
     });
   };
-  const savePlayer = (player: Player) => {
-    onSavePlayer(player);
-    setFocus(player);
+  const savePlayer = async (player: Player) => {
+    const saved = await onSavePlayer(player);
+    setFocus(saved);
     setEditing(null);
   };
   return (
@@ -336,6 +492,17 @@ function PlayerLibrary({ players, onAdd, onSavePlayer, onOpenLineup }: PlayerLib
           </select>
         </label>
       </div>
+      {isApiEnabled && (
+        <p className="api-status">球员、阵容和近 30 天战报均保存到本地 PostgreSQL。</p>
+      )}
+      {loadError && (
+        <p className="editor-error" role="alert">
+          无法加载服务端球员库：{loadError}{' '}
+          <button className="ghost" onClick={onRetry}>
+            重试
+          </button>
+        </p>
+      )}
       <div className="player-layout">
         <div className="player-grid">
           {list.map((p) => (
@@ -433,6 +600,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
   // 编辑草稿与已保存数据分离，取消时不会污染当前球员档案或阵容中的能力值。
   const [draft, setDraft] = useState<Player>(player);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const setText = (
     key: keyof Pick<
       Player,
@@ -449,7 +617,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
     // 数字输入是逐字符组成的：例如 210 会依次经过 2、21、210，不能在中途强行改为 80。
     setDraft((current) => ({ ...current, [key]: value }));
   };
-  const submit = () => {
+  const submit = async () => {
     if (!draft.name.trim()) {
       setError('请填写球员名称。');
       return;
@@ -476,7 +644,19 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
       setError('所有能力值必须是 0–99 之间的整数。');
       return;
     }
-    onSave({ ...draft, name: draft.name.trim(), initials: draft.initials.trim().slice(0, 4) });
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        ...draft,
+        name: draft.name.trim(),
+        initials: draft.initials.trim().slice(0, 4),
+      });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : '保存球员失败。');
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <aside className="detail-panel player-editor">
@@ -606,8 +786,8 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           {error}
         </p>
       )}
-      <button className="primary wide" onClick={submit}>
-        保存球员
+      <button className="primary wide" onClick={() => void submit()} disabled={saving}>
+        {saving ? '保存中…' : '保存球员'}
       </button>
     </aside>
   );
@@ -621,14 +801,20 @@ function LineupWorkbench({
   onSave,
   onNew,
   onPlay,
+  syncError,
 }: LineupWorkbenchProps) {
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
   const [playerQuery, setPlayerQuery] = useState('');
   const [starterLimitMessage, setStarterLimitMessage] = useState<string | null>(null);
-  const members = selected.members.map((m) => ({
-    ...m,
-    player: players.find((p) => p.id === m.playerId)!,
-  }));
+  // 旧的 localStorage 阵容可能引用已从远端目录移除的球员；过滤缺失项而非用非空断言让页面崩溃。
+  const missingPlayerIds = selected.members
+    .filter((member) => !players.some((player) => player.id === member.playerId))
+    .map((member) => member.playerId);
+  const members = selected.members.flatMap((member) => {
+    const player = players.find((candidate) => candidate.id === member.playerId);
+
+    return player ? [{ ...member, player }] : [];
+  });
   // 仅改变编辑表格的显示顺序，不改写阵容成员的存储顺序，避免排序影响数据本身。
   const displayMembers = members
     .map((member, index) => ({ ...member, index }))
@@ -662,7 +848,7 @@ function LineupWorkbench({
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
   // 这些规则同时控制“开始梦幻对战”按钮，后端接入时也应复用同样的校验。
-  const valid = isEligibleForSimulation;
+  const valid = isEligibleForSimulation && missingPlayerIds.length === 0;
   const rosterIsFull = selected.members.length >= 15;
 
   const toggleStarter = (index: number) => {
@@ -749,6 +935,17 @@ function LineupWorkbench({
           <span>编制规则</span>
           <p>5–15 人 · 最多 13 人激活 · 首发必须各有一位 PG / SG / SF / PF / C · 可自由错位</p>
         </div>
+        {syncError && (
+          <p className="editor-error" role="alert">
+            阵容尚未同步到服务器：{syncError}
+          </p>
+        )}
+        {missingPlayerIds.length > 0 && (
+          <div className="starter-rule-alert error" role="alert">
+            <strong>这套旧阵容引用了当前球员库中不存在的球员，无法开始对战。</strong>
+            <span>请移除或替换：{missingPlayerIds.join('、')}</span>
+          </div>
+        )}
         <div
           className={
             'starter-rule-alert ' +
@@ -889,7 +1086,7 @@ function LineupWorkbench({
             disabled={!valid || !opponentId}
             onClick={() => {
               const other = lineups.find((x) => x.id === opponentId);
-              if (other) onPlay(selected, other);
+              if (other) void onPlay(selected, other);
             }}
           >
             开始梦幻对战 →
@@ -900,24 +1097,33 @@ function LineupWorkbench({
   );
 }
 
-function Battle({ players, lineups, game, onPlay }: BattleProps) {
+function Battle({
+  players,
+  lineups,
+  games,
+  game,
+  onSelectGame,
+  onPlay,
+  isSimulating,
+  simulationError,
+}: BattleProps) {
   const [homeId, setHomeId] = useState(lineups[0]?.id || '');
   const [awayId, setAwayId] = useState(lineups[1]?.id || '');
   const home = lineups.find((x) => x.id === homeId);
   const away = lineups.find((x) => x.id === awayId);
-  // 历史战报需按其保存的阵容 ID 展示，不能误用选择器当前选择的阵容。
-  const matchup =
-    game &&
-    lineups.find((l) => l.id === game.homeLineupId) &&
-    lineups.find((l) => l.id === game.awayLineupId);
-  const showHome = matchup ? lineups.find((l) => l.id === game!.homeLineupId)! : home;
-  const showAway = matchup ? lineups.find((l) => l.id === game!.awayLineupId)! : away;
+  const homeIsEligible = home ? validateLineup(home).isEligibleForSimulation : false;
+  const awayIsEligible = away ? validateLineup(away).isEligibleForSimulation : false;
   return (
     <section className="page battle-page">
       <div className="battle-hero">
         <p className="eyebrow">SIMULATION LAB</p>
         <h1>梦幻对战</h1>
         <p>统计模型会以能力、角色与随机种子计算一场可复现的比赛。</p>
+        {isApiEnabled && (
+          <p className="retention-summary">
+            云端战报仅保留 30 天，过期后立即不可查看，并在每天凌晨 3:00 自动清理。
+          </p>
+        )}
         <div className="matchup-picker">
           <select value={homeId} onChange={(e) => setHomeId(e.target.value)}>
             {lineups.map((l) => (
@@ -936,15 +1142,61 @@ function Battle({ players, lineups, game, onPlay }: BattleProps) {
           </select>
           <button
             className="primary"
-            disabled={!home || !away || homeId === awayId}
-            onClick={() => home && away && onPlay(home, away)}
+            disabled={
+              !home ||
+              !away ||
+              homeId === awayId ||
+              !homeIsEligible ||
+              !awayIsEligible ||
+              isSimulating
+            }
+            onClick={() => {
+              if (home && away) void onPlay(home, away);
+            }}
           >
-            模拟比赛
+            {isSimulating ? '模拟并保存中…' : '模拟比赛'}
           </button>
         </div>
       </div>
-      {game && showHome && showAway ? (
-        <GameResult game={game} home={showHome} away={showAway} players={players} />
+      {simulationError && (
+        <p className="editor-error battle-error" role="alert">
+          {simulationError}
+        </p>
+      )}
+      {games.length > 0 && (
+        <section className="report-history" aria-label="近 30 天云端战报">
+          <div className="report-history-heading">
+            <div>
+              <p className="eyebrow">REPORT HISTORY</p>
+              <h2>近 30 天战报</h2>
+            </div>
+            <span>{games.length} 场</span>
+          </div>
+          <div className="report-history-list">
+            {games.map((report) => (
+              <button
+                className={report.id === game?.id ? 'selected' : ''}
+                key={report.id}
+                onClick={() => onSelectGame(report)}
+              >
+                <span>
+                  <b>{report.homeLineupName ?? '主队'}</b>
+                  <strong>
+                    {report.homeScore}–{report.awayScore}
+                  </strong>
+                  <b>{report.awayLineupName ?? '客队'}</b>
+                </span>
+                <small>
+                  {reportDateTime.format(new Date(report.createdAt))} · 保存至{' '}
+                  {reportDateTime.format(new Date(report.expiresAt))}
+                </small>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      {game ? (
+        <GameResult game={game} players={players} isCloudReport={isApiEnabled} />
       ) : (
         <div className="empty large">选择两套不同阵容，开始第一场梦幻对战。</div>
       )}
@@ -952,16 +1204,19 @@ function Battle({ players, lineups, game, onPlay }: BattleProps) {
   );
 }
 
-function GameResult({ game, home, away, players }: GameResultProps) {
+function GameResult({ game, players, isCloudReport }: GameResultProps) {
   // 模拟层只返回统计值；展示层在这里把 playerId 关联回球员昵称和抽象头像颜色。
   const rows = (stats: Simulation['homeStats']) =>
     stats.map((s) => {
-      const p = players.find((x) => x.id === s.playerId)!;
+      // 优先展示战报快照；旧版离线记录没有快照时才回查当前球员库。
+      const p = players.find((x) => x.id === s.playerId);
       return (
         <tr key={s.playerId}>
           <td>
-            <i style={{ background: p.accent }}>{p.initials}</i>
-            {p.name}
+            <i style={{ background: s.playerAccent ?? p?.accent ?? '#777' }}>
+              {s.playerInitials ?? p?.initials ?? '?'}
+            </i>
+            {s.playerName ?? p?.name ?? `已移除球员 (${s.playerId})`}
           </td>
           <td>{s.minutes}</td>
           <td>
@@ -977,12 +1232,27 @@ function GameResult({ game, home, away, players }: GameResultProps) {
         </tr>
       );
     });
+  const expiresAt = new Date(game.expiresAt);
+  const remainingDays = Math.max(
+    0,
+    Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
+  );
+  const expirationIsNear = remainingDays <= 3;
+  const homeName = game.homeLineupName ?? '主队';
+  const awayName = game.awayLineupName ?? '客队';
   return (
     <div className="game-result">
+      <div className={'report-retention ' + (expirationIsNear ? 'expires-soon' : '')}>
+        <strong>{isCloudReport ? '云端战报' : '本地战报'}最多保存 30 天</strong>
+        <span>
+          保存至 {reportDateTime.format(expiresAt)}
+          {remainingDays > 0 ? `（剩余 ${remainingDays} 天）` : '（已到期）'}，过期后不可恢复。
+        </span>
+      </div>
       <div className="scoreboard">
         <div>
           <small>HOME</small>
-          <b>{home.name}</b>
+          <b>{homeName}</b>
           <strong>{game.homeScore}</strong>
         </div>
         <span>
@@ -990,13 +1260,13 @@ function GameResult({ game, home, away, players }: GameResultProps) {
         </span>
         <div>
           <small>AWAY</small>
-          <b>{away.name}</b>
+          <b>{awayName}</b>
           <strong>{game.awayScore}</strong>
         </div>
       </div>
       <div className="stat-columns">
-        <StatTable name={home.name} rows={rows(game.homeStats)} />
-        <StatTable name={away.name} rows={rows(game.awayStats)} />
+        <StatTable name={homeName} rows={rows(game.homeStats)} />
+        <StatTable name={awayName} rows={rows(game.awayStats)} />
       </div>
     </div>
   );

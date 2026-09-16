@@ -59,6 +59,10 @@ export interface Lineup {
 
 export interface PlayerStat {
   playerId: string;
+  /** Cloud reports snapshot display fields so later player edits do not rewrite history. */
+  playerName?: string;
+  playerInitials?: string;
+  playerAccent?: string;
   minutes: number;
   points: number;
   rebounds: number;
@@ -75,10 +79,14 @@ export interface Simulation {
   id: string;
   homeLineupId: string;
   awayLineupId: string;
+  homeLineupName?: string;
+  awayLineupName?: string;
   seed: number;
   homeScore: number;
   awayScore: number;
   homeStats: PlayerStat[];
   awayStats: PlayerStat[];
+  engineVersion?: string;
   createdAt: string;
+  expiresAt: string;
 }

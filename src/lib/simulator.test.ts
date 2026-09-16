@@ -44,5 +44,6 @@ describe('simulate', () => {
 
     expect(result.homeScore).toBe(result.homeStats.reduce((sum, stat) => sum + stat.points, 0));
     expect(result.awayScore).toBe(result.awayStats.reduce((sum, stat) => sum + stat.points, 0));
+    expect([result.homeScore, result.awayScore]).toEqual([101, 112]);
   });
 });

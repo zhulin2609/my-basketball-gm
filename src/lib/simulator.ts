@@ -44,6 +44,9 @@ function makeStats(
       const freeThrows = Math.round((p.shotTendency / 26 + rand() * 3) * (p.freeThrow / 100));
       return {
         playerId: p.id,
+        playerName: p.name,
+        playerInitials: p.initials,
+        playerAccent: p.accent,
         minutes,
         points: twoMade * 2 + threeMade * 3 + freeThrows,
         rebounds: Math.max(
@@ -82,15 +85,21 @@ export function simulate(
     if (rand() > 0.5) homeScore += 3;
     else awayScore += 3;
   }
+  const createdAt = new Date();
+  const expiresAt = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
   return {
     id: crypto.randomUUID(),
     homeLineupId: home.id,
     awayLineupId: away.id,
+    homeLineupName: home.name,
+    awayLineupName: away.name,
     seed,
     homeScore,
     awayScore,
     homeStats,
     awayStats,
-    createdAt: new Date().toISOString(),
+    engineVersion: 'v1',
+    createdAt: createdAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
   };
 }

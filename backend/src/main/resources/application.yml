@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: basketball-gm-api
+  profiles:
+    default: local
+  flyway:
+    enabled: true
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  simulation-retention:
+    cron: ${SIMULATION_RETENTION_CRON:0 0 3 * * *}
+    zone: ${SIMULATION_RETENTION_ZONE:Asia/Shanghai}

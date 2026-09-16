@@ -1,6 +1,6 @@
 # Dream Court / 梦之队
 
-一个面向 PC 浏览器的历史篮球球星资料库、阵容编辑与梦幻对战模拟器。V1 使用浏览器本地存储，且已保留 REST API 与 PostgreSQL 数据模型边界。
+一个面向 PC 浏览器的历史篮球球星资料库、阵容编辑与梦幻对战模拟器。配置 API 后，球员、阵容和近 30 天战报由 PostgreSQL 持久化；未配置 API 时仍可作为离线演示使用。
 
 ## Run
 
@@ -13,8 +13,8 @@ npm run dev
 
 - 99 分制；一名球员只保存一个巅峰赛季的自定义评价。
 - 阵容为 5–15 人；15 人名单遵循 13 名激活、2 名非激活。首发必须各有一个 PG / SG / SF / PF / C，位置只属于该阵容条目。
-- 比赛引擎是可复现的纯 TypeScript 统计模型，输入双方阵容与 seed，输出比分及球员数据。
-- 目前数据、阵容保存于 `localStorage`；部署后将 `VITE_API_BASE_URL` 指向后端，逐步替换 `src/lib/repository.ts` 的本地实现即可。
+- 云端比赛由 Java 服务使用可复现的 V1 统计模型计算，输入双方阵容与 seed，原子保存比分及球员数据。
+- 云端战报在创建 30 天后停止展示，每天北京时间 03:00 物理清理；离线演示记录也按 30 天过滤。
 
 ## Backend contract
 
@@ -22,6 +22,7 @@ npm run dev
 
 - `GET /players?query=&sort=&order=`
 - `GET/POST/PATCH/DELETE /lineups/:id`
+- `GET /simulations?limit=30`
 - `POST /simulations`
 
 ## Disclaimer
