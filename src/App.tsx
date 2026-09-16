@@ -841,7 +841,6 @@ function PlayerLibrary({
           </select>
         </label>
       </div>
-      {isApiEnabled && <p className="api-status">{t('players.stored')}</p>}
       {loadError && (
         <p className="editor-error" role="alert">
           {t('players.loadFailed', { message: loadError })}{' '}
