@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import com.links.basketballgm.user.CurrentUser;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,29 +18,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Persists lineup drafts for the local development owner. Production will obtain the owner
- * from the authenticated principal instead of the local profile property.
+ * Persists lineup drafts under the authenticated owner.
  */
 @RestController
-@Profile("local")
 @RequestMapping("/api/v1/lineups")
 public class LineupController {
   private final LineupMapper mapper;
-  private final UUID ownerId;
+  private final CurrentUser currentUser;
 
-  public LineupController(LineupMapper mapper, @Value("${app.local-dev-owner-id}") UUID ownerId) {
+  public LineupController(LineupMapper mapper, CurrentUser currentUser) {
     this.mapper = mapper;
-    this.ownerId = ownerId;
+    this.currentUser = currentUser;
   }
 
   @GetMapping
-  public List<LineupResponse> list() {
+  public List<LineupResponse> list(@AuthenticationPrincipal Jwt jwt) {
+    var ownerId = currentUser.id(jwt);
     return assemble(mapper.list(ownerId), mapper.listMembers(ownerId));
   }
 
   @PutMapping("/{id}")
   @Transactional
-  public ResponseEntity<?> save(@PathVariable String id, @Valid @RequestBody LineupPayload payload) {
+  public ResponseEntity<?> save(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable String id,
+      @Valid @RequestBody LineupPayload payload
+  ) {
+    var ownerId = currentUser.id(jwt);
     String validationMessage = payload.validationMessage();
     if (validationMessage != null) return ResponseEntity.badRequest().body(Map.of("message", validationMessage));
 

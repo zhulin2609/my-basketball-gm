@@ -8,5 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 public record SimulationRequest(
     @NotBlank String homeLineupId,
     @NotBlank String awayLineupId,
-    @Min(0) @Max(4_294_967_295L) Long seed
+    @Min(0) @Max(4_294_967_295L) Long seed,
+    SimulationMode simulationMode
 ) {}

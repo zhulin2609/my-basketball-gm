@@ -1,17 +1,27 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { api, isApiEnabled } from '@/lib/api';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { api, isApiEnabled, type AuthSession, type LlmCredential } from '@/lib/api';
 import {
   bootstrapLineups,
+  classicLineup,
   lineupRepository,
   listPlayers,
   playerRepository,
   simulationRepository,
+  starterLineup,
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { simulate } from '@/lib/simulator';
-import type { Lineup, LineupMember, Player, Position, Ratings, Simulation } from '@/types';
+import type {
+  Lineup,
+  LineupMember,
+  Player,
+  Position,
+  Ratings,
+  Simulation,
+  SimulationMode,
+} from '@/types';
 
-type View = 'players' | 'lineups' | 'battle';
+type View = 'players' | 'lineups' | 'battle' | 'ai-settings';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
@@ -69,7 +79,8 @@ const defaultRatings: Ratings = {
 };
 
 // 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
-const initialLineups = bootstrapLineups();
+// API 模式不能把浏览器存档迁移给另一个账号，因此只使用公共示例阵容作为首次模板。
+const initialLineups = isApiEnabled ? [starterLineup(), classicLineup()] : bootstrapLineups();
 const initialGames = isApiEnabled ? [] : simulationRepository.list();
 
 // V1 的综合能力仅用于列表排序和展示，不参与比赛引擎的具体计算。
@@ -128,7 +139,7 @@ interface LineupWorkbenchProps {
   onSelect: (lineup: Lineup) => void;
   onSave: (lineup: Lineup) => void;
   onNew: () => void;
-  onPlay: (home: Lineup, away: Lineup) => Promise<void>;
+  onPlay: (home: Lineup, away: Lineup, mode?: SimulationMode) => Promise<void>;
   syncError: string | null;
 }
 
@@ -138,7 +149,8 @@ interface BattleProps {
   games: Simulation[];
   game: Simulation | null;
   onSelectGame: (game: Simulation) => void;
-  onPlay: (home: Lineup, away: Lineup) => Promise<void>;
+  onPlay: (home: Lineup, away: Lineup, mode?: SimulationMode) => Promise<void>;
+  onOpenAiSettings: () => void;
   isSimulating: boolean;
   simulationError: string | null;
 }
@@ -154,9 +166,18 @@ interface StatTableProps {
   rows: ReactNode;
 }
 
+interface AuthScreenProps {
+  onAuthenticated: (session: AuthSession) => void;
+}
+
+interface AiSettingsProps {
+  onBack: () => void;
+}
+
 export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const [view, setView] = useState<View>('players');
+  const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
   const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
   const [players, setPlayers] = useState<Player[]>(listPlayers);
   const [playerLoadError, setPlayerLoadError] = useState<string | null>(null);
@@ -168,10 +189,11 @@ export function App() {
   const [game, setGame] = useState<Simulation | null>(initialGames[0] ?? null);
   // 同一阵容的请求串行化，防止用户连续输入名称时较早的网络请求覆盖较晚的修改。
   const lineupSaveQueues = useRef<Map<string, Promise<void>>>(new Map());
+  const isAuthenticatedApi = isApiEnabled && authSession !== null;
   // 阵容的唯一写入口：离线模式写 localStorage；API 模式乐观更新并排队写入 PostgreSQL。
   const persist = (next: Lineup) => {
     const saved = { ...next, updatedAt: new Date().toISOString() };
-    if (!isApiEnabled) {
+    if (!isAuthenticatedApi) {
       lineupRepository.save(saved);
       setLineups(lineupRepository.list());
       setSelected(saved);
@@ -204,7 +226,7 @@ export function App() {
   };
   // API 模式下，球员和阵容都从 PostgreSQL 读取；没有远端阵容时迁移本机示例阵容。
   useEffect(() => {
-    if (!isApiEnabled) return;
+    if (!isAuthenticatedApi) return;
     void api
       .listPlayers()
       .then((remotePlayers) => {
@@ -214,9 +236,9 @@ export function App() {
       .catch((error: unknown) => {
         setPlayerLoadError(error instanceof Error ? error.message : '球员库加载失败。');
       });
-  }, []);
+  }, [isAuthenticatedApi]);
   useEffect(() => {
-    if (!isApiEnabled) return;
+    if (!isAuthenticatedApi) return;
     void api
       .listSimulations()
       .then((remoteGames) => {
@@ -228,9 +250,9 @@ export function App() {
         const message = error instanceof Error ? error.message : '未知错误';
         setSimulationError(`无法加载云端战报：${message}`);
       });
-  }, []);
+  }, [isAuthenticatedApi]);
   useEffect(() => {
-    if (!isApiEnabled) return;
+    if (!isAuthenticatedApi) return;
     void api
       .listLineups()
       .then(async (remoteLineups) => {
@@ -247,9 +269,9 @@ export function App() {
       .catch((error: unknown) => {
         setLineupSyncError(error instanceof Error ? error.message : '阵容库加载失败。');
       });
-  }, []);
+  }, [isAuthenticatedApi]);
   const persistPlayer = async (player: Player): Promise<Player> => {
-    if (isApiEnabled) {
+    if (isAuthenticatedApi) {
       const { id: _id, isCustom: _isCustom, ...payload } = player;
       const saved = player.isCustom
         ? await api.createPlayer(payload)
@@ -277,24 +299,30 @@ export function App() {
       createdAt: now,
       updatedAt: now,
     };
+    // persist 在云端模式只更新已选中的阵容；新阵容需先切换焦点，才能避免仍停在旧阵容。
+    setSelected(next);
     persist(next);
     setView('lineups');
   };
   // 云端模式先等待阵容同步，再由 Java 引擎计算并原子保存；离线演示继续使用纯 TS 引擎。
-  const play = async (home: Lineup, away: Lineup): Promise<void> => {
+  const play = async (
+    home: Lineup,
+    away: Lineup,
+    mode: SimulationMode = 'local',
+  ): Promise<void> => {
     setView('battle');
     setIsSimulating(true);
     setSimulationError(null);
 
     try {
       let next: Simulation;
-      if (isApiEnabled) {
+      if (isAuthenticatedApi) {
         const pendingSaves = [
           lineupSaveQueues.current.get(home.id),
           lineupSaveQueues.current.get(away.id),
         ].filter((request): request is Promise<void> => Boolean(request));
         await Promise.all(pendingSaves);
-        next = await api.simulate(home.id, away.id);
+        next = await api.simulate(home.id, away.id, mode);
       } else {
         next = simulate(home, away, players);
         simulationRepository.save(next);
@@ -309,6 +337,23 @@ export function App() {
       setIsSimulating(false);
     }
   };
+  useEffect(() => {
+    if (!isAuthenticatedApi) return;
+    void api
+      .currentUser()
+      .then((user) => {
+        setAuthSession((current) => (current ? { ...current, user } : current));
+      })
+      .catch(() => {
+        api.clearSession();
+        setAuthSession(null);
+      });
+  }, [isAuthenticatedApi]);
+
+  if (isApiEnabled && !authSession) {
+    return <AuthScreen onAuthenticated={setAuthSession} />;
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -331,9 +376,28 @@ export function App() {
             </button>
           ))}
         </nav>
-        <button className="primary compact" onClick={newLineup}>
-          + 新建阵容
-        </button>
+        <div className="topbar-actions">
+          {isApiEnabled && authSession && (
+            <>
+              <span className="account-name">{authSession.user.username}</span>
+              <button className="secondary compact" onClick={() => setView('ai-settings')}>
+                AI 设置
+              </button>
+              <button
+                className="secondary compact"
+                onClick={() => {
+                  api.clearSession();
+                  setAuthSession(null);
+                }}
+              >
+                退出登录
+              </button>
+            </>
+          )}
+          <button className="primary compact" onClick={newLineup}>
+            + 新建阵容
+          </button>
+        </div>
       </header>
       {view === 'players' && (
         <PlayerLibrary
@@ -386,14 +450,264 @@ export function App() {
           game={game}
           onSelectGame={setGame}
           onPlay={play}
+          onOpenAiSettings={() => setView('ai-settings')}
           isSimulating={isSimulating}
           simulationError={simulationError}
         />
       )}
+      {view === 'ai-settings' && <AiSettings onBack={() => setView('battle')} />}
       <footer>
         独立爱好者原型 · 不隶属于任何联盟、球队或球员工会 ·
         使用原创示例数值，不含照片、标志或球衣设计
       </footer>
+    </main>
+  );
+}
+
+function AiSettings({ onBack }: AiSettingsProps) {
+  const [credential, setCredential] = useState<LlmCredential | null>(null);
+  const [isEditingCredential, setIsEditingCredential] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1');
+  const [model, setModel] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    void api
+      .getLlmCredential()
+      .then((saved) => {
+        setCredential(saved);
+        setIsEditingCredential(false);
+        setBaseUrl(saved.baseUrl ?? 'https://api.openai.com/v1');
+        setModel(saved.model ?? '');
+      })
+      .catch((requestError: unknown) => {
+        setError(requestError instanceof Error ? requestError.message : '无法读取 AI 设置。');
+      });
+  }, []);
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setNotice(null);
+    setIsSubmitting(true);
+    try {
+      const saved = await api.saveLlmCredential({ baseUrl, model, apiKey });
+      setCredential(saved);
+      setIsEditingCredential(false);
+      setApiKey('');
+      setNotice('已加密保存。你可在梦幻对战页主动选择 AI 模拟。');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '保存失败，请稍后重试。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const remove = async () => {
+    setError(null);
+    setNotice(null);
+    setIsSubmitting(true);
+    try {
+      await api.deleteLlmCredential();
+      setCredential({ configured: false, baseUrl: null, model: null, apiKeyHint: null });
+      setIsEditingCredential(false);
+      setApiKey('');
+      setNotice('AI Key 已删除。本地模拟仍可正常使用。');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '删除失败，请稍后重试。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const hasSavedCredential = credential?.configured === true;
+  const showCredentialForm = !hasSavedCredential || isEditingCredential;
+
+  return (
+    <section className="page ai-settings" aria-labelledby="ai-settings-title">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">OPENAI-COMPATIBLE</p>
+          <h1 id="ai-settings-title">AI 比赛模拟（可选）</h1>
+        </div>
+        <button className="ghost" onClick={onBack}>
+          返回梦幻对战
+        </button>
+      </div>
+      <div className="settings-card">
+        <p>
+          配置后，比赛比分和球员数据会由你选择的大模型生成。API Key
+          仅在服务端加密保存，页面不会再次显示完整 Key。不配置也可以一直使用本地模拟。
+        </p>
+        {notice && <p className="settings-notice">{notice}</p>}
+        {hasSavedCredential && !isEditingCredential && (
+          <div className="credential-status">
+            <p>当前已启用</p>
+            <strong>{credential.model}</strong>
+            <span>{credential.baseUrl}</span>
+            <span>API Key：{credential.apiKeyHint}</span>
+            <div className="credential-actions">
+              <button className="primary" onClick={() => setIsEditingCredential(true)}>
+                更新连接配置
+              </button>
+              <button
+                className="secondary danger-button"
+                disabled={isSubmitting}
+                onClick={() => void remove()}
+              >
+                删除 API Key
+              </button>
+            </div>
+          </div>
+        )}
+        {showCredentialForm && (
+          <form className="auth-form" onSubmit={save}>
+            <label>
+              API Base URL
+              <input
+                onChange={(event) => setBaseUrl(event.target.value)}
+                placeholder="https://api.openai.com/v1"
+                required
+                type="url"
+                value={baseUrl}
+              />
+            </label>
+            <label>
+              模型 ID（例如 gpt-4.1-mini；不要填写 GPT）
+              <input
+                onChange={(event) => setModel(event.target.value)}
+                placeholder="例如 gpt-4.1-mini"
+                required
+                value={model}
+              />
+            </label>
+            <label>
+              API Key
+              <input
+                autoComplete="off"
+                minLength={1}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder={hasSavedCredential ? '输入新 Key 以替换现有配置' : '粘贴你的 API Key'}
+                required
+                type="password"
+                value={apiKey}
+              />
+            </label>
+            {error && (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="primary auth-submit" disabled={isSubmitting} type="submit">
+              {isSubmitting
+                ? '保存中…'
+                : hasSavedCredential
+                  ? '保存新的连接配置'
+                  : '加密保存并启用 AI 模拟'}
+            </button>
+            {hasSavedCredential && (
+              <button
+                className="ghost"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setApiKey('');
+                  setError(null);
+                  setIsEditingCredential(false);
+                }}
+                type="button"
+              >
+                取消
+              </button>
+            )}
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AuthScreen({ onAuthenticated }: AuthScreenProps) {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const session =
+        mode === 'login'
+          ? await api.login({ username, password })
+          : await api.register({ username, password });
+      api.saveSession(session);
+      onAuthenticated(session);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '登录失败，请稍后重试。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="auth-shell">
+      <section className="auth-card" aria-labelledby="auth-title">
+        <div className="brand-mark">DC</div>
+        <p className="eyebrow">DREAM COURT · HISTORY LAB</p>
+        <h1 id="auth-title">{mode === 'login' ? '登录你的篮球经理' : '创建篮球经理账号'}</h1>
+        <p className="auth-copy">登录后，球员修改、阵容和云端战报将只归属于你的账号。</p>
+        <form onSubmit={submit} className="auth-form">
+          <label>
+            用户名
+            <input
+              autoComplete="username"
+              maxLength={32}
+              minLength={3}
+              onChange={(event) => setUsername(event.target.value)}
+              pattern="[A-Za-z0-9_-]{3,32}"
+              required
+              value={username}
+            />
+          </label>
+          <label>
+            密码
+            <input
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              minLength={8}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              type="password"
+              value={password}
+            />
+          </label>
+          {error && (
+            <p className="auth-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="primary auth-submit" disabled={isSubmitting} type="submit">
+            {isSubmitting ? '处理中…' : mode === 'login' ? '登录' : '注册并登录'}
+          </button>
+        </form>
+        <p className="auth-switch">
+          {mode === 'login' ? '还没有账号？' : '已经有账号？'}
+          <button
+            onClick={() => {
+              setError(null);
+              setMode((current) => (current === 'login' ? 'register' : 'login'));
+            }}
+            type="button"
+          >
+            {mode === 'login' ? '创建账号' : '去登录'}
+          </button>
+        </p>
+        <p className="auth-hint">用户名可使用 3–32 位字母、数字、下划线或连字符；密码至少 8 位。</p>
+      </section>
     </main>
   );
 }
@@ -1089,7 +1403,7 @@ function LineupWorkbench({
               if (other) void onPlay(selected, other);
             }}
           >
-            开始梦幻对战 →
+            使用本地引擎对战 →
           </button>
         </div>
       </div>
@@ -1104,26 +1418,103 @@ function Battle({
   game,
   onSelectGame,
   onPlay,
+  onOpenAiSettings,
   isSimulating,
   simulationError,
 }: BattleProps) {
   const [homeId, setHomeId] = useState(lineups[0]?.id || '');
   const [awayId, setAwayId] = useState(lineups[1]?.id || '');
+  const [simulationMode, setSimulationMode] = useState<SimulationMode>('local');
+  const [credential, setCredential] = useState<LlmCredential | null>(null);
+  const [credentialError, setCredentialError] = useState<string | null>(null);
   const home = lineups.find((x) => x.id === homeId);
   const away = lineups.find((x) => x.id === awayId);
   const homeIsEligible = home ? validateLineup(home).isEligibleForSimulation : false;
   const awayIsEligible = away ? validateLineup(away).isEligibleForSimulation : false;
+  const aiIsAvailable = isApiEnabled && credential?.configured === true;
+
+  // 每次进入对战页都读取最新的脱敏配置，从 AI 设置返回后无需刷新页面。
+  useEffect(() => {
+    if (!isApiEnabled) return;
+    void api
+      .getLlmCredential()
+      .then((saved) => {
+        setCredential(saved);
+        setCredentialError(null);
+      })
+      .catch((error: unknown) => {
+        setCredentialError(error instanceof Error ? error.message : '无法读取 AI 设置。');
+      });
+  }, []);
+
+  // 本地引擎是始终可用的安全默认值；Key 被删除后不保留无效的 AI 选中状态。
+  useEffect(() => {
+    if (credential && !credential.configured) setSimulationMode('local');
+  }, [credential]);
+
   return (
     <section className="page battle-page">
       <div className="battle-hero">
         <p className="eyebrow">SIMULATION LAB</p>
         <h1>梦幻对战</h1>
-        <p>统计模型会以能力、角色与随机种子计算一场可复现的比赛。</p>
+        <p>你可使用稳定、免费的内置规则引擎，也可主动选择已配置的 AI 模型。</p>
         {isApiEnabled && (
           <p className="retention-summary">
             云端战报仅保留 30 天，过期后立即不可查看，并在每天凌晨 3:00 自动清理。
           </p>
         )}
+        <div className="simulation-mode-section">
+          <div className="simulation-mode-heading">
+            <strong>选择模拟方式</strong>
+            <span>默认使用本地模拟，不需要 API Key</span>
+          </div>
+          <div className="simulation-mode-options" role="radiogroup" aria-label="模拟方式">
+            <button
+              aria-checked={simulationMode === 'local'}
+              className={'simulation-mode-card ' + (simulationMode === 'local' ? 'selected' : '')}
+              onClick={() => setSimulationMode('local')}
+              role="radio"
+              type="button"
+            >
+              <span className="mode-card-title">
+                <strong>本地模拟</strong>
+                <i>推荐</i>
+              </span>
+              <span>内置规则引擎计算比分和球员数据，立即生成，不产生 API 费用。</span>
+            </button>
+            <button
+              aria-checked={simulationMode === 'ai'}
+              className={'simulation-mode-card ' + (simulationMode === 'ai' ? 'selected' : '')}
+              disabled={!aiIsAvailable}
+              onClick={() => setSimulationMode('ai')}
+              role="radio"
+              type="button"
+            >
+              <span className="mode-card-title">
+                <strong>AI 模拟</strong>
+                <i className="experimental">实验性</i>
+              </span>
+              <span>
+                {aiIsAvailable
+                  ? `使用 ${credential.model} 生成；可能耗时、产生费用，且受模型兼容性影响。`
+                  : '需要先配置 API Key；未配置也不影响本地模拟。'}
+              </span>
+            </button>
+          </div>
+          {isApiEnabled && credential && !credential.configured && (
+            <div className="ai-setup-prompt">
+              <span>尚未配置 AI，你现在就可以使用本地模拟。</span>
+              <button className="ghost" onClick={onOpenAiSettings} type="button">
+                配置 AI（可选）
+              </button>
+            </div>
+          )}
+          {credentialError && (
+            <p className="mode-status-error" role="status">
+              AI 配置状态暂时无法读取，本地模拟仍可正常使用。
+            </p>
+          )}
+        </div>
         <div className="matchup-picker">
           <select value={homeId} onChange={(e) => setHomeId(e.target.value)}>
             {lineups.map((l) => (
@@ -1151,10 +1542,14 @@ function Battle({
               isSimulating
             }
             onClick={() => {
-              if (home && away) void onPlay(home, away);
+              if (home && away) void onPlay(home, away, simulationMode);
             }}
           >
-            {isSimulating ? '模拟并保存中…' : '模拟比赛'}
+            {isSimulating
+              ? '模拟并保存中…'
+              : simulationMode === 'ai'
+                ? '使用 AI 模拟'
+                : '使用本地引擎模拟'}
           </button>
         </div>
       </div>
@@ -1240,10 +1635,16 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
   const expirationIsNear = remainingDays <= 3;
   const homeName = game.homeLineupName ?? '主队';
   const awayName = game.awayLineupName ?? '客队';
+  const engineLabel = game.engineVersion?.startsWith('llm:')
+    ? `AI 模拟 · ${game.engineVersion.slice(4)}`
+    : '本地规则引擎';
   return (
     <div className="game-result">
       <div className={'report-retention ' + (expirationIsNear ? 'expires-soon' : '')}>
-        <strong>{isCloudReport ? '云端战报' : '本地战报'}最多保存 30 天</strong>
+        <div>
+          <strong>{isCloudReport ? '云端战报' : '本地战报'}最多保存 30 天</strong>
+          <small className="report-engine">{engineLabel}</small>
+        </div>
         <span>
           保存至 {reportDateTime.format(expiresAt)}
           {remainingDays > 0 ? `（剩余 ${remainingDays} 天）` : '（已到期）'}，过期后不可恢复。

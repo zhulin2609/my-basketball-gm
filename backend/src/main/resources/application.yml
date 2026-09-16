@@ -14,6 +14,13 @@ server:
   port: ${SERVER_PORT:8080}
 
 app:
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+    token-ttl: ${JWT_TOKEN_TTL:PT8H}
   simulation-retention:
     cron: ${SIMULATION_RETENTION_CRON:0 0 3 * * *}
     zone: ${SIMULATION_RETENTION_ZONE:Asia/Shanghai}
+  llm:
+    # A base64-encoded 32-byte AES key. It is independent from JWT_SECRET so rotating one
+    # does not invalidate the other; key-version supports a future credential re-encryption job.
+    credential-encryption-key: ${LLM_CREDENTIAL_ENCRYPTION_KEY:}

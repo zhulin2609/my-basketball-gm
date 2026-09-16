@@ -2,7 +2,40 @@
  * 云端版本的 HTTP 适配层。
  * 未配置 API 地址时仍由 repository.ts 读写 localStorage；配置后业务数据走 REST 接口。
  */
-import type { Lineup, Player, Simulation } from '@/types';
+import type { Lineup, Player, Simulation, SimulationMode } from '@/types';
+
+const SESSION_STORAGE_KEY = 'dream-court.auth-session.v1';
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  displayName: string;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresAt: string;
+  user: AuthUser;
+}
+
+export interface AuthRequest {
+  username: string;
+  password: string;
+}
+
+export interface LlmCredential {
+  configured: boolean;
+  baseUrl: string | null;
+  model: string | null;
+  apiKeyHint: string | null;
+}
+
+export interface LlmCredentialWrite {
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+}
 
 // ownerId 不出现在请求体中：Spring Security 从当前登录用户的 token 建立球员归属。
 export type PlayerWriteRequest = Omit<Player, 'id' | 'isCustom'>;
@@ -11,20 +44,81 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 /** When unset, the product keeps the original offline demo storage behavior. */
 export const isApiEnabled = Boolean(baseUrl);
 
+function readSession(): AuthSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as AuthSession;
+    const expiresAt = Date.parse(session.expiresAt);
+    const isUsable =
+      session.tokenType === 'Bearer' &&
+      typeof session.accessToken === 'string' &&
+      Boolean(session.user?.id) &&
+      Number.isFinite(expiresAt) &&
+      expiresAt > Date.now();
+    if (!isUsable) {
+      clearSession();
+      return null;
+    }
+    return session;
+  } catch {
+    clearSession();
+    return null;
+  }
+}
+
+function saveSession(session: AuthSession) {
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
 // 统一处理 API base URL、JSON 请求头和非 2xx 响应，避免每个 endpoint 重复同一套样板代码。
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!baseUrl) throw new Error('VITE_API_BASE_URL is not configured');
+  const token = readSession()?.accessToken;
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
+    if (response.status === 401) clearSession();
     const body = (await response.json().catch(() => null)) as { message?: string } | null;
     throw new Error(body?.message ?? `API ${response.status}`);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 export const api = {
+  readSession,
+  saveSession,
+  clearSession,
+  register: (credentials: AuthRequest) =>
+    request<AuthSession>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
+  login: (credentials: AuthRequest) =>
+    request<AuthSession>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
+  currentUser: () => request<AuthUser>('/auth/me'),
+  getLlmCredential: () => request<LlmCredential>('/llm-credentials'),
+  saveLlmCredential: (credential: LlmCredentialWrite) =>
+    request<LlmCredential>('/llm-credentials', {
+      method: 'PUT',
+      body: JSON.stringify(credential),
+    }),
+  deleteLlmCredential: async () => {
+    await request<void>('/llm-credentials', { method: 'DELETE' });
+  },
   // 这里的路径和请求体是前后端约定，具体表结构见 db/schema.sql。
   listPlayers: () => request<Player[]>('/players'),
   createPlayer: (player: PlayerWriteRequest) =>
@@ -38,9 +132,14 @@ export const api = {
     request<Lineup>(`/lineups/${lineup.id}`, { method: 'PUT', body: JSON.stringify(lineup) }),
   // 服务端是云端比赛的权威计算方，并在同一事务中保存比分和球员统计。
   listSimulations: () => request<Simulation[]>('/simulations?limit=30'),
-  simulate: (homeLineupId: string, awayLineupId: string, seed?: number) =>
+  simulate: (
+    homeLineupId: string,
+    awayLineupId: string,
+    simulationMode: SimulationMode,
+    seed?: number,
+  ) =>
     request<Simulation>('/simulations', {
       method: 'POST',
-      body: JSON.stringify({ homeLineupId, awayLineupId, seed }),
+      body: JSON.stringify({ homeLineupId, awayLineupId, seed, simulationMode }),
     }),
 };

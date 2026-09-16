@@ -1,4 +1,5 @@
 export type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
+export type SimulationMode = 'local' | 'ai';
 
 export interface Ratings {
   threePoint: number;

@@ -17,7 +17,7 @@ public interface SimulationMapper {
         random_seed, home_score, away_score, engine_version, created_at, expires_at
       ) values (
         #{ownerId}, cast(#{homeDatabaseId} as uuid), cast(#{awayDatabaseId} as uuid),
-        #{homeName}, #{awayName}, #{seed}, #{homeScore}, #{awayScore}, 'v1',
+        #{homeName}, #{awayName}, #{seed}, #{homeScore}, #{awayScore}, #{engineVersion},
         now(), now() + interval '30 days'
       )
       returning id::text, created_at as "createdAt", expires_at as "expiresAt"
@@ -30,7 +30,8 @@ public interface SimulationMapper {
       @Param("awayName") String awayName,
       @Param("seed") long seed,
       @Param("homeScore") int homeScore,
-      @Param("awayScore") int awayScore
+      @Param("awayScore") int awayScore,
+      @Param("engineVersion") String engineVersion
   );
 
   @Insert({

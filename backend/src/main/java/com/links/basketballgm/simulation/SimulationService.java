@@ -3,6 +3,7 @@ package com.links.basketballgm.simulation;
 import com.links.basketballgm.lineup.LineupMapper;
 import com.links.basketballgm.lineup.LineupMemberRow;
 import com.links.basketballgm.lineup.LineupRow;
+import com.links.basketballgm.llm.AiSimulationService;
 import com.links.basketballgm.player.PlayerMapper;
 import com.links.basketballgm.player.PlayerResponse;
 import java.util.ArrayList;
@@ -28,17 +29,20 @@ public class SimulationService {
   private final LineupMapper lineupMapper;
   private final PlayerMapper playerMapper;
   private final SimulationEngine engine;
+  private final AiSimulationService aiSimulationService;
 
   public SimulationService(
       SimulationMapper simulationMapper,
       LineupMapper lineupMapper,
       PlayerMapper playerMapper,
-      SimulationEngine engine
+      SimulationEngine engine,
+      AiSimulationService aiSimulationService
   ) {
     this.simulationMapper = simulationMapper;
     this.lineupMapper = lineupMapper;
     this.playerMapper = playerMapper;
     this.engine = engine;
+    this.aiSimulationService = aiSimulationService;
   }
 
   @Transactional(readOnly = true)
@@ -91,7 +95,14 @@ public class SimulationService {
     long seed = request.seed() == null
         ? ThreadLocalRandom.current().nextLong(1L << 31)
         : request.seed();
-    SimulationResult result = engine.simulate(homeMembers, awayMembers, players, seed);
+    SimulationMode simulationMode = SimulationMode.resolve(request.simulationMode());
+    AiSimulationService.AiSimulationResult aiResult = simulationMode == SimulationMode.AI
+        ? aiSimulationService.simulateRequired(ownerId, homeMembers, awayMembers, players)
+        : null;
+    SimulationResult result = aiResult == null
+        ? engine.simulate(homeMembers, awayMembers, players, seed)
+        : aiResult.result();
+    String engineVersion = aiResult == null ? ENGINE_VERSION : aiResult.engineVersion();
     String homeDatabaseId = lineupMapper.findDatabaseId(ownerId, home.id());
     String awayDatabaseId = lineupMapper.findDatabaseId(ownerId, away.id());
     SimulationIdentity identity = simulationMapper.insert(
@@ -102,7 +113,8 @@ public class SimulationService {
         away.name(),
         seed,
         result.homeScore(),
-        result.awayScore()
+        result.awayScore(),
+        engineVersion
     );
 
     List<SimulationStatWrite> writes = toWrites(result);
@@ -121,7 +133,7 @@ public class SimulationService {
         result.awayScore(),
         result.homeStats(),
         result.awayStats(),
-        ENGINE_VERSION,
+        engineVersion,
         identity.createdAt(),
         identity.expiresAt()
     );

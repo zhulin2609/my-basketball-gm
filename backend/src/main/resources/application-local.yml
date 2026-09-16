@@ -5,4 +5,14 @@ spring:
     password: ${DB_PASSWORD:}
 
 app:
-  local-dev-owner-id: ${LOCAL_DEV_OWNER_ID:00000000-0000-0000-0000-000000000001}
+  auth:
+    # 仅用于本地调试；部署前必须通过 JWT_SECRET 设置独立的随机密钥。
+    jwt-secret: ${JWT_SECRET:local-development-secret-change-before-production-2026}
+    token-ttl: ${JWT_TOKEN_TTL:PT8H}
+  local-bootstrap-user:
+    id: ${LOCAL_DEV_OWNER_ID:00000000-0000-0000-0000-000000000001}
+    username: ${LOCAL_BOOTSTRAP_USERNAME:local-dev}
+    password: ${LOCAL_BOOTSTRAP_PASSWORD:local-dev-password}
+  llm:
+    # 仅用于本地调试。部署环境必须使用 LLM_CREDENTIAL_ENCRYPTION_KEY 注入独立随机密钥。
+    credential-encryption-key: ${LLM_CREDENTIAL_ENCRYPTION_KEY:ZHJlYW0tY291cnQtbG9jYWwtYWVzLWtleS0yMDI2MDk=}
