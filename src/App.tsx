@@ -936,7 +936,7 @@ function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
       </div>
       <div className="detail-meta">
         <span>{t('players.peakSalary')}</span>
-        <b>{formatCurrency(player.salaryUsd, locale)}</b>
+        <b>{player.salaryUsd > 0 ? formatCurrency(player.salaryUsd, locale) : '—'}</b>
       </div>
       <button className="primary wide" onClick={onAdd}>
         {t('players.add')}

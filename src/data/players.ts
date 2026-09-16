@@ -1,4 +1,5 @@
 import type { Player } from '@/types';
+import { historicalPlayers } from '@/data/historical-players.generated';
 
 const rating = (
   overrides: Partial<
@@ -43,7 +44,7 @@ const rating = (
   ...overrides,
 });
 
-export const players: Player[] = [
+const curatedPlayers: Player[] = [
   {
     id: 'jordan',
     name: 'Michael Jordan',
@@ -636,3 +637,7 @@ export const players: Player[] = [
     }),
   },
 ];
+
+// Keep the original hand-tuned stars first, then append the generated history
+// catalog. The generator excludes these names, so every player appears once.
+export const players: Player[] = [...curatedPlayers, ...historicalPlayers];
