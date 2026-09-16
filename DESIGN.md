@@ -5,7 +5,7 @@
 - Status: Active
 - Last refreshed: 2026-09-16
 - Primary product surfaces: 球员库、我的阵容、梦幻对战
-- Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/links/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
+- Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/lib/repository.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/links/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
 
 ## Brand
 
@@ -38,6 +38,7 @@
 - 渐进披露: 球员详情保留在资料库；阵容页的选择器只展示足以决策的信息。
 - 本地优先: 对战始终可以使用内置规则引擎；AI 只是用户主动选择的实验性增强，不得成为开始比赛的前置条件。
 - 风险在操作前告知: AI 模式的耗时、可能费用和模型兼容性要在选项旁说明，不只在报错后说明。
+- 语言稳定性: 简体中文与英文共享同一套结构化翻译 key；语言切换不得改变任何阵容、对战或登录状态。
 - Tradeoffs: 移动端优先保证单列选择与大点击区；桌面端再提升信息密度。
 
 ## Visual language
@@ -52,7 +53,7 @@
 ## Components
 
 - Existing components to reuse: `primary`、`ghost`、`search`、`tag`、`portrait`、`roster-row`。
-- New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示、对战页的“本地模拟 / AI 模拟”模式选择器，以及球员详情中的各项能力值。
+- New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示、对战页的“本地模拟 / AI 模拟”模式选择器、全局中英语言切换控件，以及球员详情中的各项能力值。
 - Variants and states: 默认、编辑中、输入校验失败、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐、本地模拟已选中、AI 已配置可选、AI 未配置禁用、模拟中、模拟失败。
 - Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`，本地球员覆盖在 `src/lib/repository.ts`。
 
@@ -62,6 +63,7 @@
 - Keyboard/focus behavior: 搜索框和候选按钮按 DOM 顺序聚焦；禁用按钮不可触发。
 - Contrast/readability: 正文与背景维持高对比；小号数据标签不得承载唯一信息。
 - Screen-reader semantics: 输入框须有 `aria-label`，操作按钮使用清晰动词。
+- Language: 语言切换器正确声明当前语言；日期、数字和货币随语言区域显示。
 - Reduced motion and sensory considerations: 当前无必要动画。
 
 ## Responsive behavior
@@ -91,6 +93,7 @@
 - Design-token constraints: 复用现有颜色与按钮类，不引入新 UI 依赖。
 - Performance constraints: 候选列表为本地小数据集，直接过滤即可。
 - Compatibility constraints: 现代桌面浏览器；保留 900px 响应式规则。
+- i18n constraints: 一期仅支持 `zh-CN` 和 `en`；语言偏好写入浏览器存储，但不需后端字段或数据库迁移。
 - Test/screenshot expectations: 运行格式、单元测试和生产构建；关键编辑路径需手动验证。
 
 ## Open questions

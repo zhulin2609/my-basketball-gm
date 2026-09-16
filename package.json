@@ -13,15 +13,17 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "i18next": "^26.4.2",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-i18next": "^17.0.14",
+    "vite": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "vitest": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "prettier": "latest"
+    "prettier": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
   }
 }

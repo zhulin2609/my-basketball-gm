@@ -50,6 +50,36 @@ button {
   margin-bottom: 24px;
 }
 
+.language-switch {
+  align-items: center;
+  border: 1px solid #3c5147;
+  border-radius: 7px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.language-switch button {
+  background: transparent;
+  color: #a8b2a4;
+  font: 11px 'DM Mono';
+  min-height: 30px;
+  padding: 0 9px;
+}
+
+.language-switch button + button {
+  border-left: 1px solid #3c5147;
+}
+
+.language-switch button[aria-pressed='true'] {
+  background: #c3ec8b;
+  color: #152018;
+}
+
+.auth-card > .language-switch {
+  float: right;
+  margin-bottom: 10px;
+}
+
 .eyebrow {
   color: #c3ec8b;
   font-size: 12px;

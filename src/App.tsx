@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { changeLocale, supportedLocales, type AppLocale } from '@/i18n';
 import { api, isApiEnabled, type AuthSession, type LlmCredential } from '@/lib/api';
 import {
   bootstrapLineups,
@@ -32,27 +34,27 @@ interface RatingField {
   label: string;
 }
 
-const ratingFields: RatingField[] = [
-  { key: 'threePoint', label: '三分' },
-  { key: 'layup', label: '上篮' },
-  { key: 'midRange', label: '中投' },
-  { key: 'insideScoring', label: '内线进攻' },
-  { key: 'dunk', label: '扣篮' },
-  { key: 'offensiveRebound', label: '进攻篮板' },
-  { key: 'defensiveRebound', label: '防守篮板' },
-  { key: 'handling', label: '运球' },
-  { key: 'passing', label: '传球' },
-  { key: 'defensiveIQ', label: '防守意识' },
-  { key: 'offensiveIQ', label: '进攻意识' },
-  { key: 'block', label: '盖帽' },
-  { key: 'steal', label: '抢断' },
-  { key: 'freeThrow', label: '罚篮' },
-  { key: 'speed', label: '速度' },
-  { key: 'agility', label: '敏捷' },
-  { key: 'strength', label: '力量' },
-  { key: 'vertical', label: '弹跳' },
-  { key: 'stamina', label: '耐力' },
-  { key: 'shotTendency', label: '投篮倾向' },
+const ratingKeys: Array<keyof Ratings> = [
+  'threePoint',
+  'layup',
+  'midRange',
+  'insideScoring',
+  'dunk',
+  'offensiveRebound',
+  'defensiveRebound',
+  'handling',
+  'passing',
+  'defensiveIQ',
+  'offensiveIQ',
+  'block',
+  'steal',
+  'freeThrow',
+  'speed',
+  'agility',
+  'strength',
+  'vertical',
+  'stamina',
+  'shotTendency',
 ];
 
 const defaultRatings: Ratings = {
@@ -99,19 +101,45 @@ const average = (p: Player) =>
       p.offensiveIQ) /
       11,
   );
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
-const reportDateTime = new Intl.DateTimeFormat('zh-CN', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
+function formatCurrency(value: number, locale: AppLocale): string {
+  return new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'zh-CN', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatReportDate(value: Date, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(value);
+}
+
+function LanguageSwitch() {
+  const { i18n, t } = useTranslation();
+  const activeLocale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
+
+  return (
+    <div className="language-switch" aria-label={t('language.selector')} role="group">
+      {supportedLocales.map((locale) => (
+        <button
+          aria-pressed={activeLocale === locale}
+          key={locale}
+          lang={locale}
+          onClick={() => void changeLocale(locale)}
+          type="button"
+        >
+          {locale === 'zh-CN' ? t('language.chinese') : t('language.english')}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface PlayerLibraryProps {
   players: Player[];
@@ -176,6 +204,7 @@ interface AiSettingsProps {
 
 export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
+  const { t } = useTranslation();
   const [view, setView] = useState<View>('players');
   const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
   const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
@@ -221,7 +250,7 @@ export function App() {
       });
     lineupSaveQueues.current.set(saved.id, request);
     void request.catch((error: unknown) => {
-      setLineupSyncError(error instanceof Error ? error.message : '阵容保存失败。');
+      setLineupSyncError(error instanceof Error ? error.message : t('errors.lineupSave'));
     });
   };
   // API 模式下，球员和阵容都从 PostgreSQL 读取；没有远端阵容时迁移本机示例阵容。
@@ -234,7 +263,7 @@ export function App() {
         setPlayerLoadError(null);
       })
       .catch((error: unknown) => {
-        setPlayerLoadError(error instanceof Error ? error.message : '球员库加载失败。');
+        setPlayerLoadError(error instanceof Error ? error.message : t('errors.playerLoad'));
       });
   }, [isAuthenticatedApi]);
   useEffect(() => {
@@ -247,8 +276,8 @@ export function App() {
         setSimulationError(null);
       })
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : '未知错误';
-        setSimulationError(`无法加载云端战报：${message}`);
+        const message = error instanceof Error ? error.message : t('errors.unknown');
+        setSimulationError(t('errors.simulation', { message }));
       });
   }, [isAuthenticatedApi]);
   useEffect(() => {
@@ -267,7 +296,7 @@ export function App() {
         setLineupSyncError(null);
       })
       .catch((error: unknown) => {
-        setLineupSyncError(error instanceof Error ? error.message : '阵容库加载失败。');
+        setLineupSyncError(error instanceof Error ? error.message : t('errors.lineupSave'));
       });
   }, [isAuthenticatedApi]);
   const persistPlayer = async (player: Player): Promise<Player> => {
@@ -293,7 +322,7 @@ export function App() {
     const now = new Date().toISOString();
     const next: Lineup = {
       id: crypto.randomUUID(),
-      name: '未命名阵容',
+      name: t('lineup.newLineup').replace('+ ', ''),
       description: '',
       members: [],
       createdAt: now,
@@ -331,8 +360,8 @@ export function App() {
       setGames((current) => [next, ...current.filter((report) => report.id !== next.id)]);
       setGame(next);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '未知错误';
-      setSimulationError(`比赛未完成或战报未能保存：${message}`);
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setSimulationError(t('errors.simulation', { message }));
     } finally {
       setIsSimulating(false);
     }
@@ -366,9 +395,9 @@ export function App() {
         <nav>
           {(
             [
-              ['players', '球员库'],
-              ['lineups', '我的阵容'],
-              ['battle', '梦幻对战'],
+              ['players', t('nav.players')],
+              ['lineups', t('nav.lineups')],
+              ['battle', t('nav.battle')],
             ] as [View, string][]
           ).map(([id, label]) => (
             <button className={view === id ? 'active' : ''} onClick={() => setView(id)} key={id}>
@@ -377,11 +406,12 @@ export function App() {
           ))}
         </nav>
         <div className="topbar-actions">
+          <LanguageSwitch />
           {isApiEnabled && authSession && (
             <>
               <span className="account-name">{authSession.user.username}</span>
               <button className="secondary compact" onClick={() => setView('ai-settings')}>
-                AI 设置
+                {t('nav.aiSettings')}
               </button>
               <button
                 className="secondary compact"
@@ -390,12 +420,12 @@ export function App() {
                   setAuthSession(null);
                 }}
               >
-                退出登录
+                {t('nav.logout')}
               </button>
             </>
           )}
           <button className="primary compact" onClick={newLineup}>
-            + 新建阵容
+            {t('nav.newLineup')}
           </button>
         </div>
       </header>
@@ -425,7 +455,7 @@ export function App() {
               .then(setPlayers)
               .then(() => setPlayerLoadError(null))
               .catch((error: unknown) =>
-                setPlayerLoadError(error instanceof Error ? error.message : '球员库加载失败。'),
+                setPlayerLoadError(error instanceof Error ? error.message : t('errors.playerLoad')),
               );
           }}
         />
@@ -456,15 +486,13 @@ export function App() {
         />
       )}
       {view === 'ai-settings' && <AiSettings onBack={() => setView('battle')} />}
-      <footer>
-        独立爱好者原型 · 不隶属于任何联盟、球队或球员工会 ·
-        使用原创示例数值，不含照片、标志或球衣设计
-      </footer>
+      <footer>{t('footer')}</footer>
     </main>
   );
 }
 
 function AiSettings({ onBack }: AiSettingsProps) {
+  const { t } = useTranslation();
   const [credential, setCredential] = useState<LlmCredential | null>(null);
   const [isEditingCredential, setIsEditingCredential] = useState(false);
   const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1');
@@ -484,7 +512,7 @@ function AiSettings({ onBack }: AiSettingsProps) {
         setModel(saved.model ?? '');
       })
       .catch((requestError: unknown) => {
-        setError(requestError instanceof Error ? requestError.message : '无法读取 AI 设置。');
+        setError(requestError instanceof Error ? requestError.message : t('ai.readFailed'));
       });
   }, []);
 
@@ -498,9 +526,9 @@ function AiSettings({ onBack }: AiSettingsProps) {
       setCredential(saved);
       setIsEditingCredential(false);
       setApiKey('');
-      setNotice('已加密保存。你可在梦幻对战页主动选择 AI 模拟。');
+      setNotice(t('ai.saved'));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '保存失败，请稍后重试。');
+      setError(requestError instanceof Error ? requestError.message : t('ai.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -515,9 +543,9 @@ function AiSettings({ onBack }: AiSettingsProps) {
       setCredential({ configured: false, baseUrl: null, model: null, apiKeyHint: null });
       setIsEditingCredential(false);
       setApiKey('');
-      setNotice('AI Key 已删除。本地模拟仍可正常使用。');
+      setNotice(t('ai.deleted'));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '删除失败，请稍后重试。');
+      setError(requestError instanceof Error ? requestError.message : t('ai.deleteFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -531,34 +559,34 @@ function AiSettings({ onBack }: AiSettingsProps) {
       <div className="page-heading">
         <div>
           <p className="eyebrow">OPENAI-COMPATIBLE</p>
-          <h1 id="ai-settings-title">AI 比赛模拟（可选）</h1>
+          <h1 id="ai-settings-title">{t('ai.title')}</h1>
         </div>
         <button className="ghost" onClick={onBack}>
-          返回梦幻对战
+          {t('ai.back')}
         </button>
       </div>
       <div className="settings-card">
-        <p>
-          配置后，比赛比分和球员数据会由你选择的大模型生成。API Key
-          仅在服务端加密保存，页面不会再次显示完整 Key。不配置也可以一直使用本地模拟。
-        </p>
+        <p>{t('ai.intro')}</p>
         {notice && <p className="settings-notice">{notice}</p>}
         {hasSavedCredential && !isEditingCredential && (
           <div className="credential-status">
-            <p>当前已启用</p>
+            <p>{t('ai.enabled')}</p>
             <strong>{credential.model}</strong>
             <span>{credential.baseUrl}</span>
-            <span>API Key：{credential.apiKeyHint}</span>
+            <span>
+              {t('ai.key')}
+              {credential.apiKeyHint}
+            </span>
             <div className="credential-actions">
               <button className="primary" onClick={() => setIsEditingCredential(true)}>
-                更新连接配置
+                {t('ai.update')}
               </button>
               <button
                 className="secondary danger-button"
                 disabled={isSubmitting}
                 onClick={() => void remove()}
               >
-                删除 API Key
+                {t('ai.delete')}
               </button>
             </div>
           </div>
@@ -576,10 +604,10 @@ function AiSettings({ onBack }: AiSettingsProps) {
               />
             </label>
             <label>
-              模型 ID（例如 gpt-4.1-mini；不要填写 GPT）
+              {t('ai.model')}
               <input
                 onChange={(event) => setModel(event.target.value)}
-                placeholder="例如 gpt-4.1-mini"
+                placeholder={t('ai.modelPlaceholder')}
                 required
                 value={model}
               />
@@ -590,7 +618,7 @@ function AiSettings({ onBack }: AiSettingsProps) {
                 autoComplete="off"
                 minLength={1}
                 onChange={(event) => setApiKey(event.target.value)}
-                placeholder={hasSavedCredential ? '输入新 Key 以替换现有配置' : '粘贴你的 API Key'}
+                placeholder={hasSavedCredential ? t('ai.replaceKey') : t('ai.pasteKey')}
                 required
                 type="password"
                 value={apiKey}
@@ -603,10 +631,10 @@ function AiSettings({ onBack }: AiSettingsProps) {
             )}
             <button className="primary auth-submit" disabled={isSubmitting} type="submit">
               {isSubmitting
-                ? '保存中…'
+                ? t('common.saving')
                 : hasSavedCredential
-                  ? '保存新的连接配置'
-                  : '加密保存并启用 AI 模拟'}
+                  ? t('ai.saveNew')
+                  : t('ai.saveAndEnable')}
             </button>
             {hasSavedCredential && (
               <button
@@ -619,7 +647,7 @@ function AiSettings({ onBack }: AiSettingsProps) {
                 }}
                 type="button"
               >
-                取消
+                {t('common.cancel')}
               </button>
             )}
           </form>
@@ -630,6 +658,7 @@ function AiSettings({ onBack }: AiSettingsProps) {
 }
 
 function AuthScreen({ onAuthenticated }: AuthScreenProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -648,7 +677,7 @@ function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       api.saveSession(session);
       onAuthenticated(session);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '登录失败，请稍后重试。');
+      setError(requestError instanceof Error ? requestError.message : t('auth.loginFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -657,13 +686,14 @@ function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
+        <LanguageSwitch />
         <div className="brand-mark">DC</div>
         <p className="eyebrow">DREAM COURT · HISTORY LAB</p>
-        <h1 id="auth-title">{mode === 'login' ? '登录你的篮球经理' : '创建篮球经理账号'}</h1>
-        <p className="auth-copy">登录后，球员修改、阵容和云端战报将只归属于你的账号。</p>
+        <h1 id="auth-title">{mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h1>
+        <p className="auth-copy">{t('auth.copy')}</p>
         <form onSubmit={submit} className="auth-form">
           <label>
-            用户名
+            {t('auth.username')}
             <input
               autoComplete="username"
               maxLength={32}
@@ -675,7 +705,7 @@ function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             />
           </label>
           <label>
-            密码
+            {t('auth.password')}
             <input
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               minLength={8}
@@ -691,11 +721,15 @@ function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             </p>
           )}
           <button className="primary auth-submit" disabled={isSubmitting} type="submit">
-            {isSubmitting ? '处理中…' : mode === 'login' ? '登录' : '注册并登录'}
+            {isSubmitting
+              ? t('common.processing')
+              : mode === 'login'
+                ? t('auth.login')
+                : t('auth.register')}
           </button>
         </form>
         <p className="auth-switch">
-          {mode === 'login' ? '还没有账号？' : '已经有账号？'}
+          {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}
           <button
             onClick={() => {
               setError(null);
@@ -703,10 +737,10 @@ function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             }}
             type="button"
           >
-            {mode === 'login' ? '创建账号' : '去登录'}
+            {mode === 'login' ? t('auth.createAccount') : t('auth.goLogin')}
           </button>
         </p>
-        <p className="auth-hint">用户名可使用 3–32 位字母、数字、下划线或连字符；密码至少 8 位。</p>
+        <p className="auth-hint">{t('auth.hint')}</p>
       </section>
     </main>
   );
@@ -720,6 +754,7 @@ function PlayerLibrary({
   loadError,
   onRetry,
 }: PlayerLibraryProps & { loadError: string | null; onRetry: () => void }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [pos, setPos] = useState<'ALL' | Position>('ALL');
   const [sort, setSort] = useState<'overall' | 'threePoint' | 'salaryUsd'>('overall');
@@ -766,15 +801,15 @@ function PlayerLibrary({
       <div className="page-heading">
         <div>
           <p className="eyebrow">THE ARCHIVE</p>
-          <h1>巅峰球员库</h1>
-          <p>为每位球员保留一个巅峰赛季的原创能力档案。</p>
+          <h1>{t('players.title')}</h1>
+          <p>{t('players.subtitle')}</p>
         </div>
         <div className="page-heading-actions">
           <button className="ghost" onClick={onOpenLineup}>
-            查看当前阵容 →
+            {t('players.openLineup')}
           </button>
           <button className="primary compact" onClick={createCustomPlayer}>
-            + 自定义球员
+            {t('players.custom')}
           </button>
         </div>
       </div>
@@ -784,12 +819,12 @@ function PlayerLibrary({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索球员或打法"
+            placeholder={t('players.search')}
           />
         </label>
         <div className="pills">
           <button className={pos === 'ALL' ? 'selected' : ''} onClick={() => setPos('ALL')}>
-            全部
+            {t('players.all')}
           </button>
           {positions.map((x) => (
             <button className={pos === x ? 'selected' : ''} onClick={() => setPos(x)} key={x}>
@@ -798,22 +833,20 @@ function PlayerLibrary({
           ))}
         </div>
         <label className="sort">
-          排序{' '}
+          {t('players.sort')}{' '}
           <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-            <option value="overall">综合能力</option>
-            <option value="threePoint">三分能力</option>
-            <option value="salaryUsd">巅峰薪资</option>
+            <option value="overall">{t('players.overall')}</option>
+            <option value="threePoint">{t('players.threePoint')}</option>
+            <option value="salaryUsd">{t('players.salary')}</option>
           </select>
         </label>
       </div>
-      {isApiEnabled && (
-        <p className="api-status">球员、阵容和近 30 天战报均保存到本地 PostgreSQL。</p>
-      )}
+      {isApiEnabled && <p className="api-status">{t('players.stored')}</p>}
       {loadError && (
         <p className="editor-error" role="alert">
-          无法加载服务端球员库：{loadError}{' '}
+          {t('players.loadFailed', { message: loadError })}{' '}
           <button className="ghost" onClick={onRetry}>
-            重试
+            {t('common.retry')}
           </button>
         </p>
       )}
@@ -857,6 +890,12 @@ function PlayerLibrary({
 }
 
 function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
+  const ratingFields: RatingField[] = ratingKeys.map((key) => ({
+    key,
+    label: t(`ratings.${key}`),
+  }));
   return (
     <aside className="detail-panel">
       <div className="detail-top">
@@ -873,7 +912,7 @@ function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
       </div>
       <p className="bio">{player.bio}</p>
       <div className="overall">
-        <span>综合能力</span>
+        <span>{t('players.overall')}</span>
         <b>{average(player)}</b>
         <small>/ 99</small>
       </div>
@@ -889,28 +928,33 @@ function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
         ))}
       </div>
       <div className="detail-meta">
-        <span>身高</span>
+        <span>{t('players.height')}</span>
         <b>
           {player.heightFeet}' {player.heightInches}"
         </b>
-        <span>体重</span>
+        <span>{t('players.weight')}</span>
         <b>{player.weightLbs} lb</b>
       </div>
       <div className="detail-meta">
-        <span>巅峰赛季薪资</span>
-        <b>{currency.format(player.salaryUsd)}</b>
+        <span>{t('players.peakSalary')}</span>
+        <b>{formatCurrency(player.salaryUsd, locale)}</b>
       </div>
       <button className="primary wide" onClick={onAdd}>
-        加入当前阵容
+        {t('players.add')}
       </button>
       <button className="ghost wide player-edit-button" onClick={onEdit}>
-        编辑球员属性
+        {t('players.edit')}
       </button>
     </aside>
   );
 }
 
 function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
+  const { t } = useTranslation();
+  const ratingFields: RatingField[] = ratingKeys.map((key) => ({
+    key,
+    label: t(`ratings.${key}`),
+  }));
   // 编辑草稿与已保存数据分离，取消时不会污染当前球员档案或阵容中的能力值。
   const [draft, setDraft] = useState<Player>(player);
   const [error, setError] = useState<string | null>(null);
@@ -933,29 +977,29 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
   };
   const submit = async () => {
     if (!draft.name.trim()) {
-      setError('请填写球员名称。');
+      setError(t('editor.nameRequired'));
       return;
     }
     if (!draft.initials.trim()) {
-      setError('请填写球员缩写。');
+      setError(t('editor.initialsRequired'));
       return;
     }
     const isIntegerWithin = (value: number, min: number, max: number) =>
       Number.isInteger(value) && value >= min && value <= max;
     if (!isIntegerWithin(draft.heightFeet, 4, 8)) {
-      setError('身高英尺必须是 4–8 之间的整数。');
+      setError(t('editor.feetInvalid'));
       return;
     }
     if (!isIntegerWithin(draft.heightInches, 0, 11)) {
-      setError('身高英寸必须是 0–11 之间的整数。');
+      setError(t('editor.inchesInvalid'));
       return;
     }
     if (!isIntegerWithin(draft.weightLbs, 80, 500)) {
-      setError('体重必须是 80–500 磅之间的整数。');
+      setError(t('editor.weightInvalid'));
       return;
     }
-    if (ratingFields.some(({ key }) => !isIntegerWithin(draft[key], 0, 99))) {
-      setError('所有能力值必须是 0–99 之间的整数。');
+    if (ratingKeys.some((key) => !isIntegerWithin(draft[key], 0, 99))) {
+      setError(t('editor.ratingsInvalid'));
       return;
     }
     setSaving(true);
@@ -967,7 +1011,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
         initials: draft.initials.trim().slice(0, 4),
       });
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : '保存球员失败。');
+      setError(saveError instanceof Error ? saveError.message : t('editor.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -977,19 +1021,19 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
       <div className="editor-heading">
         <div>
           <p className="eyebrow">PLAYER EDITOR</p>
-          <h2>{player.isCustom ? '新建自定义球员' : '编辑球员属性'}</h2>
+          <h2>{player.isCustom ? t('editor.newPlayer') : t('editor.title')}</h2>
         </div>
         <button className="ghost" onClick={onCancel}>
-          取消
+          {t('common.cancel')}
         </button>
       </div>
       <div className="editor-grid">
         <label>
-          名称
+          {t('editor.name')}
           <input value={draft.name} onChange={(event) => setText('name', event.target.value)} />
         </label>
         <label>
-          缩写
+          {t('editor.initials')}
           <input
             value={draft.initials}
             maxLength={4}
@@ -997,7 +1041,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           />
         </label>
         <label>
-          默认位置
+          {t('editor.defaultPosition')}
           <select
             value={draft.defaultPosition}
             onChange={(event) =>
@@ -1013,7 +1057,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           </select>
         </label>
         <label>
-          身高（英尺）
+          {t('editor.heightFeet')}
           <input
             type="number"
             min="4"
@@ -1023,7 +1067,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           />
         </label>
         <label>
-          身高（英寸）
+          {t('editor.heightInches')}
           <input
             type="number"
             min="0"
@@ -1033,7 +1077,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           />
         </label>
         <label>
-          体重（磅）
+          {t('editor.weight')}
           <input
             type="number"
             min="80"
@@ -1043,21 +1087,21 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           />
         </label>
         <label>
-          巅峰赛季
+          {t('editor.peakSeason')}
           <input
             value={draft.peakSeason}
             onChange={(event) => setText('peakSeason', event.target.value)}
           />
         </label>
         <label>
-          所属球队
+          {t('editor.team')}
           <input
             value={draft.peakTeam}
             onChange={(event) => setText('peakTeam', event.target.value)}
           />
         </label>
         <label>
-          巅峰薪资（USD）
+          {t('editor.salary')}
           <input
             type="number"
             min="0"
@@ -1066,19 +1110,19 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
           />
         </label>
         <label>
-          打法标签
+          {t('editor.archetype')}
           <input
             value={draft.archetype}
             onChange={(event) => setText('archetype', event.target.value)}
           />
         </label>
         <label>
-          头像颜色
+          {t('editor.color')}
           <input value={draft.accent} onChange={(event) => setText('accent', event.target.value)} />
         </label>
       </div>
       <label className="editor-bio">
-        简介
+        {t('editor.bio')}
         <textarea value={draft.bio} onChange={(event) => setText('bio', event.target.value)} />
       </label>
       <div className="rating-editor">
@@ -1101,7 +1145,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
         </p>
       )}
       <button className="primary wide" onClick={() => void submit()} disabled={saving}>
-        {saving ? '保存中…' : '保存球员'}
+        {saving ? t('common.saving') : t('editor.savePlayer')}
       </button>
     </aside>
   );
@@ -1117,6 +1161,7 @@ function LineupWorkbench({
   onPlay,
   syncError,
 }: LineupWorkbenchProps) {
+  const { t } = useTranslation();
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
   const [playerQuery, setPlayerQuery] = useState('');
   const [starterLimitMessage, setStarterLimitMessage] = useState<string | null>(null);
@@ -1169,7 +1214,7 @@ function LineupWorkbench({
     const member = selected.members[index];
 
     if (!member.starter && starterCount >= positions.length) {
-      setStarterLimitMessage('首发最多只能有 5 人，请先将一名首发改为替补。');
+      setStarterLimitMessage(t('lineup.starterLimit'));
       return;
     }
 
@@ -1180,12 +1225,12 @@ function LineupWorkbench({
   const starterStatus =
     starterLimitMessage ??
     (starterCount > positions.length
-      ? `当前已有 ${starterCount} 名首发，首发只能有 5 名。`
+      ? t('lineup.tooManyStarters', { count: starterCount })
       : starterCount < positions.length
-        ? `当前首发 ${starterCount}/5 人，请设为 5 名首发并分配 1–5 号位。`
+        ? t('lineup.tooFewStarters', { count: starterCount })
         : missingStarterPositions.length > 0
-          ? '5 名首发的位置重复，请调整为 1–5 号位各一位。'
-          : '首发位置已配齐：可以开始对战。');
+          ? t('lineup.duplicateStarters')
+          : t('lineup.startersReady'));
 
   const addPlayer = (player: Player) => {
     if (rosterIsFull) return;
@@ -1206,7 +1251,7 @@ function LineupWorkbench({
   return (
     <section className="page lineup-page">
       <div className="lineup-sidebar">
-        <p className="eyebrow">SAVED ROSTERS</p>
+        <p className="eyebrow">{t('lineup.savedRosters')}</p>
         <div className="roster-list">
           {lineups.map((l) => (
             <button
@@ -1215,12 +1260,12 @@ function LineupWorkbench({
               onClick={() => onSelect(l)}
             >
               <b>{l.name}</b>
-              <small>{l.members.length}/15 人</small>
+              <small>{t('lineup.count', { count: l.members.length })}</small>
             </button>
           ))}
         </div>
         <button className="ghost wide" onClick={onNew}>
-          + 新建阵容
+          {t('lineup.newLineup')}
         </button>
       </div>
       <div className="workbench">
@@ -1229,35 +1274,35 @@ function LineupWorkbench({
             <input
               value={selected.name}
               onChange={(e) => update({ name: e.target.value })}
-              aria-label="阵容名称"
+              aria-label={t('lineup.name')}
             />
             <input
               className="description"
               value={selected.description}
               onChange={(e) => update({ description: e.target.value })}
-              placeholder="为这支队伍写一句注释"
+              placeholder={t('lineup.descriptionPlaceholder')}
             />
           </div>
           <div className={'rule-state ' + (valid ? 'good' : '')}>
-            <b>{valid ? '阵容合规' : '需要完善'}</b>
+            <b>{valid ? t('lineup.valid') : t('lineup.incomplete')}</b>
             <span>
-              {selected.members.length}/15 · {activeCount}/13 激活
+              {t('lineup.activeCount', { members: selected.members.length, active: activeCount })}
             </span>
           </div>
         </div>
         <div className="rule-note">
-          <span>编制规则</span>
-          <p>5–15 人 · 最多 13 人激活 · 首发必须各有一位 PG / SG / SF / PF / C · 可自由错位</p>
+          <span>{t('lineup.rules')}</span>
+          <p>{t('lineup.rulesText')}</p>
         </div>
         {syncError && (
           <p className="editor-error" role="alert">
-            阵容尚未同步到服务器：{syncError}
+            {t('lineup.syncFailed', { message: syncError })}
           </p>
         )}
         {missingPlayerIds.length > 0 && (
           <div className="starter-rule-alert error" role="alert">
-            <strong>这套旧阵容引用了当前球员库中不存在的球员，无法开始对战。</strong>
-            <span>请移除或替换：{missingPlayerIds.join('、')}</span>
+            <strong>{t('lineup.missingPlayers')}</strong>
+            <span>{t('lineup.replacePlayers', { players: missingPlayerIds.join('、') })}</span>
           </div>
         )}
         <div
@@ -1270,21 +1315,23 @@ function LineupWorkbench({
           <strong>{starterStatus}</strong>
           {!isStarterFormationValid && missingStarterPositions.length > 0 && (
             <span>
-              当前还缺：
+              {t('lineup.missingPositions')}
               {missingStarterPositions.map((position) => (
                 <b key={position}>{position}</b>
               ))}
             </span>
           )}
         </div>
-        <section className="inline-player-picker" aria-label="添加球员">
+        <section className="inline-player-picker" aria-label={t('lineup.addPlayer')}>
           <div className="picker-heading">
             <div>
               <p className="eyebrow">ADD TO ROSTER</p>
-              <h2>直接添加球员</h2>
+              <h2>{t('lineup.addPlayer')}</h2>
             </div>
             <span>
-              {rosterIsFull ? '阵容已满（15/15）' : `还可加入 ${15 - selected.members.length} 人`}
+              {rosterIsFull
+                ? t('lineup.rosterFull')
+                : t('lineup.remainingSlots', { count: 15 - selected.members.length })}
             </span>
           </div>
           <label className="search picker-search">
@@ -1292,8 +1339,8 @@ function LineupWorkbench({
             <input
               value={playerQuery}
               onChange={(event) => setPlayerQuery(event.target.value)}
-              placeholder="搜索未加入的球员或打法"
-              aria-label="搜索未加入的球员"
+              placeholder={t('lineup.searchAvailable')}
+              aria-label={t('lineup.searchAvailable')}
             />
           </label>
           <div className="picker-results">
@@ -1311,22 +1358,22 @@ function LineupWorkbench({
                     {player.defaultPosition} · {average(player)} OVR · {player.archetype}
                   </small>
                 </span>
-                <strong>+ 加入</strong>
+                <strong>{t('lineup.add')}</strong>
               </button>
             ))}
             {!availablePlayers.length && (
               <p className="picker-empty">
-                {rosterIsFull ? '阵容已满，请先移除一名球员。' : '没有匹配的未加入球员。'}
+                {rosterIsFull ? t('lineup.fullRemoveFirst') : t('lineup.noMatches')}
               </p>
             )}
           </div>
         </section>
         <div className="roster-table">
           <div className="roster-row header">
-            <span>球员</span>
-            <span>位置</span>
-            <span>角色</span>
-            <span>状态</span>
+            <span>{t('common.player')}</span>
+            <span>{t('common.position')}</span>
+            <span>{t('common.role')}</span>
+            <span>{t('common.status')}</span>
             <span />
           </div>
           {displayMembers.map(({ player, index, ...m }) => (
@@ -1355,7 +1402,7 @@ function LineupWorkbench({
                   className={'tag ' + (m.starter ? 'on' : '')}
                   onClick={() => toggleStarter(index)}
                 >
-                  {m.starter ? '首发' : '替补'}
+                  {m.starter ? t('common.starter') : t('common.bench')}
                 </button>
               </span>
               <span>
@@ -1368,7 +1415,7 @@ function LineupWorkbench({
                     })
                   }
                 >
-                  {m.inactive ? '非激活' : '激活'}
+                  {m.inactive ? t('common.inactive') : t('common.active')}
                 </button>
               </span>
               <button
@@ -1379,14 +1426,14 @@ function LineupWorkbench({
               </button>
             </div>
           ))}
-          {!members.length && <div className="empty">从球员库把球员加入这个阵容。</div>}
+          {!members.length && <div className="empty">{t('lineup.empty')}</div>}
         </div>
         <div className="workbench-actions">
           <button className="ghost" onClick={() => onSave(selected)}>
-            保存阵容
+            {t('common.save')}
           </button>
           <select value={opponentId} onChange={(e) => setOpponentId(e.target.value)}>
-            <option value="">选择对手阵容</option>
+            <option value="">{t('lineup.chooseOpponent')}</option>
             {lineups
               .filter((l) => l.id !== selected.id)
               .map((l) => (
@@ -1403,7 +1450,7 @@ function LineupWorkbench({
               if (other) void onPlay(selected, other);
             }}
           >
-            使用本地引擎对战 →
+            {t('lineup.localPlay')}
           </button>
         </div>
       </div>
@@ -1422,6 +1469,8 @@ function Battle({
   isSimulating,
   simulationError,
 }: BattleProps) {
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
   const [homeId, setHomeId] = useState(lineups[0]?.id || '');
   const [awayId, setAwayId] = useState(lineups[1]?.id || '');
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('local');
@@ -1443,7 +1492,7 @@ function Battle({
         setCredentialError(null);
       })
       .catch((error: unknown) => {
-        setCredentialError(error instanceof Error ? error.message : '无法读取 AI 设置。');
+        setCredentialError(error instanceof Error ? error.message : t('ai.readFailed'));
       });
   }, []);
 
@@ -1456,19 +1505,19 @@ function Battle({
     <section className="page battle-page">
       <div className="battle-hero">
         <p className="eyebrow">SIMULATION LAB</p>
-        <h1>梦幻对战</h1>
-        <p>你可使用稳定、免费的内置规则引擎，也可主动选择已配置的 AI 模型。</p>
-        {isApiEnabled && (
-          <p className="retention-summary">
-            云端战报仅保留 30 天，过期后立即不可查看，并在每天凌晨 3:00 自动清理。
-          </p>
-        )}
+        <h1>{t('battle.title')}</h1>
+        <p>{t('battle.subtitle')}</p>
+        {isApiEnabled && <p className="retention-summary">{t('battle.retention')}</p>}
         <div className="simulation-mode-section">
           <div className="simulation-mode-heading">
-            <strong>选择模拟方式</strong>
-            <span>默认使用本地模拟，不需要 API Key</span>
+            <strong>{t('battle.chooseMode')}</strong>
+            <span>{t('battle.defaultMode')}</span>
           </div>
-          <div className="simulation-mode-options" role="radiogroup" aria-label="模拟方式">
+          <div
+            className="simulation-mode-options"
+            role="radiogroup"
+            aria-label={t('battle.chooseMode')}
+          >
             <button
               aria-checked={simulationMode === 'local'}
               className={'simulation-mode-card ' + (simulationMode === 'local' ? 'selected' : '')}
@@ -1477,10 +1526,10 @@ function Battle({
               type="button"
             >
               <span className="mode-card-title">
-                <strong>本地模拟</strong>
-                <i>推荐</i>
+                <strong>{t('battle.local')}</strong>
+                <i>{t('battle.recommended')}</i>
               </span>
-              <span>内置规则引擎计算比分和球员数据，立即生成，不产生 API 费用。</span>
+              <span>{t('battle.localInfo')}</span>
             </button>
             <button
               aria-checked={simulationMode === 'ai'}
@@ -1491,27 +1540,27 @@ function Battle({
               type="button"
             >
               <span className="mode-card-title">
-                <strong>AI 模拟</strong>
-                <i className="experimental">实验性</i>
+                <strong>{t('battle.aiMode')}</strong>
+                <i className="experimental">{t('battle.experimental')}</i>
               </span>
               <span>
                 {aiIsAvailable
-                  ? `使用 ${credential.model} 生成；可能耗时、产生费用，且受模型兼容性影响。`
-                  : '需要先配置 API Key；未配置也不影响本地模拟。'}
+                  ? t('battle.aiInfo', { model: credential.model })
+                  : t('battle.aiUnavailable')}
               </span>
             </button>
           </div>
           {isApiEnabled && credential && !credential.configured && (
             <div className="ai-setup-prompt">
-              <span>尚未配置 AI，你现在就可以使用本地模拟。</span>
+              <span>{t('battle.aiNotConfigured')}</span>
               <button className="ghost" onClick={onOpenAiSettings} type="button">
-                配置 AI（可选）
+                {t('battle.configureAi')}
               </button>
             </div>
           )}
           {credentialError && (
             <p className="mode-status-error" role="status">
-              AI 配置状态暂时无法读取，本地模拟仍可正常使用。
+              {t('battle.aiReadFailed')}
             </p>
           )}
         </div>
@@ -1546,10 +1595,10 @@ function Battle({
             }}
           >
             {isSimulating
-              ? '模拟并保存中…'
+              ? t('battle.simulateSaving')
               : simulationMode === 'ai'
-                ? '使用 AI 模拟'
-                : '使用本地引擎模拟'}
+                ? t('battle.simulateAi')
+                : t('battle.simulateLocal')}
           </button>
         </div>
       </div>
@@ -1559,13 +1608,13 @@ function Battle({
         </p>
       )}
       {games.length > 0 && (
-        <section className="report-history" aria-label="近 30 天云端战报">
+        <section className="report-history" aria-label={t('battle.reports')}>
           <div className="report-history-heading">
             <div>
               <p className="eyebrow">REPORT HISTORY</p>
-              <h2>近 30 天战报</h2>
+              <h2>{t('battle.reports')}</h2>
             </div>
-            <span>{games.length} 场</span>
+            <span>{t('battle.games', { count: games.length })}</span>
           </div>
           <div className="report-history-list">
             {games.map((report) => (
@@ -1575,15 +1624,17 @@ function Battle({
                 onClick={() => onSelectGame(report)}
               >
                 <span>
-                  <b>{report.homeLineupName ?? '主队'}</b>
+                  <b>{report.homeLineupName ?? t('battle.home')}</b>
                   <strong>
                     {report.homeScore}–{report.awayScore}
                   </strong>
-                  <b>{report.awayLineupName ?? '客队'}</b>
+                  <b>{report.awayLineupName ?? t('battle.away')}</b>
                 </span>
                 <small>
-                  {reportDateTime.format(new Date(report.createdAt))} · 保存至{' '}
-                  {reportDateTime.format(new Date(report.expiresAt))}
+                  {formatReportDate(new Date(report.createdAt), locale)} ·{' '}
+                  {t('battle.savedUntil', {
+                    date: formatReportDate(new Date(report.expiresAt), locale),
+                  })}
                 </small>
               </button>
             ))}
@@ -1593,13 +1644,15 @@ function Battle({
       {game ? (
         <GameResult game={game} players={players} isCloudReport={isApiEnabled} />
       ) : (
-        <div className="empty large">选择两套不同阵容，开始第一场梦幻对战。</div>
+        <div className="empty large">{t('battle.selectFirst')}</div>
       )}
     </section>
   );
 }
 
 function GameResult({ game, players, isCloudReport }: GameResultProps) {
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
   // 模拟层只返回统计值；展示层在这里把 playerId 关联回球员昵称和抽象头像颜色。
   const rows = (stats: Simulation['homeStats']) =>
     stats.map((s) => {
@@ -1611,7 +1664,7 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
             <i style={{ background: s.playerAccent ?? p?.accent ?? '#777' }}>
               {s.playerInitials ?? p?.initials ?? '?'}
             </i>
-            {s.playerName ?? p?.name ?? `已移除球员 (${s.playerId})`}
+            {s.playerName ?? p?.name ?? t('battle.playerRemoved', { id: s.playerId })}
           </td>
           <td>{s.minutes}</td>
           <td>
@@ -1633,21 +1686,24 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
     Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
   );
   const expirationIsNear = remainingDays <= 3;
-  const homeName = game.homeLineupName ?? '主队';
-  const awayName = game.awayLineupName ?? '客队';
+  const homeName = game.homeLineupName ?? t('battle.home');
+  const awayName = game.awayLineupName ?? t('battle.away');
   const engineLabel = game.engineVersion?.startsWith('llm:')
-    ? `AI 模拟 · ${game.engineVersion.slice(4)}`
-    : '本地规则引擎';
+    ? t('battle.aiEngine', { model: game.engineVersion.slice(4) })
+    : t('battle.localEngine');
   return (
     <div className="game-result">
       <div className={'report-retention ' + (expirationIsNear ? 'expires-soon' : '')}>
         <div>
-          <strong>{isCloudReport ? '云端战报' : '本地战报'}最多保存 30 天</strong>
+          <strong>{isCloudReport ? t('battle.reportCloud') : t('battle.reportLocal')}</strong>
           <small className="report-engine">{engineLabel}</small>
         </div>
         <span>
-          保存至 {reportDateTime.format(expiresAt)}
-          {remainingDays > 0 ? `（剩余 ${remainingDays} 天）` : '（已到期）'}，过期后不可恢复。
+          {t('battle.savedUntil', { date: formatReportDate(expiresAt, locale) })}
+          {remainingDays > 0
+            ? t('battle.daysRemaining', { count: remainingDays })
+            : t('battle.expired')}
+          {t('battle.cannotRecover')}
         </span>
       </div>
       <div className="scoreboard">
@@ -1673,13 +1729,14 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
   );
 }
 function StatTable({ name, rows }: StatTableProps) {
+  const { t } = useTranslation();
   return (
     <div className="stat-table">
       <h3>{name}</h3>
       <table>
         <thead>
           <tr>
-            <th>球员</th>
+            <th>{t('common.player')}</th>
             <th>MIN</th>
             <th>PTS</th>
             <th>REB</th>

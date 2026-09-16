@@ -1,4 +1,5 @@
 import { players as seedPlayers } from '@/data/players';
+import i18n from '@/i18n';
 import type { Lineup, Player, Position, Simulation } from '@/types';
 
 // key 带版本号，未来本地存档结构升级时可执行迁移，而不是覆盖旧数据。
@@ -81,8 +82,8 @@ export function starterLineup(): Lineup {
   const now = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
-    name: '我的梦之队',
-    description: '从这里开始搭建你的历史最佳阵容。',
+    name: i18n.t('defaults.dreamTeam'),
+    description: i18n.t('defaults.dreamTeamDescription'),
     createdAt: now,
     updatedAt: now,
     members: ['curry', 'jordan', 'lebron', 'duncan', 'shaq'].map((playerId, index) => ({
@@ -98,8 +99,8 @@ export function classicLineup(): Lineup {
   const now = new Date().toISOString();
   return {
     id: 'classic-five',
-    name: '经典五人',
-    description: '一套可立即用于对战的示例阵容。',
+    name: i18n.t('defaults.classicFive'),
+    description: i18n.t('defaults.classicDescription'),
     createdAt: now,
     updatedAt: now,
     members: ['magic', 'kobe', 'bird', 'garnett', 'olajuwon'].map((playerId, index) => ({
