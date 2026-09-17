@@ -25,6 +25,12 @@ export const resources = {
         role: '角色',
         status: '状态',
       },
+      pagination: {
+        label: '分页导航',
+        prev: '上一页',
+        next: '下一页',
+        status: '第 {{page}} / {{pages}} 页 · 共 {{total}} 名球员',
+      },
       ratings: {
         threePoint: '三分',
         layup: '上篮',
@@ -245,6 +251,12 @@ export const resources = {
         position: 'Position',
         role: 'Role',
         status: 'Status',
+      },
+      pagination: {
+        label: 'Pagination',
+        prev: 'Previous',
+        next: 'Next',
+        status: 'Page {{page}} of {{pages}} · {{total}} players',
       },
       ratings: {
         threePoint: '3PT',

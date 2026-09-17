@@ -16,6 +16,8 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 `src/App.tsx` 管理当前页面、认证会话、球员、阵容和战报的共享状态。主要页面包括球员库、我的阵容、梦幻对战、AI 设置和登录或注册。
 
+球员库网格（每页 12 名）与我的阵容候选列表（每页 9 名）通过 `src/lib/use-pagination.ts` 分页；搜索、过滤或排序条件变化时回到第 1 页。
+
 页面文案位于 `src/i18n/resources.ts`，当前支持简体中文和英文。
 
 ### 数据来源

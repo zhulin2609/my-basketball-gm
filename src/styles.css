@@ -442,6 +442,21 @@ nav button.active:after {
   background: #c3ec8b;
   border-color: #c3ec8b;
 }
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.pagination span {
+  color: #909c94;
+  font-size: 12px;
+}
 .sort {
   margin-left: auto;
   color: #909c94;

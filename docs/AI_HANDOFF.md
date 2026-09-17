@@ -27,7 +27,7 @@ git log -5 --oneline
 
 游客无需注册即可浏览球员库、创建或编辑球员与阵容，并使用本地规则引擎进行梦幻对战。游客产生的数据保存在当前浏览器。注册后自动导入游客数据；登录已有账号时，由用户选择导入或暂不导入。
 
-该目标已经完成。当前工作是关闭开发 Session、保存交接信息并维持可复现的测试状态。
+该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染。当前工作是提交分页功能与本次交接文档。
 
 ## 已完成工作
 
@@ -67,10 +67,18 @@ git log -5 --oneline
 - 已过期的游客战报不会导入；有效战报保留原创建时间和到期时间。
 - 整个导入过程使用一个数据库事务，任何校验或写入失败都会撤销本次导入。
 
+### 球员列表分页
+
+- `src/lib/use-pagination.ts` 提供 `usePagination`：维护页码状态，在 `resetSignal` 变化时回到第 1 页，列表缩短时把页码钳制到有效范围，并对传入列表切片。
+- `src/App.tsx` 新增 `PaginationBar` 组件，只有一页时不渲染；按钮使用 `ghost` 样式，避开小屏下 `.compact` 被隐藏的媒体查询。
+- 球员库网格每页 12 名球员，搜索、位置过滤和排序变化都会重置页码。
+- 我的阵容候选球员列表每页 9 名，搜索词变化会重置页码；添加球员导致列表缩短时页码自动钳制。
+- `src/i18n/resources.ts` 新增 `pagination` 组文案（简体中文、英文）。
+- `src/App.test.tsx` 新增 3 项分页回归测试，覆盖翻页、搜索重置和阵容页候选列表分页。
+
 ## 未完成工作
 
-- 游客态目标没有遗留的功能开发任务。
-- 本次 Session 的交接文档尚未提交：`docs/AI_HANDOFF.md`、`docs/plans/current.md`、`docs/ARCHITECTURE.md`。
+- 分页功能与三份交接文档的改动尚未提交。
 - 腾讯云 TKE 部署仍属于后续工作，当前仓库只验证本地运行。
 
 ## 本轮修改过的文件
@@ -87,15 +95,20 @@ git log -5 --oneline
 - 后端测试：`backend/src/test/java/com/links/basketballgm/guest/GuestImportApiTest.java`、`backend/src/test/resources/application-test.yml`
 - 文档骨架：`docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/DECISIONS.md`、`docs/plans/current.md`
 
-提交 `13d11b1 docs: 完善 AI 交接规范` 继续更新了 `AGENTS.md`。
+提交 `13d11b1 docs: 完善 AI 交接规范` 更新了 `AGENTS.md`，提交 `17ef87e docs: Codex 完善交接文档` 更新了三份交接文档。
+
+分页功能改动（尚未提交）：
+
+- `src/lib/use-pagination.ts`（新增）
+- `src/App.tsx`
+- `src/i18n/resources.ts`
+- `src/styles.css`
+- `src/App.test.tsx`
+- `docs/AI_HANDOFF.md`、`docs/plans/current.md`、`docs/ARCHITECTURE.md`
 
 ## 修改中的文件
 
-- `docs/AI_HANDOFF.md`
-- `docs/plans/current.md`
-- `docs/ARCHITECTURE.md`
-
-业务源码在开始本次文档更新前没有未提交改动。
+分页功能的 5 个源码文件与三份交接文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -130,6 +143,18 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 ### 导入使用完整事务
 
 球员 ID、阵容成员和战报统计存在引用关系。后端在一个事务中完成预留、ID 转换和全部写入，避免数据库留下部分导入的数据。
+
+### 分页逻辑收敛在一个 Hook 中
+
+球员库和我的阵容都需要分页。`usePagination` 统一处理页码状态、条件变化重置（`resetSignal`）、列表缩短钳制和切片，组件只渲染当前页。查询条件变化必须回到第 1 页，否则用户会停留在旧条件下的页码看到错误子集。
+
+### 翻页按钮不使用 `compact` 样式
+
+`.compact` 在 900px 以下屏幕的媒体查询中被隐藏。分页控件必须始终可用，因此使用 `ghost` 样式。
+
+### 每页数量与网格列数对齐
+
+球员库是双列卡片网格，每页 12 名可整行显示；我的阵容候选列表是三列网格，每页 9 名可整行显示。
 
 ## 本地运行条件
 
@@ -192,24 +217,21 @@ mvn test
 
 2026-09-17 最近一次完整验证：
 
-- 前端：8 个测试文件、18 项测试全部通过。
+- 前端：8 个测试文件、21 项测试全部通过（含 3 项分页回归测试）。
 - 生产构建：通过。
 - Prettier：通过。
-- 后端：14 项测试全部通过，包含 3 项真实 PostgreSQL 游客导入接口测试。
-- `git diff --check`：业务和交接文档没有空白错误；`AGENTS.md` 已在后续提交中修正先前的尾随空格。
+- 后端：14 项测试全部通过，包含 3 项真实 PostgreSQL 游客导入接口测试（本次分页改动未涉及后端代码）。
 
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 确认三份交接文档的改动符合新的任务背景。
-3. 如果要提交本次交接文档，先再次运行前端与后端全部测试，再提交这些文件。
-4. 新功能从 `develop` 分支继续开发和验证。
-5. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
+2. 提交分页功能与本次交接文档。
+3. 新功能从 `develop` 分支继续开发和验证。
+4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- HEAD：`13d11b1 docs: 完善 AI 交接规范`
+- HEAD：`17ef87e docs: Codex 完善交接文档`
 - 上游：`origin/develop`
-- 开始本次交接更新前：本地与上游一致，工作区干净。
-- 完成本次交接更新后：仅 `docs/AI_HANDOFF.md`、`docs/plans/current.md` 和 `docs/ARCHITECTURE.md` 有未提交修改。
+- 未提交改动：`src/lib/use-pagination.ts`（新增）、`src/App.tsx`、`src/i18n/resources.ts`、`src/styles.css`、`src/App.test.tsx`，以及三份交接文档。

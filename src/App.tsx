@@ -15,6 +15,7 @@ import {
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { simulate } from '@/lib/simulator';
+import { usePagination } from '@/lib/use-pagination';
 import type {
   Lineup,
   LineupMember,
@@ -30,6 +31,8 @@ type View = 'players' | 'lineups' | 'battle' | 'ai-settings' | 'auth';
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
 const starterDisplayOrder: Position[] = ['C', 'PF', 'SF', 'SG', 'PG'];
+const PLAYER_PAGE_SIZE = 12;
+const PICKER_PAGE_SIZE = 9;
 
 interface RatingField {
   key: keyof Ratings;
@@ -190,6 +193,39 @@ interface GameResultProps {
 interface StatTableProps {
   name: string;
   rows: ReactNode;
+}
+
+interface PaginationBarProps {
+  page: number;
+  pageCount: number;
+  total: number;
+  onChange: (page: number) => void;
+}
+
+function PaginationBar({ page, pageCount, total, onChange }: PaginationBarProps) {
+  const { t } = useTranslation();
+  if (pageCount <= 1) return null;
+  return (
+    <nav className="pagination" aria-label={t('pagination.label')}>
+      <button
+        className="ghost"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+        type="button"
+      >
+        {t('pagination.prev')}
+      </button>
+      <span>{t('pagination.status', { page, pages: pageCount, total })}</span>
+      <button
+        className="ghost"
+        disabled={page >= pageCount}
+        onClick={() => onChange(page + 1)}
+        type="button"
+      >
+        {t('pagination.next')}
+      </button>
+    </nav>
+  );
 }
 
 interface AuthScreenProps {
@@ -910,6 +946,7 @@ function PlayerLibrary({
         .sort((a, b) => (sort === 'overall' ? average(b) - average(a) : b[sort] - a[sort])),
     [players, query, pos, sort],
   );
+  const pagination = usePagination(list, PLAYER_PAGE_SIZE, `${query}|${pos}|${sort}`);
   const createCustomPlayer = () => {
     setEditing({
       id: crypto.randomUUID(),
@@ -988,29 +1025,37 @@ function PlayerLibrary({
         </p>
       )}
       <div className="player-layout">
-        <div className="player-grid">
-          {list.map((p) => (
-            <button
-              className={'player-card ' + (focus.id === p.id ? 'focus' : '')}
-              key={p.id}
-              onClick={() => setFocus(p)}
-            >
-              <span className="portrait" style={{ background: p.accent }}>
-                {p.initials}
-              </span>
-              <span className="player-info">
-                <b>{p.name}</b>
-                <small>
-                  {p.peakSeason} · {p.peakTeam}
-                </small>
-                <em>{p.archetype}</em>
-              </span>
-              <strong>
-                {average(p)}
-                <small>OVR</small>
-              </strong>
-            </button>
-          ))}
+        <div className="player-list">
+          <div className="player-grid">
+            {pagination.pageItems.map((p) => (
+              <button
+                className={'player-card ' + (focus.id === p.id ? 'focus' : '')}
+                key={p.id}
+                onClick={() => setFocus(p)}
+              >
+                <span className="portrait" style={{ background: p.accent }}>
+                  {p.initials}
+                </span>
+                <span className="player-info">
+                  <b>{p.name}</b>
+                  <small>
+                    {p.peakSeason} · {p.peakTeam}
+                  </small>
+                  <em>{p.archetype}</em>
+                </span>
+                <strong>
+                  {average(p)}
+                  <small>OVR</small>
+                </strong>
+              </button>
+            ))}
+          </div>
+          <PaginationBar
+            onChange={pagination.setPage}
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            total={list.length}
+          />
         </div>
         {editing ? (
           <PlayerEditor player={editing} onCancel={() => setEditing(null)} onSave={savePlayer} />
@@ -1340,6 +1385,7 @@ function LineupWorkbench({
       !selected.members.some((member) => member.playerId === player.id) &&
       `${player.name} ${player.archetype}`.toLowerCase().includes(playerQuery.toLowerCase()),
   );
+  const pagination = usePagination(availablePlayers, PICKER_PAGE_SIZE, playerQuery);
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
@@ -1481,7 +1527,7 @@ function LineupWorkbench({
             />
           </label>
           <div className="picker-results">
-            {availablePlayers.map((player) => (
+            {pagination.pageItems.map((player) => (
               <button
                 className="picker-player"
                 key={player.id}
@@ -1504,6 +1550,12 @@ function LineupWorkbench({
               </p>
             )}
           </div>
+          <PaginationBar
+            onChange={pagination.setPage}
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            total={availablePlayers.length}
+          />
         </section>
         <div className="roster-table">
           <div className="roster-row header">

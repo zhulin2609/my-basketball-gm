@@ -40,3 +40,67 @@ describe('guest entry experience', () => {
     expect(screen.queryByLabelText(/密码|Password/i)).toBeNull();
   });
 });
+
+describe('player list pagination', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('paginates the player archive grid', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    expect(container.querySelectorAll('.player-card')).toHaveLength(12);
+    expect(screen.getByRole('button', { name: /上一页|Previous/i })).toHaveProperty(
+      'disabled',
+      true,
+    );
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 1 \/|Page 1 of/);
+
+    await user.click(screen.getByRole('button', { name: /下一页|Next/i }));
+
+    expect(container.querySelectorAll('.player-card')).toHaveLength(12);
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 2 \/|Page 2 of/);
+    expect(screen.getByRole('button', { name: /上一页|Previous/i })).toHaveProperty(
+      'disabled',
+      false,
+    );
+  });
+
+  it('returns to the first page when the player search changes', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /下一页|Next/i }));
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 2 \/|Page 2 of/);
+
+    await user.type(screen.getByPlaceholderText(/搜索球员或打法|Search players/i), 'a');
+
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 1 \/|Page 1 of/);
+  });
+
+  it('paginates the candidate players on the roster page', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+
+    expect(container.querySelectorAll('.picker-player')).toHaveLength(9);
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 1 \/|Page 1 of/);
+
+    await user.click(screen.getByRole('button', { name: /下一页|Next/i }));
+
+    expect(container.querySelectorAll('.picker-player')).toHaveLength(9);
+    expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 2 \/|Page 2 of/);
+  });
+});
