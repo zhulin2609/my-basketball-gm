@@ -29,7 +29,7 @@ git log -5 --oneline
 
 该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染；以及「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。
 
-当前完成的工作是「FMVP 补齐」：球员库覆盖 1978–2026 年全部总决赛 FMVP。方案与验收标准见 `docs/plans/current.md`。
+当前完成的工作是「球员列表按能力值排序」：球员库网格默认按能力值降序，我的阵容页候选球员列表同样改为能力值降序。方案与验收标准见 `docs/plans/current.md`。
 
 ## 已完成工作
 
@@ -123,9 +123,16 @@ git log -5 --oneline
 - 再生成只新增 Cedric Maxwell（峰值 1978–79 赛季，波士顿，SF），其余 396 名球员无变化。
 - V9 迁移随目录再生成；本地开发库与测试库删除 `flyway_schema_history` 的 V9 行后，以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 运行一次完成重新应用（V9 为幂等 upsert），后续常规启动校验通过。操作步骤记录在 `src/data/README.md`。
 
+### 球员列表按能力值排序
+
+- 球员库网格的排序控件默认即「综合能力」降序，未改动。
+- 我的阵容页候选球员列表（`availablePlayers`）由目录原序改为 `average` 降序，新用户优先看到最好的球员；同分保持目录原序。
+- 阵容成员表保持首发状态与位置的结构性排序，不属于浏览用球员列表。
+- `src/App.test.tsx` 新增 2 项回归测试，分别断言球员库网格与阵容页候选列表按 OVR 降序。
+
 ## 未完成工作
 
-- FMVP 补齐与文档的改动尚未提交。
+- 球员列表排序与文档的改动尚未提交。
 - 腾讯云 TKE 部署仍属于后续工作，当前仓库只验证本地运行。
 
 ## 本轮修改过的文件
@@ -150,16 +157,16 @@ git log -5 --oneline
 
 本场最佳球员改动已经包含在提交 `36ff947 feat: 模拟对战结果展示本场最佳球员`。
 
-FMVP 补齐改动（尚未提交）：
+FMVP 补齐改动已经包含在提交 `c854c1e feat: 球员库补齐 1978-2026 年全部总决赛 FMVP`。
 
-- `scripts/generate-nba-history-catalog.mjs`
-- `src/data/historical-players.generated.ts`、`src/data/historical-player-catalog.test.ts`、`src/data/README.md`
-- `backend/src/main/resources/db/migration/V9__seed_historical_player_catalog.sql`
+球员列表排序改动（尚未提交）：
+
+- `src/App.tsx`、`src/App.test.tsx`
 - `docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-FMVP 补齐的全部源码文件与交接文档处于未提交状态，清单见上一节。
+球员列表排序的全部源码文件与交接文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -312,7 +319,7 @@ mvn test
 
 2026-09-17 最近一次完整验证：
 
-- 前端：9 个测试文件、35 项测试全部通过（目录测试断言 FMVP 1978–2026 全覆盖）。
+- 前端：9 个测试文件、37 项测试全部通过（含 2 项能力值排序回归测试）。
 - 生产构建：通过。
 - Prettier：通过。
 - 后端：22 项测试全部通过（真实 PostgreSQL，V9 重新应用后常规运行）。
@@ -320,13 +327,13 @@ mvn test
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交 FMVP 补齐与本次交接文档。
+2. 提交球员列表排序与本次交接文档。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`36ff947 feat: 模拟对战结果展示本场最佳球员`
+- 基线提交：`c854c1e feat: 球员库补齐 1978-2026 年全部总决赛 FMVP`
 - 上游：`origin/develop`
-- 未提交改动：FMVP 数据源与再生成目录、V9 迁移、目录测试断言、数据 README，以及交接文档。
+- 未提交改动：候选球员列表能力值排序、排序回归测试，以及交接文档。

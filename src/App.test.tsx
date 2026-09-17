@@ -228,3 +228,49 @@ describe('player of the game', () => {
     expect(container.querySelector('.pog-stats')?.textContent).toMatch(/\d+ PTS/);
   });
 });
+
+describe('player ordering by overall rating', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    // 指向不可达地址：球员列表来自内置目录，不依赖服务端。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  const expectDescending = (ovrs: number[]) => {
+    expect(ovrs.length).toBeGreaterThan(1);
+    for (let index = 1; index < ovrs.length; index += 1) {
+      expect(ovrs[index - 1]).toBeGreaterThanOrEqual(ovrs[index]);
+    }
+  };
+
+  it('sorts the player archive grid by overall rating descending', async () => {
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    const ovrs = [...container.querySelectorAll('.player-card strong')].map((el) =>
+      Number(el.textContent?.replace('OVR', '')),
+    );
+
+    expectDescending(ovrs);
+  });
+
+  it('sorts the candidate players on the roster page by overall rating descending', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+
+    const ovrs = [...container.querySelectorAll('.picker-player small')].map((el) =>
+      Number(el.textContent?.match(/(\d+) OVR/)?.[1]),
+    );
+
+    expectDescending(ovrs);
+  });
+});

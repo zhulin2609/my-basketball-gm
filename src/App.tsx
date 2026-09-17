@@ -1507,11 +1507,14 @@ function LineupWorkbench({
     isEligibleForSimulation,
   } = validateLineup(selected);
   // 在当前编辑上下文内提供候选球员；已入选者不重复显示，避免用户添加后再手动处理重复项。
-  const availablePlayers = players.filter(
-    (player) =>
-      !selected.members.some((member) => member.playerId === player.id) &&
-      `${player.name} ${player.archetype}`.toLowerCase().includes(playerQuery.toLowerCase()),
-  );
+  // 按能力值降序排列，新用户优先看到最好的球员。
+  const availablePlayers = players
+    .filter(
+      (player) =>
+        !selected.members.some((member) => member.playerId === player.id) &&
+        `${player.name} ${player.archetype}`.toLowerCase().includes(playerQuery.toLowerCase()),
+    )
+    .sort((a, b) => average(b) - average(a));
   const pagination = usePagination(availablePlayers, PICKER_PAGE_SIZE, playerQuery);
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
