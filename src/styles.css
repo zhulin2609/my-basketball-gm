@@ -80,6 +80,60 @@ button {
   margin-bottom: 10px;
 }
 
+.auth-cancel {
+  background: transparent;
+  color: #c3ec8b;
+  float: right;
+  font-weight: 800;
+  margin: 7px 14px 0 0;
+  padding: 6px 0;
+}
+
+.guest-import-summary {
+  background: #17261e;
+  border: 1px solid #40573c;
+  color: #d5e5cb;
+  font: 12px 'DM Mono';
+  line-height: 1.6;
+  margin: 22px 0;
+  padding: 14px;
+}
+
+.guest-import-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.guest-label {
+  color: #c3ec8b;
+  font: 11px 'DM Mono';
+}
+
+.guest-notice {
+  align-items: center;
+  background: #1a2b22;
+  border-bottom: 1px solid #3c5746;
+  color: #bfccbd;
+  display: flex;
+  font-size: 12px;
+  gap: 10px;
+  justify-content: center;
+  line-height: 1.5;
+  padding: 10px 24px;
+}
+
+.guest-notice strong {
+  color: #dff5c9;
+}
+
+.guest-notice button {
+  background: transparent;
+  border-bottom: 1px solid #c3ec8b;
+  color: #c3ec8b;
+  font-weight: 800;
+  padding: 2px 0;
+}
+
 .eyebrow {
   color: #c3ec8b;
   font-size: 12px;
@@ -1326,6 +1380,14 @@ footer {
   }
   .compact {
     display: none;
+  }
+  .guest-auth-button {
+    display: inline-flex;
+  }
+  .guest-notice {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 10px 20px;
   }
   .page {
     padding: 35px 20px;

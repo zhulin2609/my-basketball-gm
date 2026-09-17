@@ -62,6 +62,20 @@ export const resources = {
         hint: '用户名可使用 3–32 位字母、数字、下划线或连字符；密码至少 8 位。',
         loginFailed: '登录失败，请稍后重试。',
       },
+      guest: {
+        status: '游客',
+        login: '登录 / 注册',
+        continue: '继续游客体验',
+        noticeTitle: '当前是游客模式',
+        noticeBody: '球员、阵容和战报仅保存在这台设备。注册或登录后可选择保存到账号。',
+        saveProgress: '保存当前进度',
+        importTitle: '是否保存游客进度？',
+        importBody: '导入成功后，当前游客存档会从这台设备清空，数据将归属于已登录账号。',
+        importSummary: '将导入 {{players}} 名球员、{{lineups}} 套阵容和 {{simulations}} 份战报。',
+        importNow: '导入并继续',
+        skipImport: '暂不导入',
+        importFailed: '导入游客进度失败，本地存档仍已保留。',
+      },
       ai: {
         title: 'AI 比赛模拟（可选）',
         back: '返回梦幻对战',
@@ -268,6 +282,24 @@ export const resources = {
         goLogin: 'Sign in',
         hint: 'Username: 3–32 letters, numbers, underscores, or hyphens. Password: at least 8 characters.',
         loginFailed: 'Sign-in failed. Please try again.',
+      },
+      guest: {
+        status: 'Guest',
+        login: 'Sign in / Register',
+        continue: 'Continue as guest',
+        noticeTitle: 'You are playing as a guest',
+        noticeBody:
+          'Players, rosters, and reports are stored only on this device. Sign in or register to save them to your account.',
+        saveProgress: 'Save current progress',
+        importTitle: 'Save your guest progress?',
+        importBody:
+          'After a successful import, this guest workspace will be cleared from this device and the data will belong to your signed-in account.',
+        importSummary:
+          '{{players}} players, {{lineups}} rosters, and {{simulations}} reports will be imported.',
+        importNow: 'Import and continue',
+        skipImport: 'Not now',
+        importFailed:
+          'Guest progress could not be imported. Your local workspace is still available.',
       },
       ai: {
         title: 'AI game simulation (optional)',

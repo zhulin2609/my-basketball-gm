@@ -1,33 +1,29 @@
 import { players as seedPlayers } from '@/data/players';
 import i18n from '@/i18n';
+import { guestWorkspaceRepository } from '@/lib/guest-workspace';
 import type { Lineup, Player, Position, Simulation } from '@/types';
-
-// key 带版本号，未来本地存档结构升级时可执行迁移，而不是覆盖旧数据。
-const LINEUPS_KEY = 'dream-court.lineups.v1';
-const GAMES_KEY = 'dream-court.games.v1';
-const PLAYERS_KEY = 'dream-court.players.v1';
 
 export const lineupRepository = {
   // repository 是 UI 和浏览器存储之间的边界；组件不直接访问 localStorage。
   list(): Lineup[] {
-    return JSON.parse(localStorage.getItem(LINEUPS_KEY) || '[]');
+    return guestWorkspaceRepository.load().lineups;
   },
-  save(lineup: Lineup) {
+  save(lineup: Lineup, markUserProgress = true) {
     const all = this.list();
     const index = all.findIndex((item) => item.id === lineup.id);
     if (index < 0) all.unshift(lineup);
     else all[index] = lineup;
-    localStorage.setItem(LINEUPS_KEY, JSON.stringify(all));
+    guestWorkspaceRepository.saveLineups(all, markUserProgress);
     return lineup;
   },
   remove(id: string) {
-    localStorage.setItem(LINEUPS_KEY, JSON.stringify(this.list().filter((item) => item.id !== id)));
+    guestWorkspaceRepository.saveLineups(this.list().filter((item) => item.id !== id));
   },
 };
 
 export const simulationRepository = {
   list(): Simulation[] {
-    const reports = JSON.parse(localStorage.getItem(GAMES_KEY) || '[]') as Array<
+    const reports = guestWorkspaceRepository.load().simulations as Array<
       Omit<Simulation, 'expiresAt'> & { expiresAt?: string }
     >;
     const now = Date.now();
@@ -42,12 +38,12 @@ export const simulationRepository = {
 
     // Reading also removes expired offline-demo reports; API mode never writes this repository.
     if (activeReports.length !== reports.length) {
-      localStorage.setItem(GAMES_KEY, JSON.stringify(activeReports));
+      guestWorkspaceRepository.saveSimulations(activeReports, false);
     }
     return activeReports;
   },
   save(game: Simulation) {
-    localStorage.setItem(GAMES_KEY, JSON.stringify([game, ...this.list()].slice(0, 20)));
+    guestWorkspaceRepository.saveSimulations([game, ...this.list()].slice(0, 20));
     return game;
   },
 };
@@ -55,14 +51,14 @@ export const simulationRepository = {
 export const playerRepository = {
   // 仅保存用户创建的球员或对种子档案的覆盖，避免把整份默认球员库重复写入浏览器。
   list(): Player[] {
-    return JSON.parse(localStorage.getItem(PLAYERS_KEY) || '[]') as Player[];
+    return guestWorkspaceRepository.load().players;
   },
   save(player: Player): Player {
     const all = this.list();
     const index = all.findIndex((item) => item.id === player.id);
     if (index < 0) all.unshift(player);
     else all[index] = player;
-    localStorage.setItem(PLAYERS_KEY, JSON.stringify(all));
+    guestWorkspaceRepository.savePlayers(all);
     return player;
   },
 };
@@ -115,8 +111,8 @@ export function classicLineup(): Lineup {
 export function bootstrapLineups() {
   // 仅在第一次使用时写入示例阵容，后续刷新不会覆盖用户编辑过的存档。
   if (!lineupRepository.list().length) {
-    lineupRepository.save(classicLineup());
-    lineupRepository.save(starterLineup());
+    lineupRepository.save(classicLineup(), false);
+    lineupRepository.save(starterLineup(), false);
   }
   return lineupRepository.list();
 }

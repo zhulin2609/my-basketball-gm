@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { useTranslation } from 'react-i18next';
 import { changeLocale, supportedLocales, type AppLocale } from '@/i18n';
 import { api, isApiEnabled, type AuthSession, type LlmCredential } from '@/lib/api';
+import { createGuestImportRequest } from '@/lib/guest-import';
+import { guestWorkspaceRepository } from '@/lib/guest-workspace';
 import {
   bootstrapLineups,
   classicLineup,
@@ -23,7 +25,7 @@ import type {
   SimulationMode,
 } from '@/types';
 
-type View = 'players' | 'lineups' | 'battle' | 'ai-settings';
+type View = 'players' | 'lineups' | 'battle' | 'ai-settings' | 'auth';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
@@ -79,11 +81,6 @@ const defaultRatings: Ratings = {
   stamina: 75,
   shotTendency: 75,
 };
-
-// 首次加载时从本地存储取回阵容；没有存档时 repository 会写入两套可直接试玩的示例阵容。
-// API 模式不能把浏览器存档迁移给另一个账号，因此只使用公共示例阵容作为首次模板。
-const initialLineups = isApiEnabled ? [starterLineup(), classicLineup()] : bootstrapLineups();
-const initialGames = isApiEnabled ? [] : simulationRepository.list();
 
 // V1 的综合能力仅用于列表排序和展示，不参与比赛引擎的具体计算。
 const average = (p: Player) =>
@@ -181,6 +178,7 @@ interface BattleProps {
   onOpenAiSettings: () => void;
   isSimulating: boolean;
   simulationError: string | null;
+  isCloudMode: boolean;
 }
 
 interface GameResultProps {
@@ -196,6 +194,7 @@ interface StatTableProps {
 
 interface AuthScreenProps {
   onAuthenticated: (session: AuthSession) => void;
+  onCancel: () => void;
 }
 
 interface AiSettingsProps {
@@ -207,15 +206,19 @@ export function App() {
   const { t } = useTranslation();
   const [view, setView] = useState<View>('players');
   const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
-  const [lineups, setLineups] = useState<Lineup[]>(initialLineups);
+  const [lineups, setLineups] = useState<Lineup[]>(() =>
+    isApiEnabled && authSession ? [starterLineup(), classicLineup()] : bootstrapLineups(),
+  );
   const [players, setPlayers] = useState<Player[]>(listPlayers);
   const [playerLoadError, setPlayerLoadError] = useState<string | null>(null);
   const [lineupSyncError, setLineupSyncError] = useState<string | null>(null);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [selected, setSelected] = useState<Lineup>(initialLineups[0]);
-  const [games, setGames] = useState<Simulation[]>(initialGames);
-  const [game, setGame] = useState<Simulation | null>(initialGames[0] ?? null);
+  const [selected, setSelected] = useState<Lineup>(() => lineups[0] ?? starterLineup());
+  const [games, setGames] = useState<Simulation[]>(() =>
+    isApiEnabled && authSession ? [] : simulationRepository.list(),
+  );
+  const [game, setGame] = useState<Simulation | null>(() => games[0] ?? null);
   // 同一阵容的请求串行化，防止用户连续输入名称时较早的网络请求覆盖较晚的修改。
   const lineupSaveQueues = useRef<Map<string, Promise<void>>>(new Map());
   const isAuthenticatedApi = isApiEnabled && authSession !== null;
@@ -253,7 +256,7 @@ export function App() {
       setLineupSyncError(error instanceof Error ? error.message : t('errors.lineupSave'));
     });
   };
-  // API 模式下，球员和阵容都从 PostgreSQL 读取；没有远端阵容时迁移本机示例阵容。
+  // 已认证后，球员和阵容都从 PostgreSQL 读取；没有远端阵容时创建账号自带示例阵容。
   useEffect(() => {
     if (!isAuthenticatedApi) return;
     void api
@@ -287,7 +290,9 @@ export function App() {
       .then(async (remoteLineups) => {
         const savedLineups = remoteLineups.length
           ? remoteLineups
-          : await Promise.all(initialLineups.map((lineup) => api.saveLineup(lineup)));
+          : await Promise.all(
+              [starterLineup(), classicLineup()].map((lineup) => api.saveLineup(lineup)),
+            );
         setLineups(savedLineups);
         setSelected(
           (current) =>
@@ -379,8 +384,16 @@ export function App() {
       });
   }, [isAuthenticatedApi]);
 
-  if (isApiEnabled && !authSession) {
-    return <AuthScreen onAuthenticated={setAuthSession} />;
+  if (view === 'auth') {
+    return (
+      <AuthScreen
+        onAuthenticated={(session) => {
+          setAuthSession(session);
+          setView('players');
+        }}
+        onCancel={() => setView('players')}
+      />
+    );
   }
 
   return (
@@ -407,6 +420,17 @@ export function App() {
         </nav>
         <div className="topbar-actions">
           <LanguageSwitch />
+          {isApiEnabled && !authSession && (
+            <>
+              <span className="guest-label">{t('guest.status')}</span>
+              <button
+                className="secondary compact guest-auth-button"
+                onClick={() => setView('auth')}
+              >
+                {t('guest.login')}
+              </button>
+            </>
+          )}
           {isApiEnabled && authSession && (
             <>
               <span className="account-name">{authSession.user.username}</span>
@@ -418,6 +442,14 @@ export function App() {
                 onClick={() => {
                   api.clearSession();
                   setAuthSession(null);
+                  const guestLineups = bootstrapLineups();
+                  const guestGames = simulationRepository.list();
+                  setPlayers(listPlayers());
+                  setLineups(guestLineups);
+                  setSelected(guestLineups[0]);
+                  setGames(guestGames);
+                  setGame(guestGames[0] ?? null);
+                  setView('players');
                 }}
               >
                 {t('nav.logout')}
@@ -429,6 +461,17 @@ export function App() {
           </button>
         </div>
       </header>
+      {!authSession && (
+        <aside className="guest-notice" role="status">
+          <strong>{t('guest.noticeTitle')}</strong>
+          <span>{t('guest.noticeBody')}</span>
+          {guestWorkspaceRepository.load().hasUserProgress && (
+            <button onClick={() => setView('auth')} type="button">
+              {t('guest.saveProgress')}
+            </button>
+          )}
+        </aside>
+      )}
       {view === 'players' && (
         <PlayerLibrary
           players={players}
@@ -483,9 +526,12 @@ export function App() {
           onOpenAiSettings={() => setView('ai-settings')}
           isSimulating={isSimulating}
           simulationError={simulationError}
+          isCloudMode={isAuthenticatedApi}
         />
       )}
-      {view === 'ai-settings' && <AiSettings onBack={() => setView('battle')} />}
+      {view === 'ai-settings' && isAuthenticatedApi && (
+        <AiSettings onBack={() => setView('battle')} />
+      )}
       <footer>{t('footer')}</footer>
     </main>
   );
@@ -657,36 +703,128 @@ function AiSettings({ onBack }: AiSettingsProps) {
   );
 }
 
-function AuthScreen({ onAuthenticated }: AuthScreenProps) {
+function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingSession, setPendingSession] = useState<AuthSession | null>(null);
+
+  const importGuestWorkspace = async (session: AuthSession): Promise<void> => {
+    const workspace = guestWorkspaceRepository.load();
+    if (!workspace.hasUserProgress) {
+      onAuthenticated(session);
+      return;
+    }
+
+    const request = createGuestImportRequest(workspace, listPlayers());
+    await api.importGuestWorkspace(request);
+    guestWorkspaceRepository.clear();
+    onAuthenticated(session);
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+    let authenticatedSession: AuthSession | null = null;
     try {
       const session =
         mode === 'login'
           ? await api.login({ username, password })
           : await api.register({ username, password });
+      authenticatedSession = session;
       api.saveSession(session);
-      onAuthenticated(session);
+      if (mode === 'login' && guestWorkspaceRepository.load().hasUserProgress) {
+        setPendingSession(session);
+        return;
+      }
+      await importGuestWorkspace(session);
     } catch (requestError) {
+      if (authenticatedSession) setPendingSession(authenticatedSession);
       setError(requestError instanceof Error ? requestError.message : t('auth.loginFailed'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const completeGuestImport = async () => {
+    if (!pendingSession) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await importGuestWorkspace(pendingSession);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : t('guest.importFailed'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (pendingSession) {
+    const summary = guestWorkspaceRepository.summary();
+    return (
+      <main className="auth-shell">
+        <section className="auth-card" aria-labelledby="guest-import-title">
+          <LanguageSwitch />
+          <button
+            className="auth-cancel"
+            onClick={() => {
+              api.clearSession();
+              onCancel();
+            }}
+            type="button"
+          >
+            {t('guest.continue')}
+          </button>
+          <div className="brand-mark">DC</div>
+          <p className="eyebrow">GUEST WORKSPACE</p>
+          <h1 id="guest-import-title">{t('guest.importTitle')}</h1>
+          <p className="auth-copy">{t('guest.importBody')}</p>
+          <p className="guest-import-summary">
+            {t('guest.importSummary', {
+              players: summary.playerCount,
+              lineups: summary.lineupCount,
+              simulations: summary.simulationCount,
+            })}
+          </p>
+          {error && (
+            <p className="auth-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="guest-import-actions">
+            <button
+              className="primary auth-submit"
+              disabled={isSubmitting}
+              onClick={() => void completeGuestImport()}
+              type="button"
+            >
+              {isSubmitting ? t('common.processing') : t('guest.importNow')}
+            </button>
+            <button
+              className="secondary"
+              disabled={isSubmitting}
+              onClick={() => onAuthenticated(pendingSession)}
+              type="button"
+            >
+              {t('guest.skipImport')}
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
         <LanguageSwitch />
+        <button className="auth-cancel" onClick={onCancel} type="button">
+          {t('guest.continue')}
+        </button>
         <div className="brand-mark">DC</div>
         <p className="eyebrow">DREAM COURT · HISTORY LAB</p>
         <h1 id="auth-title">{mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h1>
@@ -1467,6 +1605,7 @@ function Battle({
   onOpenAiSettings,
   isSimulating,
   simulationError,
+  isCloudMode,
 }: BattleProps) {
   const { i18n, t } = useTranslation();
   const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
@@ -1479,11 +1618,11 @@ function Battle({
   const away = lineups.find((x) => x.id === awayId);
   const homeIsEligible = home ? validateLineup(home).isEligibleForSimulation : false;
   const awayIsEligible = away ? validateLineup(away).isEligibleForSimulation : false;
-  const aiIsAvailable = isApiEnabled && credential?.configured === true;
+  const aiIsAvailable = isCloudMode && credential?.configured === true;
 
   // 每次进入对战页都读取最新的脱敏配置，从 AI 设置返回后无需刷新页面。
   useEffect(() => {
-    if (!isApiEnabled) return;
+    if (!isCloudMode) return;
     void api
       .getLlmCredential()
       .then((saved) => {
@@ -1493,7 +1632,7 @@ function Battle({
       .catch((error: unknown) => {
         setCredentialError(error instanceof Error ? error.message : t('ai.readFailed'));
       });
-  }, []);
+  }, [isCloudMode]);
 
   // 本地引擎是始终可用的安全默认值；Key 被删除后不保留无效的 AI 选中状态。
   useEffect(() => {
@@ -1506,7 +1645,7 @@ function Battle({
         <p className="eyebrow">SIMULATION LAB</p>
         <h1>{t('battle.title')}</h1>
         <p>{t('battle.subtitle')}</p>
-        {isApiEnabled && <p className="retention-summary">{t('battle.retention')}</p>}
+        {isCloudMode && <p className="retention-summary">{t('battle.retention')}</p>}
         <div className="simulation-mode-section">
           <div className="simulation-mode-heading">
             <strong>{t('battle.chooseMode')}</strong>
@@ -1549,7 +1688,7 @@ function Battle({
               </span>
             </button>
           </div>
-          {isApiEnabled && credential && !credential.configured && (
+          {isCloudMode && credential && !credential.configured && (
             <div className="ai-setup-prompt">
               <span>{t('battle.aiNotConfigured')}</span>
               <button className="ghost" onClick={onOpenAiSettings} type="button">
@@ -1641,7 +1780,7 @@ function Battle({
         </section>
       )}
       {game ? (
-        <GameResult game={game} players={players} isCloudReport={isApiEnabled} />
+        <GameResult game={game} players={players} isCloudReport={isCloudMode} />
       ) : (
         <div className="empty large">{t('battle.selectFirst')}</div>
       )}

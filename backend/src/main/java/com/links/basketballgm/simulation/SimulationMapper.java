@@ -1,5 +1,6 @@
 package com.links.basketballgm.simulation;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ibatis.annotations.Delete;
@@ -32,6 +33,31 @@ public interface SimulationMapper {
       @Param("homeScore") int homeScore,
       @Param("awayScore") int awayScore,
       @Param("engineVersion") String engineVersion
+  );
+
+  @Select("""
+      insert into simulations (
+        owner_id, home_lineup_id, away_lineup_id, home_lineup_name, away_lineup_name,
+        random_seed, home_score, away_score, engine_version, created_at, expires_at
+      ) values (
+        #{ownerId}, cast(#{homeDatabaseId} as uuid), cast(#{awayDatabaseId} as uuid),
+        #{homeName}, #{awayName}, #{seed}, #{homeScore}, #{awayScore}, #{engineVersion},
+        #{createdAt}, #{expiresAt}
+      )
+      returning id::text, created_at as "createdAt", expires_at as "expiresAt"
+      """)
+  SimulationIdentity insertImported(
+      @Param("ownerId") UUID ownerId,
+      @Param("homeDatabaseId") String homeDatabaseId,
+      @Param("awayDatabaseId") String awayDatabaseId,
+      @Param("homeName") String homeName,
+      @Param("awayName") String awayName,
+      @Param("seed") long seed,
+      @Param("homeScore") int homeScore,
+      @Param("awayScore") int awayScore,
+      @Param("engineVersion") String engineVersion,
+      @Param("createdAt") Instant createdAt,
+      @Param("expiresAt") Instant expiresAt
   );
 
   @Insert({

@@ -3,6 +3,7 @@ dist
 .env
 .env.local
 .omx
+.cache
 .DS_Store
 *.tsbuildinfo
 backend/target

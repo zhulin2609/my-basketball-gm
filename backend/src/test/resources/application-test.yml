@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/basketball_gm_test
+    username: zhulin
+    password:
+
+app:
+  auth:
+    jwt-secret: guest-import-integration-test-secret-2026
+    token-ttl: PT1H
+  llm:
+    credential-encryption-key: ZHJlYW0tY291cnQtbG9jYWwtYWVzLWtleS0yMDI2MDk=
