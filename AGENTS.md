@@ -79,6 +79,8 @@
 
 - 向远端推送 `main` 分支之前，必须完整运行项目的全部测试用例并全部通过。若测试未运行或任一测试失败，不得执行 `git push` 到远端 `main`。
 
+## 6. 更新 AI_HANDOFF.md 和 current plan
+
 大型功能开发过程中，每完成一个阶段就更新：docs/AI_HANDOFF.md 和 docs/plans/current.md
 
 ## 语言

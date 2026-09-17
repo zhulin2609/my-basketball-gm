@@ -104,3 +104,73 @@ describe('player list pagination', () => {
     expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 2 \/|Page 2 of/);
   });
 });
+
+describe('roster save feedback', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    // 指向不可达地址：游客模式的保存写入本地存储，不依赖服务端。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('confirms a manual roster save', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+    await user.click(screen.getByRole('button', { name: /^(保存|Save)$/i }));
+
+    expect(await screen.findByRole('button', { name: /已保存|Saved/i })).toBeTruthy();
+  });
+});
+
+describe('community rosters', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    // 指向不可达地址：社区数据只来自服务端，测试必须验证服务不可用时的界面行为。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('shows the community entry in navigation when the API is enabled', async () => {
+    const { App } = await import('@/App');
+
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: /社区|Community/i })).toBeTruthy();
+  });
+
+  it('shows an error with retry when the community service is unreachable', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /社区|Community/i }));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /社区内容加载失败|Unable to load community content/i,
+    );
+    expect(screen.getByRole('button', { name: /重试|Retry/i })).toBeTruthy();
+  });
+
+  it('hides the share-to-community action from guests on the roster page', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+
+    expect(screen.queryByRole('button', { name: /公开到社区|Share to community/i })).toBeNull();
+  });
+});

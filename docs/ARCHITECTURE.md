@@ -14,9 +14,9 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 ### 页面和共享状态
 
-`src/App.tsx` 管理当前页面、认证会话、球员、阵容和战报的共享状态。主要页面包括球员库、我的阵容、梦幻对战、AI 设置和登录或注册。
+`src/App.tsx` 管理当前页面、认证会话、球员、阵容和战报的共享状态。主要页面包括球员库、我的阵容、梦幻对战、社区、AI 设置和登录或注册。
 
-球员库网格（每页 12 名）与我的阵容候选列表（每页 9 名）通过 `src/lib/use-pagination.ts` 分页；搜索、过滤或排序条件变化时回到第 1 页。
+球员库网格（每页 12 名）与我的阵容候选列表（每页 9 名）通过 `src/lib/use-pagination.ts` 分页；搜索、过滤或排序条件变化时回到第 1 页。社区帖子列表（每页 10 帖）与评论（每页 20 条）由服务端分页，前端复用同一个分页组件。
 
 页面文案位于 `src/i18n/resources.ts`，当前支持简体中文和英文。
 
@@ -47,6 +47,7 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 - `simulation`：本地规则模拟、战报保存、查询和到期清理。
 - `llm`：OpenAI 兼容接口配置、API Key 加密和 AI 模拟。
 - `guest`：游客工作区导入、幂等控制和球员 ID 转换。
+- `forum`：社区公开阵容的发布、浏览、评论和复制。
 - `config`：Spring Security、统一错误响应和跨模块配置。
 
 Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，MyBatis Mapper 负责 SQL。用户归属从 JWT 中读取，客户端不能指定 owner ID。
@@ -61,11 +62,14 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - 战报保存阵容名称和球员显示快照，后续修改球员不会改写历史战报。
 - 战报创建 30 天后失效，每天北京时间 03:00 清理。
 - `guest_imports` 以游客工作区 UUID 为主键，保证同一账号重试安全，并阻止同一游客工作区进入两个账号。
+- `shared_lineups` 保存社区公开阵容：成员以 jsonb 快照冻结在公开时刻，`source_lineup_id` 部分唯一索引保证一套阵容最多一个公开帖，评论数与复制数作为计数器维护。
+- `lineup_comments` 保存社区评论，`parent_id` 自引用支持一级回复，删除帖或评论时回复级联删除。
 
 ## 测试边界
 
-- Vitest 覆盖前端规则、游客存储、导入转换、入口交互和历史球员目录。
+- Vitest 覆盖前端规则、游客存储、导入转换、入口交互、分页和社区界面。
 - 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密。
 - `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务。
+- `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
 
 具体执行命令和当前测试状态见 `docs/AI_HANDOFF.md` 与 `docs/plans/current.md`。

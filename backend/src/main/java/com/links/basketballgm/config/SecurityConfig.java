@@ -46,6 +46,8 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
+            // Community reads stay anonymous; writes below still require a JWT.
+            .requestMatchers(HttpMethod.GET, "/api/v1/forum/posts", "/api/v1/forum/posts/**").permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .anyRequest().authenticated())
         .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint((request, response, error) -> {

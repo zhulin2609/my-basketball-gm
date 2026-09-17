@@ -17,8 +17,12 @@ import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { simulate } from '@/lib/simulator';
 import { usePagination } from '@/lib/use-pagination';
 import type {
+  CommunityComment,
+  CommunityPostDetail,
+  CommunityPostSummary,
   Lineup,
   LineupMember,
+  PagedResponse,
   Player,
   Position,
   Ratings,
@@ -26,13 +30,15 @@ import type {
   SimulationMode,
 } from '@/types';
 
-type View = 'players' | 'lineups' | 'battle' | 'ai-settings' | 'auth';
+type View = 'players' | 'lineups' | 'battle' | 'community' | 'ai-settings' | 'auth';
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
 const starterDisplayOrder: Position[] = ['C', 'PF', 'SF', 'SG', 'PG'];
 const PLAYER_PAGE_SIZE = 12;
 const PICKER_PAGE_SIZE = 9;
+const COMMUNITY_PAGE_SIZE = 10;
+const COMMENT_PAGE_SIZE = 20;
 
 interface RatingField {
   key: keyof Ratings;
@@ -165,10 +171,36 @@ interface LineupWorkbenchProps {
   lineups: Lineup[];
   selected: Lineup;
   onSelect: (lineup: Lineup) => void;
-  onSave: (lineup: Lineup) => void;
+  onSave: (lineup: Lineup) => Promise<void>;
   onNew: () => void;
   onPlay: (home: Lineup, away: Lineup, mode?: SimulationMode) => Promise<void>;
+  canShare: boolean;
+  onShare: (lineup: Lineup) => Promise<string>;
+  onOpenSharedPost: (postId: string) => void;
   syncError: string | null;
+}
+
+interface CommunityHubProps {
+  isAuthenticated: boolean;
+  postId: string | null;
+  onOpenPost: (postId: string) => void;
+  onClosePost: () => void;
+  onRequireAuth: () => void;
+  onCopied: (lineup: Lineup) => void;
+  onLineupsChanged: () => Promise<void>;
+}
+
+interface CommunityListViewProps {
+  onOpen: (postId: string) => void;
+}
+
+interface CommunityPostViewProps {
+  postId: string;
+  isAuthenticated: boolean;
+  onBack: () => void;
+  onRequireAuth: () => void;
+  onCopied: (lineup: Lineup) => void;
+  onLineupsChanged: () => Promise<void>;
 }
 
 interface BattleProps {
@@ -255,17 +287,19 @@ export function App() {
     isApiEnabled && authSession ? [] : simulationRepository.list(),
   );
   const [game, setGame] = useState<Simulation | null>(() => games[0] ?? null);
+  const [communityPostId, setCommunityPostId] = useState<string | null>(null);
   // 同一阵容的请求串行化，防止用户连续输入名称时较早的网络请求覆盖较晚的修改。
   const lineupSaveQueues = useRef<Map<string, Promise<void>>>(new Map());
   const isAuthenticatedApi = isApiEnabled && authSession !== null;
   // 阵容的唯一写入口：离线模式写 localStorage；API 模式乐观更新并排队写入 PostgreSQL。
-  const persist = (next: Lineup) => {
+  // 返回的 Promise 在数据真正写入完成后才 resolve，供保存按钮展示反馈。
+  const persist = (next: Lineup): Promise<void> => {
     const saved = { ...next, updatedAt: new Date().toISOString() };
     if (!isAuthenticatedApi) {
       lineupRepository.save(saved);
       setLineups(lineupRepository.list());
       setSelected(saved);
-      return;
+      return Promise.resolve();
     }
 
     setLineups((current) => {
@@ -291,6 +325,7 @@ export function App() {
     void request.catch((error: unknown) => {
       setLineupSyncError(error instanceof Error ? error.message : t('errors.lineupSave'));
     });
+    return request;
   };
   // 已认证后，球员和阵容都从 PostgreSQL 读取；没有远端阵容时创建账号自带示例阵容。
   useEffect(() => {
@@ -419,6 +454,32 @@ export function App() {
         setAuthSession(null);
       });
   }, [isAuthenticatedApi]);
+  // 公开、撤回、复制都会改变阵容的 sharedPostId 或阵容列表本身，统一从服务端重新拉取。
+  const refreshLineups = async () => {
+    if (!isAuthenticatedApi) return;
+    try {
+      const remoteLineups = await api.listLineups();
+      setLineups(remoteLineups);
+      setSelected((current) => remoteLineups.find((lineup) => lineup.id === current.id) ?? current);
+    } catch (error: unknown) {
+      setLineupSyncError(error instanceof Error ? error.message : t('errors.lineupSave'));
+    }
+  };
+  const shareLineupToCommunity = async (lineup: Lineup): Promise<string> => {
+    const post = await api.shareLineup(lineup.id);
+    await refreshLineups();
+    return post.id;
+  };
+  const openSharedPost = (postId: string) => {
+    setCommunityPostId(postId);
+    setView('community');
+  };
+  // 复制成功后新阵容直接进入阵容列表并设为当前编辑对象。
+  const communityCopied = (lineup: Lineup) => {
+    setLineups((current) => [lineup, ...current]);
+    setSelected(lineup);
+    setView('lineups');
+  };
 
   if (view === 'auth') {
     return (
@@ -447,6 +508,8 @@ export function App() {
               ['players', t('nav.players')],
               ['lineups', t('nav.lineups')],
               ['battle', t('nav.battle')],
+              // 社区数据完全来自服务端，离线演示模式没有可访问的社区后端。
+              ...(isApiEnabled ? [['community', t('nav.community')] as [View, string]] : []),
             ] as [View, string][]
           ).map(([id, label]) => (
             <button className={view === id ? 'active' : ''} onClick={() => setView(id)} key={id}>
@@ -548,6 +611,9 @@ export function App() {
           onSave={persist}
           onNew={newLineup}
           onPlay={play}
+          canShare={isAuthenticatedApi}
+          onShare={shareLineupToCommunity}
+          onOpenSharedPost={openSharedPost}
           syncError={lineupSyncError}
         />
       )}
@@ -563,6 +629,17 @@ export function App() {
           isSimulating={isSimulating}
           simulationError={simulationError}
           isCloudMode={isAuthenticatedApi}
+        />
+      )}
+      {view === 'community' && isApiEnabled && (
+        <CommunityHub
+          isAuthenticated={isAuthenticatedApi}
+          postId={communityPostId}
+          onOpenPost={setCommunityPostId}
+          onClosePost={() => setCommunityPostId(null)}
+          onRequireAuth={() => setView('auth')}
+          onCopied={communityCopied}
+          onLineupsChanged={refreshLineups}
         />
       )}
       {view === 'ai-settings' && isAuthenticatedApi && (
@@ -1341,12 +1418,40 @@ function LineupWorkbench({
   onSave,
   onNew,
   onPlay,
+  canShare,
+  onShare,
+  onOpenSharedPost,
   syncError,
 }: LineupWorkbenchProps) {
   const { t } = useTranslation();
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
   const [playerQuery, setPlayerQuery] = useState('');
   const [starterLimitMessage, setStarterLimitMessage] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const saveResetTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (saveResetTimer.current !== null) window.clearTimeout(saveResetTimer.current);
+    },
+    [],
+  );
+  const saveNow = async () => {
+    if (saveState === 'saving') return;
+    if (saveResetTimer.current !== null) window.clearTimeout(saveResetTimer.current);
+    setSaveState('saving');
+    try {
+      await onSave(selected);
+      setSaveState('saved');
+      saveResetTimer.current = window.setTimeout(() => setSaveState('idle'), 1600);
+    } catch {
+      // 保存失败的原因已经通过 syncError 区域展示，这里只恢复按钮状态。
+      setSaveState('idle');
+    }
+  };
+  const sharedPostId = selected.sharedPostId ?? null;
+  const shareBlockedPlayers = selected.shareBlockedPlayers ?? [];
   // 旧的 localStorage 阵容可能引用已从远端目录移除的球员；过滤缺失项而非用非空断言让页面崩溃。
   const missingPlayerIds = selected.members
     .filter((member) => !players.some((player) => player.id === member.playerId))
@@ -1430,6 +1535,19 @@ function LineupWorkbench({
       ],
     });
     setPlayerQuery('');
+  };
+  const shareLineup = async () => {
+    setShareError(null);
+    setIsSharing(true);
+    try {
+      const postId = await onShare(selected);
+      onOpenSharedPost(postId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setShareError(t('community.shareFailed', { message }));
+    } finally {
+      setIsSharing(false);
+    }
   };
   return (
     <section className="page lineup-page">
@@ -1618,8 +1736,16 @@ function LineupWorkbench({
           {!members.length && <div className="empty">{t('lineup.empty')}</div>}
         </div>
         <div className="workbench-actions">
-          <button className="ghost" onClick={() => onSave(selected)}>
-            {t('common.save')}
+          <button
+            className={'ghost' + (saveState === 'saved' ? ' saved' : '')}
+            disabled={saveState === 'saving'}
+            onClick={() => void saveNow()}
+          >
+            {saveState === 'saving'
+              ? t('common.saving')
+              : saveState === 'saved'
+                ? t('common.saved')
+                : t('common.save')}
           </button>
           <select value={opponentId} onChange={(e) => setOpponentId(e.target.value)}>
             <option value="">{t('lineup.chooseOpponent')}</option>
@@ -1642,6 +1768,47 @@ function LineupWorkbench({
             {t('lineup.localPlay')}
           </button>
         </div>
+        {canShare && (
+          <section aria-label={t('community.share')} className="share-panel">
+            <div>
+              <p className="eyebrow">Community</p>
+              <strong>{sharedPostId ? t('community.reshare') : t('community.share')}</strong>
+              {shareBlockedPlayers.length > 0 && (
+                <p className="share-blocked">
+                  {t('community.shareBlocked', { players: shareBlockedPlayers.join('、') })}
+                </p>
+              )}
+              {shareError && (
+                <p className="editor-error" role="alert">
+                  {shareError}
+                </p>
+              )}
+            </div>
+            <div className="share-actions">
+              <button
+                className="share-action"
+                disabled={shareBlockedPlayers.length > 0 || isSharing}
+                onClick={() => void shareLineup()}
+                type="button"
+              >
+                {isSharing
+                  ? t('common.processing')
+                  : sharedPostId
+                    ? t('community.reshare')
+                    : t('community.share')}
+              </button>
+              {sharedPostId && (
+                <button
+                  className="ghost"
+                  onClick={() => onOpenSharedPost(sharedPostId)}
+                  type="button"
+                >
+                  {t('community.viewShared')}
+                </button>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </section>
   );
@@ -1939,5 +2106,415 @@ function StatTable({ name, rows }: StatTableProps) {
         <tbody>{rows}</tbody>
       </table>
     </div>
+  );
+}
+
+function CommunityHub({
+  isAuthenticated,
+  postId,
+  onOpenPost,
+  onClosePost,
+  onRequireAuth,
+  onCopied,
+  onLineupsChanged,
+}: CommunityHubProps) {
+  if (postId) {
+    return (
+      <CommunityPostView
+        isAuthenticated={isAuthenticated}
+        onBack={onClosePost}
+        onCopied={onCopied}
+        onLineupsChanged={onLineupsChanged}
+        onRequireAuth={onRequireAuth}
+        postId={postId}
+      />
+    );
+  }
+  return <CommunityListView onOpen={onOpenPost} />;
+}
+
+function CommunityListView({ onOpen }: CommunityListViewProps) {
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<PagedResponse<CommunityPostSummary> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  // 翻页或重试时重新向服务端请求；社区列表的分页在服务端完成，本地不再切片。
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listCommunityPosts(page, COMMUNITY_PAGE_SIZE)
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setError(null);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        const message = loadError instanceof Error ? loadError.message : t('errors.unknown');
+        setError(t('community.loadFailed', { message }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, reloadTick]);
+
+  const pageCount = Math.max(1, Math.ceil((data?.total ?? 0) / COMMUNITY_PAGE_SIZE));
+
+  return (
+    <section className="page community-page">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">COMMUNITY</p>
+          <h1>{t('community.title')}</h1>
+          <p>{t('community.subtitle')}</p>
+        </div>
+      </div>
+      {error && (
+        <p className="editor-error" role="alert">
+          {error}{' '}
+          <button className="ghost" onClick={() => setReloadTick((tick) => tick + 1)} type="button">
+            {t('common.retry')}
+          </button>
+        </p>
+      )}
+      {!data && !error && <div className="empty">{t('community.loading')}</div>}
+      {data && data.items.length === 0 && <div className="empty large">{t('community.empty')}</div>}
+      <div className="community-list">
+        {data?.items.map((post) => (
+          <button
+            className="community-card"
+            key={post.id}
+            onClick={() => onOpen(post.id)}
+            type="button"
+          >
+            <span className="community-card-main">
+              <b>{post.name}</b>
+              {post.description && <small>{post.description}</small>}
+              <em>{t('community.byAuthor', { name: post.authorName })}</em>
+            </span>
+            <span className="community-card-meta">
+              <span>{t('community.members', { count: post.memberCount })}</span>
+              <span>{t('community.comments', { count: post.commentCount })}</span>
+              <span>{t('community.copies', { count: post.copyCount })}</span>
+              <small>{formatReportDate(new Date(post.createdAt), locale)}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+      {data && (
+        <PaginationBar onChange={setPage} page={page} pageCount={pageCount} total={data.total} />
+      )}
+    </section>
+  );
+}
+
+function CommunityPostView({
+  postId,
+  isAuthenticated,
+  onBack,
+  onRequireAuth,
+  onCopied,
+  onLineupsChanged,
+}: CommunityPostViewProps) {
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
+  const [post, setPost] = useState<CommunityPostDetail | null>(null);
+  const [postError, setPostError] = useState<string | null>(null);
+  const [comments, setComments] = useState<PagedResponse<CommunityComment> | null>(null);
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentLoadError, setCommentLoadError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<CommunityComment | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getCommunityPost(postId)
+      .then((detail) => {
+        if (cancelled) return;
+        setPost(detail);
+        setPostError(null);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        const message = loadError instanceof Error ? loadError.message : t('errors.unknown');
+        setPostError(t('community.loadFailed', { message }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [postId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listCommunityComments(postId, commentPage, COMMENT_PAGE_SIZE)
+      .then((result) => {
+        if (cancelled) return;
+        setComments(result);
+        setCommentLoadError(null);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        const message = loadError instanceof Error ? loadError.message : t('errors.unknown');
+        setCommentLoadError(t('community.loadFailed', { message }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [postId, commentPage]);
+
+  // 评论、删除、撤回之后帖子的计数都会变化，帖子和评论一起重新拉取保持一致。
+  const reloadAfterAction = async (page: number) => {
+    const [detail, commentPageData] = await Promise.all([
+      api.getCommunityPost(postId),
+      api.listCommunityComments(postId, page, COMMENT_PAGE_SIZE),
+    ]);
+    setPost(detail);
+    setComments(commentPageData);
+  };
+
+  const submitComment = async () => {
+    const content = draft.trim();
+    if (!content) return;
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await api.addCommunityComment(postId, content, replyTo?.id ?? null);
+      setDraft('');
+      setReplyTo(null);
+      setCommentPage(1);
+      await reloadAfterAction(1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setActionError(t('community.commentFailed', { message }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const removeComment = async (comment: CommunityComment) => {
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await api.deleteCommunityComment(comment.id);
+      await reloadAfterAction(commentPage);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setActionError(t('community.commentFailed', { message }));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const copy = async () => {
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      const lineup = await api.copyCommunityPost(postId);
+      onCopied(lineup);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setActionError(t('community.copyFailed', { message }));
+      setIsSubmitting(false);
+    }
+  };
+
+  const withdraw = async () => {
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      await api.withdrawCommunityPost(postId);
+      await onLineupsChanged();
+      onBack();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('errors.unknown');
+      setActionError(t('community.withdrawFailed', { message }));
+      setIsSubmitting(false);
+    }
+  };
+
+  if (postError) {
+    return (
+      <section className="page community-page">
+        <button className="ghost" onClick={onBack} type="button">
+          ← {t('community.back')}
+        </button>
+        <p className="editor-error" role="alert">
+          {postError}
+        </p>
+      </section>
+    );
+  }
+  if (!post) {
+    return (
+      <section className="page community-page">
+        <div className="empty">{t('community.loading')}</div>
+      </section>
+    );
+  }
+
+  const commentPageCount = Math.max(1, Math.ceil((comments?.total ?? 0) / COMMENT_PAGE_SIZE));
+
+  return (
+    <section className="page community-page community-detail">
+      <button className="ghost community-back" onClick={onBack} type="button">
+        ← {t('community.back')}
+      </button>
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">{t('community.byAuthor', { name: post.authorName })}</p>
+          <h1>{post.name}</h1>
+          {post.description && <p>{post.description}</p>}
+          <p className="community-meta">
+            {t('community.members', { count: post.memberCount })} ·{' '}
+            {t('community.comments', { count: post.commentCount })} ·{' '}
+            {t('community.copies', { count: post.copyCount })} ·{' '}
+            {t('community.sharedAt', { date: formatReportDate(new Date(post.createdAt), locale) })}
+          </p>
+        </div>
+        <div className="page-heading-actions">
+          {post.mine && (
+            <button
+              className="secondary danger-button"
+              disabled={isSubmitting}
+              onClick={() => void withdraw()}
+              type="button"
+            >
+              {t('community.withdraw')}
+            </button>
+          )}
+          <button
+            className="primary"
+            disabled={isSubmitting}
+            onClick={() => (isAuthenticated ? void copy() : onRequireAuth())}
+            type="button"
+          >
+            {t('community.copy')}
+          </button>
+        </div>
+      </div>
+      {actionError && (
+        <p className="editor-error" role="alert">
+          {actionError}
+        </p>
+      )}
+      <div className="roster-table community-members">
+        <div className="roster-row header">
+          <span>{t('common.player')}</span>
+          <span>{t('common.position')}</span>
+          <span>{t('common.role')}</span>
+          <span>{t('common.status')}</span>
+        </div>
+        {post.members.map((member) => (
+          <div className="roster-row" key={member.playerId}>
+            <span className="name-cell">
+              <i style={{ background: member.player.accent }}>{member.player.initials}</i>
+              <b>
+                {member.player.name}
+                <small>
+                  {average(member.player)} OVR · {member.player.archetype}
+                </small>
+              </b>
+            </span>
+            <span>{member.position}</span>
+            <span>{member.starter ? t('common.starter') : t('common.bench')}</span>
+            <span>{member.inactive ? t('common.inactive') : t('common.active')}</span>
+          </div>
+        ))}
+      </div>
+      <section aria-label={t('community.commentsTitle')} className="comments">
+        <div className="picker-heading">
+          <div>
+            <p className="eyebrow">DISCUSSION</p>
+            <h2>{t('community.commentsTitle')}</h2>
+          </div>
+          <span>{t('community.comments', { count: comments?.total ?? 0 })}</span>
+        </div>
+        {commentLoadError && (
+          <p className="editor-error" role="alert">
+            {commentLoadError}
+          </p>
+        )}
+        <div className="comment-list">
+          {comments?.items.map((comment) => (
+            <div className="comment" key={comment.id}>
+              <div className="comment-meta">
+                <b>{comment.authorName}</b>
+                {comment.parentAuthorName && (
+                  <span>{t('community.replyTo', { name: comment.parentAuthorName })}</span>
+                )}
+                <small>{formatReportDate(new Date(comment.createdAt), locale)}</small>
+                {isAuthenticated && (
+                  <button className="ghost" onClick={() => setReplyTo(comment)} type="button">
+                    {t('community.reply')}
+                  </button>
+                )}
+                {comment.mine && (
+                  <button
+                    className="ghost"
+                    disabled={isSubmitting}
+                    onClick={() => void removeComment(comment)}
+                    type="button"
+                  >
+                    {t('community.deleteComment')}
+                  </button>
+                )}
+              </div>
+              <p className="comment-content">{comment.content}</p>
+            </div>
+          ))}
+          {comments && comments.items.length === 0 && (
+            <p className="picker-empty">{t('community.noComments')}</p>
+          )}
+        </div>
+        {comments && (
+          <PaginationBar
+            onChange={setCommentPage}
+            page={commentPage}
+            pageCount={commentPageCount}
+            total={comments.total}
+          />
+        )}
+        {isAuthenticated ? (
+          <div className="comment-form">
+            {replyTo && (
+              <p className="reply-hint">
+                {t('community.replyTo', { name: replyTo.authorName })}
+                <button className="ghost" onClick={() => setReplyTo(null)} type="button">
+                  {t('community.cancelReply')}
+                </button>
+              </p>
+            )}
+            <textarea
+              maxLength={2000}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={t('community.commentPlaceholder')}
+              value={draft}
+            />
+            <button
+              className="primary"
+              disabled={isSubmitting || !draft.trim()}
+              onClick={() => void submitComment()}
+              type="button"
+            >
+              {isSubmitting ? t('common.processing') : t('community.submitComment')}
+            </button>
+          </div>
+        ) : (
+          <div className="ai-setup-prompt">
+            <span>{t('community.loginToInteract')}</span>
+            <button className="ghost" onClick={onRequireAuth} type="button">
+              {t('guest.login')}
+            </button>
+          </div>
+        )}
+      </section>
+    </section>
   );
 }

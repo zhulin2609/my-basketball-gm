@@ -34,7 +34,12 @@ public class LineupController {
   @GetMapping
   public List<LineupResponse> list(@AuthenticationPrincipal Jwt jwt) {
     var ownerId = currentUser.id(jwt);
-    return assemble(mapper.list(ownerId), mapper.listMembers(ownerId));
+    return assemble(
+        mapper.list(ownerId),
+        mapper.listMembers(ownerId),
+        mapper.listSharedPostIds(ownerId),
+        mapper.listShareBlockedPlayers(ownerId)
+    );
   }
 
   @PutMapping("/{id}")
@@ -58,7 +63,12 @@ public class LineupController {
     }
 
     LineupRow lineup = mapper.find(ownerId, id);
-    return ResponseEntity.ok(assemble(List.of(lineup), mapper.listMembers(ownerId)).getFirst());
+    return ResponseEntity.ok(assemble(
+        List.of(lineup),
+        mapper.listMembers(ownerId),
+        mapper.listSharedPostIds(ownerId),
+        mapper.listShareBlockedPlayers(ownerId)
+    ).getFirst());
   }
 
   private List<LineupMemberWrite> toWrites(List<LineupMemberPayload> members) {
@@ -71,7 +81,12 @@ public class LineupController {
     return writes;
   }
 
-  private List<LineupResponse> assemble(List<LineupRow> lineups, List<LineupMemberRow> members) {
+  private List<LineupResponse> assemble(
+      List<LineupRow> lineups,
+      List<LineupMemberRow> members,
+      List<SharedPostIdRow> sharedPosts,
+      List<ShareBlockedPlayerRow> blockedPlayers
+  ) {
     Map<String, List<LineupMemberResponse>> membersByLineup = new HashMap<>();
     for (LineupMemberRow member : members) {
       LineupMemberResponse response = new LineupMemberResponse(
@@ -82,6 +97,14 @@ public class LineupController {
       );
       membersByLineup.computeIfAbsent(member.lineupId(), ignored -> new ArrayList<>()).add(response);
     }
+    Map<String, String> postByLineup = new HashMap<>();
+    for (SharedPostIdRow shared : sharedPosts) {
+      postByLineup.put(shared.lineupId(), shared.postId());
+    }
+    Map<String, List<String>> blockedByLineup = new HashMap<>();
+    for (ShareBlockedPlayerRow blocked : blockedPlayers) {
+      blockedByLineup.computeIfAbsent(blocked.lineupId(), ignored -> new ArrayList<>()).add(blocked.playerName());
+    }
     return lineups.stream()
         .map(lineup -> new LineupResponse(
             lineup.id(),
@@ -89,7 +112,9 @@ public class LineupController {
             lineup.description(),
             membersByLineup.getOrDefault(lineup.id(), List.of()),
             lineup.createdAt(),
-            lineup.updatedAt()
+            lineup.updatedAt(),
+            postByLineup.get(lineup.id()),
+            blockedByLineup.getOrDefault(lineup.id(), List.of())
         ))
         .toList();
   }

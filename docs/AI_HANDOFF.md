@@ -27,7 +27,9 @@ git log -5 --oneline
 
 游客无需注册即可浏览球员库、创建或编辑球员与阵容，并使用本地规则引擎进行梦幻对战。游客产生的数据保存在当前浏览器。注册后自动导入游客数据；登录已有账号时，由用户选择导入或暂不导入。
 
-该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染。当前工作是提交分页功能与本次交接文档。
+该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染。
+
+当前完成的工作是「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。方案与验收标准见 `docs/plans/current.md`。
 
 ## 已完成工作
 
@@ -76,9 +78,30 @@ git log -5 --oneline
 - `src/i18n/resources.ts` 新增 `pagination` 组文案（简体中文、英文）。
 - `src/App.test.tsx` 新增 3 项分页回归测试，覆盖翻页、搜索重置和阵容页候选列表分页。
 
+### 社区（公开阵容与讨论）
+
+- Flyway 迁移 `V11__add_forum.sql` 新增 `shared_lineups` 与 `lineup_comments` 两张表。
+- 后端新增 `forum` 模块，提供 8 个接口：帖子列表、详情、评论列表（三个 GET 匿名可读），公开或更新帖子、撤回帖子、发表评论、删除评论、复制阵容（写操作要求登录）。
+- 公开即快照：成员以 jsonb 冻结在 `shared_lineups.members`；一套阵容同一时间最多一个公开帖（`source_lineup_id` 部分唯一索引），重复公开刷新快照并保留评论数与复制数。
+- 含自定义球员或作者覆盖过的公共球员的阵容不能公开：后端返回 422 与球员名单；`GET /api/v1/lineups` 响应新增 `sharedPostId` 与 `shareBlockedPlayers`，前端据此禁用公开入口并列出名单。
+- 复制阵容把快照成员全部按公共球员引用写入新阵容，单事务完成并返回完整 `LineupResponse`。
+- 评论平铺展示，支持一级回复；只有评论作者能删除，删除时回复级联删除，`comment_count` 同事务维护。
+- 帖子列表与评论使用服务端分页（响应 `{items, total, page, pageSize}`），前端复用 `PaginationBar`。
+- 前端新增社区列表与帖子详情视图（`CommunityHub`、`CommunityListView`、`CommunityPostView`），我的阵容页新增公开入口；游客看到登录引导。
+- `src/i18n/resources.ts` 新增 `community` 组文案（简体中文、英文）；`src/styles.css` 新增社区样式。
+- `src/App.test.tsx` 新增 3 项社区测试：导航入口、服务不可达时的错误与重试、游客看不到公开入口；社区测试把 API 地址指向不可达的 `127.0.0.1:9`，不依赖本机后端。
+- 后端 `ForumApiTest` 新增 8 项真实 PostgreSQL 集成测试，覆盖匿名读、公开与重复公开、422 拦截、一级回复与级联删除计数、复制、撤回级联、分页、`LineupResponse` 新字段。
+
+### 按钮样式与保存反馈
+
+- 补全 `.secondary` 与 `.danger-button` 样式：此前两个类从未定义，按钮渲染为浏览器默认白底直角样式，影响顶栏、AI 设置、撤回公开等 7 处按钮。
+- 公开面板的主操作按钮使用 `.share-action`（绿色描边样式），与实心绿色的对战按钮区分层级。
+- 我的阵容「保存」按钮新增反馈：保存中禁用并显示「保存中…」，写入完成后显示绿色描边的「已保存」，1.6 秒后恢复；`persist` 为此返回 `Promise<void>`。
+- `.ghost` 按钮补充禁用态样式。
+
 ## 未完成工作
 
-- 分页功能与三份交接文档的改动尚未提交。
+- 社区功能与三份交接文档的改动尚未提交。
 - 腾讯云 TKE 部署仍属于后续工作，当前仓库只验证本地运行。
 
 ## 本轮修改过的文件
@@ -97,18 +120,21 @@ git log -5 --oneline
 
 提交 `13d11b1 docs: 完善 AI 交接规范` 更新了 `AGENTS.md`，提交 `17ef87e docs: Codex 完善交接文档` 更新了三份交接文档。
 
-分页功能改动（尚未提交）：
+分页功能改动已经包含在提交 `b9d8364 feat: 球员库与我的阵容球员列表分页`。
 
-- `src/lib/use-pagination.ts`（新增）
-- `src/App.tsx`
-- `src/i18n/resources.ts`
-- `src/styles.css`
-- `src/App.test.tsx`
-- `docs/AI_HANDOFF.md`、`docs/plans/current.md`、`docs/ARCHITECTURE.md`
+社区功能改动（尚未提交）：
+
+- `backend/src/main/resources/db/migration/V11__add_forum.sql`（新增）
+- `backend/src/main/java/com/links/basketballgm/forum/`（新增整个模块）
+- `backend/src/main/java/com/links/basketballgm/lineup/LineupController.java`、`LineupMapper.java`、`LineupResponse.java`、`SharedPostIdRow.java`（新增）、`ShareBlockedPlayerRow.java`（新增）
+- `backend/src/main/java/com/links/basketballgm/config/SecurityConfig.java`
+- `backend/src/test/java/com/links/basketballgm/forum/ForumApiTest.java`（新增）
+- `src/types.ts`、`src/lib/api.ts`、`src/App.tsx`、`src/i18n/resources.ts`、`src/styles.css`、`src/App.test.tsx`
+- `docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-分页功能的 5 个源码文件与三份交接文档处于未提交状态，清单见上一节。
+社区功能的全部源码文件与三份交接文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -155,6 +181,22 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 ### 每页数量与网格列数对齐
 
 球员库是双列卡片网格，每页 12 名可整行显示；我的阵容候选列表是三列网格，每页 9 名可整行显示。
+
+### 公开即快照
+
+帖子在公开时刻把阵容成员和球员显示数据冻结为 jsonb。作者之后修改或删除源阵容不影响帖子，读者看到的始终是公开时刻的内容，复制得到的也是这份快照。
+
+### 一套阵容最多一个公开帖
+
+`shared_lineups.source_lineup_id` 上的部分唯一索引保证同一源阵容只会产生一个帖子。重复公开视为更新快照，评论数和复制数保留，避免同一阵容出现多个讨论串。
+
+### 含自定义或覆盖球员的阵容不能公开
+
+快照中的复制依赖公共球员目录的 `catalog_key`。自定义球员和他人覆盖过的属性无法被其他用户还原，公开会产生其他用户无法使用的帖子，因此在公开入口处直接拦截，后端返回 422 与球员名单。
+
+### 评论只支持一级回复
+
+回复的回复会让平铺列表难以理解。`parent_id` 只允许指向一级评论，删除一级评论时回复级联删除，`comment_count` 与写入在同一事务中增减。
 
 ## 本地运行条件
 
@@ -211,27 +253,27 @@ cd backend
 mvn test
 ```
 
-`GuestImportApiTest` 会连接 `basketball_gm_test`，运行 Flyway，并验证幂等导入、跨账号冲突、自定义球员 ID 转换和过期战报过滤。测试清理自己创建的用户数据。
+`GuestImportApiTest` 会连接 `basketball_gm_test`，运行 Flyway，并验证幂等导入、跨账号冲突、自定义球员 ID 转换和过期战报过滤。`ForumApiTest` 连接同一测试库，验证社区公开、评论、复制、权限与分页。测试清理自己创建的用户数据。
 
 ## 测试状态
 
 2026-09-17 最近一次完整验证：
 
-- 前端：8 个测试文件、21 项测试全部通过（含 3 项分页回归测试）。
+- 前端：8 个测试文件、25 项测试全部通过（含 3 项分页回归测试、3 项社区界面测试与 1 项保存反馈测试）。
 - 生产构建：通过。
 - Prettier：通过。
-- 后端：14 项测试全部通过，包含 3 项真实 PostgreSQL 游客导入接口测试（本次分页改动未涉及后端代码）。
+- 后端：22 项测试全部通过，包含 3 项真实 PostgreSQL 游客导入接口测试与 8 项社区接口测试。
 
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交分页功能与本次交接文档。
+2. 提交社区功能与本次交接文档。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- HEAD：`17ef87e docs: Codex 完善交接文档`
+- HEAD：`b9d8364 feat: 球员库与我的阵容球员列表分页`
 - 上游：`origin/develop`
-- 未提交改动：`src/lib/use-pagination.ts`（新增）、`src/App.tsx`、`src/i18n/resources.ts`、`src/styles.css`、`src/App.test.tsx`，以及三份交接文档。
+- 未提交改动：社区功能的后端 `forum` 模块、V11 迁移、阵容接口扩展、前端社区页面与测试，以及三份交接文档。

@@ -56,6 +56,52 @@ export interface Lineup {
   members: LineupMember[];
   createdAt: string;
   updatedAt: string;
+  /** 已公开到社区时的帖子 ID；未公开或未登录时不返回。 */
+  sharedPostId?: string | null;
+  /** 阻止公开的球员名字（自定义球员或被当前用户编辑过的公共球员）。 */
+  shareBlockedPlayers?: string[];
+}
+
+export interface CommunityPostMember {
+  playerId: string;
+  position: Position;
+  starter: boolean;
+  inactive: boolean;
+  player: Player;
+}
+
+export interface CommunityPostSummary {
+  id: string;
+  name: string;
+  description: string;
+  authorName: string;
+  memberCount: number;
+  commentCount: number;
+  copyCount: number;
+  mine: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityPostDetail extends CommunityPostSummary {
+  members: CommunityPostMember[];
+}
+
+export interface CommunityComment {
+  id: string;
+  authorName: string;
+  content: string;
+  parentId: string | null;
+  parentAuthorName: string | null;
+  mine: boolean;
+  createdAt: string;
+}
+
+export interface PagedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface PlayerStat {

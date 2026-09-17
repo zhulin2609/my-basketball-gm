@@ -17,6 +17,12 @@ public interface LineupMapper {
   @Select("select client_key as \"lineupId\", coalesce(p.catalog_key, p.id::text) as \"playerId\", lp.position::text as position, lp.role::text as role, lp.sort_order as \"sortOrder\" from lineup_players lp join lineups l on l.id = lp.lineup_id join players p on p.id = lp.player_id where l.owner_id = #{ownerId} order by l.updated_at desc, lp.sort_order")
   List<LineupMemberRow> listMembers(@Param("ownerId") UUID ownerId);
 
+  @Select("select l.client_key as \"lineupId\", s.id::text as \"postId\" from shared_lineups s join lineups l on l.id = s.source_lineup_id where l.owner_id = #{ownerId}")
+  List<SharedPostIdRow> listSharedPostIds(@Param("ownerId") UUID ownerId);
+
+  @Select("select l.client_key as \"lineupId\", p.name as \"playerName\" from lineup_players lp join lineups l on l.id = lp.lineup_id join players p on p.id = lp.player_id where l.owner_id = #{ownerId} and (p.is_custom or exists (select 1 from player_overrides po where po.owner_id = l.owner_id and po.player_id = lp.player_id))")
+  List<ShareBlockedPlayerRow> listShareBlockedPlayers(@Param("ownerId") UUID ownerId);
+
   @Update("""
       insert into lineups (owner_id, client_key, name, description)
       values (#{ownerId}, #{id}, #{p.name}, #{p.description})

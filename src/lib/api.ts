@@ -2,7 +2,16 @@
  * 云端版本的 HTTP 适配层。
  * 未配置 API 地址时仍由 repository.ts 读写 localStorage；配置后业务数据走 REST 接口。
  */
-import type { Lineup, Player, Simulation, SimulationMode } from '@/types';
+import type {
+  CommunityComment,
+  CommunityPostDetail,
+  CommunityPostSummary,
+  Lineup,
+  PagedResponse,
+  Player,
+  Simulation,
+  SimulationMode,
+} from '@/types';
 
 const SESSION_STORAGE_KEY = 'dream-court.auth-session.v1';
 
@@ -204,4 +213,26 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ homeLineupId, awayLineupId, seed, simulationMode }),
     }),
+  // 社区接口：三个只读 GET 允许匿名调用，写操作由服务端校验登录态。
+  listCommunityPosts: (page: number, pageSize: number) =>
+    request<PagedResponse<CommunityPostSummary>>(`/forum/posts?page=${page}&pageSize=${pageSize}`),
+  getCommunityPost: (id: string) => request<CommunityPostDetail>(`/forum/posts/${id}`),
+  listCommunityComments: (postId: string, page: number, pageSize: number) =>
+    request<PagedResponse<CommunityComment>>(
+      `/forum/posts/${postId}/comments?page=${page}&pageSize=${pageSize}`,
+    ),
+  shareLineup: (lineupId: string) =>
+    request<CommunityPostDetail>('/forum/posts', {
+      method: 'POST',
+      body: JSON.stringify({ lineupId }),
+    }),
+  withdrawCommunityPost: (id: string) => request<void>(`/forum/posts/${id}`, { method: 'DELETE' }),
+  addCommunityComment: (postId: string, content: string, parentId: string | null) =>
+    request<CommunityComment>(`/forum/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content, parentId }),
+    }),
+  deleteCommunityComment: (id: string) =>
+    request<void>(`/forum/comments/${id}`, { method: 'DELETE' }),
+  copyCommunityPost: (id: string) => request<Lineup>(`/forum/posts/${id}/copy`, { method: 'POST' }),
 };
