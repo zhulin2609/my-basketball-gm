@@ -311,10 +311,12 @@ export function App() {
     setSelected((current) => (current.id === saved.id ? saved : current));
 
     const previous = lineupSaveQueues.current.get(saved.id) ?? Promise.resolve();
-    const request = previous
+    const request: Promise<void> = previous
       .catch(() => undefined)
       .then(() => api.saveLineup(saved))
       .then((remoteLineup) => {
+        // 已有更新的保存请求在排队时跳过覆盖，避免较早的响应让本地状态回退。
+        if (lineupSaveQueues.current.get(saved.id) !== request) return;
         setLineups((current) =>
           current.map((lineup) => (lineup.id === remoteLineup.id ? remoteLineup : lineup)),
         );
@@ -1431,6 +1433,25 @@ function LineupWorkbench({
   const [isSharing, setIsSharing] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveResetTimer = useRef<number | null>(null);
+  // 名称与注释使用本地草稿：拼音输入法组合期间只更新草稿，组合结束才写入阵容状态。
+  // 组合中的每次按键若直接触发保存，较早的响应会在用户尚未选字时覆盖输入框内容。
+  const [nameDraft, setNameDraft] = useState(selected.name);
+  const [descriptionDraft, setDescriptionDraft] = useState(selected.description);
+  const editingLineupId = useRef(selected.id);
+  const composingInput = useRef(false);
+  if (editingLineupId.current !== selected.id) {
+    editingLineupId.current = selected.id;
+    setNameDraft(selected.name);
+    setDescriptionDraft(selected.description);
+  }
+  const changeName = (value: string) => {
+    setNameDraft(value);
+    if (!composingInput.current) update({ name: value });
+  };
+  const changeDescription = (value: string) => {
+    setDescriptionDraft(value);
+    if (!composingInput.current) update({ description: value });
+  };
   useEffect(
     () => () => {
       if (saveResetTimer.current !== null) window.clearTimeout(saveResetTimer.current);
@@ -1573,14 +1594,28 @@ function LineupWorkbench({
         <div className="lineup-heading">
           <div>
             <input
-              value={selected.name}
-              onChange={(e) => update({ name: e.target.value })}
+              value={nameDraft}
+              onChange={(e) => changeName(e.target.value)}
+              onCompositionStart={() => {
+                composingInput.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                composingInput.current = false;
+                changeName(e.currentTarget.value);
+              }}
               aria-label={t('lineup.name')}
             />
             <input
               className="description"
-              value={selected.description}
-              onChange={(e) => update({ description: e.target.value })}
+              value={descriptionDraft}
+              onChange={(e) => changeDescription(e.target.value)}
+              onCompositionStart={() => {
+                composingInput.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                composingInput.current = false;
+                changeDescription(e.currentTarget.value);
+              }}
               placeholder={t('lineup.descriptionPlaceholder')}
             />
           </div>

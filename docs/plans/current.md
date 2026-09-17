@@ -70,7 +70,7 @@ mvn test
 
 2026-09-17 社区功能完成后验证：
 
-- `npm test`：8 个测试文件、25 项测试通过（含 3 项社区界面测试与 1 项保存反馈测试）。
+- `npm test`：8 个测试文件、26 项测试通过（含 3 项社区界面测试、1 项保存反馈测试与 1 项输入法组合测试）。
 - `npm run build`：通过；Vite 仅报告 chunk 大小警告。
 - `npm run format:check`：通过。
 - `mvn test`：22 项测试通过（既有 14 项 + 新增 8 项 `ForumApiTest`，真实 PostgreSQL）。

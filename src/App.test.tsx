@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -127,6 +127,31 @@ describe('roster save feedback', () => {
     await user.click(screen.getByRole('button', { name: /^(保存|Save)$/i }));
 
     expect(await screen.findByRole('button', { name: /已保存|Saved/i })).toBeTruthy();
+  });
+
+  it('keeps pinyin composition local until the input method commits', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+    const nameInput = screen.getByLabelText(/阵容名称|Roster name/i);
+    expect(nameInput).toHaveProperty('value', expect.stringMatching(/.+/));
+
+    fireEvent.compositionStart(nameInput);
+    fireEvent.change(nameInput, { target: { value: "wu'gua" } });
+
+    // 组合期间：输入框显示拼音，阵容状态（侧边栏）保持原名称。
+    expect(nameInput).toHaveProperty('value', "wu'gua");
+    expect(screen.queryByText("wu'gua")).toBeNull();
+    expect(screen.getByText(/我的梦之队|My Dream Team/)).toBeTruthy();
+
+    fireEvent.compositionEnd(nameInput, { target: { value: '无冠' } });
+    fireEvent.change(nameInput, { target: { value: '无冠' } });
+
+    // 组合结束后才写入阵容状态，侧边栏显示最终名称。
+    expect(await screen.findByText('无冠')).toBeTruthy();
+    expect(nameInput).toHaveProperty('value', '无冠');
   });
 });
 
