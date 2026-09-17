@@ -29,7 +29,7 @@ git log -5 --oneline
 
 该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染；以及「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。
 
-当前完成的工作是「本场最佳球员」：模拟对战结果根据表现分公式选出本场最佳球员并展示卡片。方案与验收标准见 `docs/plans/current.md`。
+当前完成的工作是「FMVP 补齐」：球员库覆盖 1978–2026 年全部总决赛 FMVP。方案与验收标准见 `docs/plans/current.md`。
 
 ## 已完成工作
 
@@ -115,9 +115,17 @@ git log -5 --oneline
 - `src/lib/player-of-the-game.test.ts` 新增 8 项单元测试：公式加权、效率奖惩、小样本限制、跨队选择、胜方加成、三组平票决胜、空统计、真实引擎战报的 argmax 验证。
 - `src/App.test.tsx` 新增 1 项界面测试：本地模拟后展示最佳球员卡片。
 
+### FMVP 补齐（1978–2026）
+
+- 1978–2026 共 30 位 FMVP，其中 29 位已通过 NBA 75 大、全明星、最佳阵容、最佳防守阵容等现有数据源进入目录；只有 Cedric Maxwell（1981 年 FMVP）生涯没有上述荣誉，从未被覆盖。
+- 上游数据集没有 FMVP 表，`scripts/generate-nba-history-catalog.mjs` 新增 `finalsMvpByYear`（1978–2026 每年 FMVP，含 2026 年 Jalen Brunson）与 `finalsMvp` 数据源，49 个赛季完整性断言失败即中断。
+- 覆盖元数据新增 `fmvpSeasons` 与 `sourceNames.finalsMvp`；`src/data/historical-player-catalog.test.ts` 新增 `fmvpSeasons` 覆盖 1978–2026 的断言。
+- 再生成只新增 Cedric Maxwell（峰值 1978–79 赛季，波士顿，SF），其余 396 名球员无变化。
+- V9 迁移随目录再生成；本地开发库与测试库删除 `flyway_schema_history` 的 V9 行后，以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 运行一次完成重新应用（V9 为幂等 upsert），后续常规启动校验通过。操作步骤记录在 `src/data/README.md`。
+
 ## 未完成工作
 
-- 本场最佳球员功能与三份交接文档的改动尚未提交。
+- FMVP 补齐与文档的改动尚未提交。
 - 腾讯云 TKE 部署仍属于后续工作，当前仓库只验证本地运行。
 
 ## 本轮修改过的文件
@@ -140,15 +148,18 @@ git log -5 --oneline
 
 社区功能、按钮样式与保存反馈改动已经包含在提交 `8776b65 feat: 社区阵容公开、评论与复制，补全按钮样式与阵容保存反馈`。输入法组合修复包含在提交 `7e9b38a fix: 修复拼音输入法组合期间阵容输入框被保存响应覆盖的问题`。
 
-本场最佳球员改动（尚未提交）：
+本场最佳球员改动已经包含在提交 `36ff947 feat: 模拟对战结果展示本场最佳球员`。
 
-- `src/lib/player-of-the-game.ts`、`src/lib/player-of-the-game.test.ts`（新增）
-- `src/App.tsx`、`src/App.test.tsx`、`src/i18n/resources.ts`、`src/styles.css`
-- `docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/plans/current.md`
+FMVP 补齐改动（尚未提交）：
+
+- `scripts/generate-nba-history-catalog.mjs`
+- `src/data/historical-players.generated.ts`、`src/data/historical-player-catalog.test.ts`、`src/data/README.md`
+- `backend/src/main/resources/db/migration/V9__seed_historical_player_catalog.sql`
+- `docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-本场最佳球员功能的全部源码文件与三份交接文档处于未提交状态，清单见上一节。
+FMVP 补齐的全部源码文件与交接文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -232,6 +243,14 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 本地引擎战报与云端 AI 战报的统计结构相同。在前端展示层评选使两种来源复用同一公式，战报数据结构不变，后端无需改动。
 
+### FMVP 名单显式写在生成脚本中
+
+上游数据集没有 FMVP 表。参照 `nba75Names`、`allNba2026` 的既有模式，1978–2026 每年的 FMVP 以 `finalsMvpByYear` 显式列出，名字必须在生涯数据中解析成功、49 个赛季必须完整，否则生成中断。名单显式化让覆盖范围可审计，目录测试逐年断言。
+
+### V9 迁移随目录再生成
+
+`src/data/README.md` 把目录与 V9 定义为一对生成物，再生成时两者一起重写。已应用旧版 V9 的本地数据库删除 `flyway_schema_history` 中的 V9 行并以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 启动一次即可重新应用；V9 是幂等 upsert，重新运行只新增新球员，不影响既有行与用户覆盖。全新数据库按序应用，不需要这些步骤。
+
 ## 本地运行条件
 
 - Node.js 与 npm 已安装。
@@ -293,21 +312,21 @@ mvn test
 
 2026-09-17 最近一次完整验证：
 
-- 前端：9 个测试文件、35 项测试全部通过（含 8 项表现分公式单元测试与 1 项最佳球员卡片界面测试）。
+- 前端：9 个测试文件、35 项测试全部通过（目录测试断言 FMVP 1978–2026 全覆盖）。
 - 生产构建：通过。
 - Prettier：通过。
-- 后端：22 项测试全部通过，包含 3 项真实 PostgreSQL 游客导入接口测试与 8 项社区接口测试。本场最佳球员为纯前端改动，后端测试基线不变。
+- 后端：22 项测试全部通过（真实 PostgreSQL，V9 重新应用后常规运行）。
 
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交本场最佳球员功能与本次交接文档。
+2. 提交 FMVP 补齐与本次交接文档。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- HEAD：`b6a8e1e docs: 更新 AGENTS.md 严谨直接在 main 分支上修改代码`
+- 基线提交：`36ff947 feat: 模拟对战结果展示本场最佳球员`
 - 上游：`origin/develop`
-- 未提交改动：本场最佳球员的前端模块、界面卡片、文案、样式与测试，以及三份交接文档。
+- 未提交改动：FMVP 数据源与再生成目录、V9 迁移、目录测试断言、数据 README，以及交接文档。

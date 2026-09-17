@@ -4,39 +4,33 @@
 
 ## 当前目标
 
-在模拟对战结果中展示「本场最佳球员」（Player of the Game）：根据上场时间、得分、篮板、助攻、抢断、盖帽、投篮命中率（不区分两分和三分）与是否胜方计算表现分，从双方球员中选出分数最高者。
+在球员库中补齐 1978–2026 年全部总决赛 FMVP 球员。
 
 状态：开发完成，全部测试通过，等待提交。
 
 ## 已确认的决策
 
-- 表现分公式：得分 ×1.0 + 篮板 ×1.2 + 助攻 ×1.5 + 抢断 ×2.0 + 盖帽 ×2.0 + 上场时间 ×0.3 +（2 × 投篮命中 − 投篮出手）+ 胜方 3 分加成。
-- 效率项以出手数为乘数：命中率五成时等于命中数，高效多出手加分、低效多出手扣分；小样本高命中率无法获奖，因为产量项占主导。
-- 抢断与盖帽场均只有 0–2 个，权重放大到 2.0，避免被得分淹没；上场时间只作辅助因子。
-- 胜方加成 3 分，幅度有限：胜方球员可以因此胜过数据接近的败方球员，败方巨星仍可凭数据获奖。
-- 公式内部以十分之一分为单位做整数运算再除以 10 返回，整数在双精度浮点下精确，平票比较才可靠。
-- 平票决胜链：表现分 → 得分 → 上场时间 → 球员 ID 字典序，保证结果确定。
-- 评选在前端展示层完成，本地战报与云端战报复用同一模块，战报数据结构不变，后端无需改动。
+- 排查结果：1978–2026 共 30 位 FMVP，其中 29 位已经通过 NBA 75 大、全明星、最佳阵容、最佳防守阵容等现有数据源进入目录；只有 Cedric Maxwell（1981 年 FMVP）生涯没有任何上述荣誉，从未被覆盖。
+- 上游数据集没有 FMVP 表，参照生成脚本中 `nba75Names`、`allNba2026` 的既有模式，把 1978–2026 每年的 FMVP 以 `finalsMvpByYear` 显式列在生成脚本中（2026 年 FMVP 为 Jalen Brunson，纽约尼克斯 4–1 圣安东尼奥马刺）。
+- 生成脚本新增 `finalsMvp` 数据源：每个名字必须在生涯数据中解析成功，49 个赛季（1978–2026，1999 年总决赛正常举办）必须完整；覆盖元数据新增 `fmvpSeasons` 与 `sourceNames.finalsMvp`。
+- 目录测试新增断言：`fmvpSeasons` 覆盖 1978–2026 全部赛季；既有的「每个数据源球员恰好出现一次」测试自动覆盖 FMVP 名单。
+- 再生成只新增 Cedric Maxwell 一名球员（峰值 1978–79 赛季，波士顿，SF），其余 396 名球员与上游数据保持一致，无意外漂移。
+- V9 迁移是生成物，随目录一起再生成；已应用旧版 V9 的本地数据库删除 `flyway_schema_history` 中的 V9 行后，以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 启动一次完成重新应用（V9 是幂等 upsert），后续启动正常校验。全新数据库按序应用全部迁移，不需要这些步骤。操作步骤记录在 `src/data/README.md`。
 
 ## 验收标准
 
-- [x] 每场有统计数据的战报都选出唯一一名本场最佳球员。
-- [x] 公式覆盖上场时间、得分、篮板、助攻、抢断、盖帽、投篮命中率与胜负。
-- [x] 平票按得分、上场时间、球员 ID 依次决胜，结果确定。
-- [x] 战报没有任何统计时不渲染卡片。
-- [x] 卡片展示球员头像、姓名、所属阵容、主要数据与表现分。
-- [x] 简体中文与英文文案齐全。
-- [x] 前端测试、构建、格式检查全部通过。
+- [x] 1978–2026 年全部 30 位 FMVP 都在球员库中，目录测试断言赛季覆盖完整。
+- [x] Cedric Maxwell 出现在前端目录、数据库种子迁移与本地两个数据库中。
+- [x] 再生成不引入 FMVP 之外的球员变更。
+- [x] 前端测试、构建、格式检查与后端全部测试通过；后端常规启动（无环境变量）通过 Flyway 校验。
 
 ## 实施步骤
 
-1. `src/lib/player-of-the-game.ts`：`scorePlayerStat` 计算单行统计的表现分，`selectPlayerOfTheGame` 合并主客队统计、标记胜方并选出最高分。
-2. `src/App.tsx` 的 `GameResult` 在记分牌与数据表之间渲染最佳球员卡片，头像与姓名优先使用战报快照字段。
-3. `src/i18n/resources.ts` 新增 `battle.playerOfTheGame` 与 `battle.pogScore`（简体中文、英文）。
-4. `src/styles.css` 新增 `.pog-card` 系列样式。
-5. `src/lib/player-of-the-game.test.ts` 新增 8 项单元测试：公式加权、效率奖惩、小样本限制、跨队选择、胜方加成、三组平票决胜、空统计、真实引擎战报的 argmax 验证。
-6. `src/App.test.tsx` 新增 1 项界面测试：本地模拟后展示最佳球员卡片。
-7. 全部测试通过后更新 `docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、本文件。
+1. `scripts/generate-nba-history-catalog.mjs` 新增 `finalsMvpByYear`（1978–2026）与 `finalsMvp` 数据源、赛季完整性断言、覆盖元数据。
+2. 运行生成脚本（网络受限时先下载 CSV 到 `.cache/nba-data/` 并设置 `NBA_DATA_DIR`），重新生成 `src/data/historical-players.generated.ts` 与 V9 迁移。
+3. `src/data/historical-player-catalog.test.ts` 新增 `fmvpSeasons` 断言。
+4. 本地开发库与测试库删除 V9 历史行，以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 运行一次后端（或测试）重新应用 V9，随后常规启动验证校验通过。
+5. 全部测试通过后更新 `docs/AI_HANDOFF.md`、`src/data/README.md`、本文件。
 
 ## 测试方法
 
@@ -48,7 +42,7 @@ npm run build
 npm run format:check
 ```
 
-后端（本次无后端改动，回归用）：
+后端：
 
 ```bash
 export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
@@ -61,13 +55,14 @@ mvn test
 
 ## 测试状态
 
-2026-09-17 本场最佳球员功能完成后验证：
+2026-09-17 FMVP 补齐完成后验证：
 
-- `npm test`：9 个测试文件、35 项测试通过（含 8 项表现分公式单元测试与 1 项最佳球员卡片界面测试）。
+- `npm test`：9 个测试文件、35 项测试通过（目录测试断言 FMVP 1978–2026 全覆盖）。
 - `npm run build`：通过；Vite 仅报告 chunk 大小警告。
 - `npm run format:check`：通过。
+- `mvn test`：22 项测试通过（真实 PostgreSQL；V9 重新应用后常规运行）。
 
 ## 当前 Git 状态
 
-- 分支：`develop`，HEAD：`b6a8e1e docs: 更新 AGENTS.md 严谨直接在 main 分支上修改代码`。
-- 本场最佳球员改动完成但未提交：`src/lib/player-of-the-game.ts`、`src/lib/player-of-the-game.test.ts` 新增，`src/App.tsx`、`src/App.test.tsx`、`src/i18n/resources.ts`、`src/styles.css` 修改。
+- 分支：`develop`，基线提交：`36ff947 feat: 模拟对战结果展示本场最佳球员`。
+- FMVP 改动完成但未提交：`scripts/generate-nba-history-catalog.mjs`、`src/data/historical-players.generated.ts`、`src/data/historical-player-catalog.test.ts`、`src/data/README.md`、`backend/src/main/resources/db/migration/V9__seed_historical_player_catalog.sql`，以及三份交接文档。

@@ -132,6 +132,61 @@ const allDefense2026 = [
   'Dyson Daniels',
 ];
 
+// The awards dataset has no Finals MVP table, so the winners are listed explicitly.
+// Coverage follows the official NBA.com Finals MVP history; the key is the season's
+// end year.
+const finalsMvpByYear = new Map([
+  [1978, 'Wes Unseld'],
+  [1979, 'Dennis Johnson'],
+  [1980, 'Magic Johnson'],
+  [1981, 'Cedric Maxwell'],
+  [1982, 'Magic Johnson'],
+  [1983, 'Moses Malone'],
+  [1984, 'Larry Bird'],
+  [1985, 'Kareem Abdul-Jabbar'],
+  [1986, 'Larry Bird'],
+  [1987, 'Magic Johnson'],
+  [1988, 'James Worthy'],
+  [1989, 'Joe Dumars'],
+  [1990, 'Isiah Thomas'],
+  [1991, 'Michael Jordan'],
+  [1992, 'Michael Jordan'],
+  [1993, 'Michael Jordan'],
+  [1994, 'Hakeem Olajuwon'],
+  [1995, 'Hakeem Olajuwon'],
+  [1996, 'Michael Jordan'],
+  [1997, 'Michael Jordan'],
+  [1998, 'Michael Jordan'],
+  [1999, 'Tim Duncan'],
+  [2000, "Shaquille O'Neal"],
+  [2001, "Shaquille O'Neal"],
+  [2002, "Shaquille O'Neal"],
+  [2003, 'Tim Duncan'],
+  [2004, 'Chauncey Billups'],
+  [2005, 'Tim Duncan'],
+  [2006, 'Dwyane Wade'],
+  [2007, 'Tony Parker'],
+  [2008, 'Paul Pierce'],
+  [2009, 'Kobe Bryant'],
+  [2010, 'Kobe Bryant'],
+  [2011, 'Dirk Nowitzki'],
+  [2012, 'LeBron James'],
+  [2013, 'LeBron James'],
+  [2014, 'Kawhi Leonard'],
+  [2015, 'Andre Iguodala'],
+  [2016, 'LeBron James'],
+  [2017, 'Kevin Durant'],
+  [2018, 'Kevin Durant'],
+  [2019, 'Kawhi Leonard'],
+  [2020, 'LeBron James'],
+  [2021, 'Giannis Antetokounmpo'],
+  [2022, 'Stephen Curry'],
+  [2023, 'Nikola Jokić'],
+  [2024, 'Jaylen Brown'],
+  [2025, 'Shai Gilgeous-Alexander'],
+  [2026, 'Jalen Brunson'],
+]);
+
 const nameAliases = new Map([['Nate Archibald', 'Tiny Archibald']]);
 
 const teamNames = {
@@ -613,8 +668,14 @@ async function main() {
     allStars: new Set(),
     allNba: new Set(),
     allDefense: new Set(),
+    finalsMvp: new Set(),
   };
-  const seasons = { allStars: new Set(), allNba: new Set(), allDefense: new Set() };
+  const seasons = {
+    allStars: new Set(),
+    allNba: new Set(),
+    allDefense: new Set(),
+    finalsMvp: new Set(),
+  };
 
   for (const officialName of nba75Names) {
     const lookupName = nameAliases.get(officialName) ?? officialName;
@@ -656,6 +717,13 @@ async function main() {
     seasons[type].add(END_SEASON);
   }
 
+  for (const [season, name] of finalsMvpByYear) {
+    const career = careerByName.get(normalizedName(name));
+    if (!career) throw new Error(`Finals MVP not found: ${name}`);
+    sourcePlayerIds.finalsMvp.add(career.player_id);
+    seasons.finalsMvp.add(season);
+  }
+
   const expectedAllStarSeasons = Array.from(
     { length: END_SEASON - START_SEASON + 1 },
     (_, index) => START_SEASON + index,
@@ -667,6 +735,7 @@ async function main() {
   assertSeasonCoverage('All-Star', [...seasons.allStars], expectedAllStarSeasons);
   assertSeasonCoverage('All-NBA', [...seasons.allNba], expectedAnnualSeasons);
   assertSeasonCoverage('All-Defense', [...seasons.allDefense], expectedAnnualSeasons);
+  assertSeasonCoverage('Finals MVP', [...seasons.finalsMvp], expectedAnnualSeasons);
   if (sourcePlayerIds.nba75.size !== 76) {
     throw new Error(`NBA 75 should contain 76 unique players, found ${sourcePlayerIds.nba75.size}`);
   }
@@ -743,6 +812,7 @@ async function main() {
     allStarSeasons: [...seasons.allStars].sort(),
     allNbaSeasons: [...seasons.allNba].sort(),
     allDefenseSeasons: [...seasons.allDefense].sort(),
+    fmvpSeasons: [...seasons.finalsMvp].sort(),
     sourceNames: Object.fromEntries(
       Object.entries(sourcePlayerIds).map(([key, ids]) => [
         key,

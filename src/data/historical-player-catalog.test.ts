@@ -59,6 +59,7 @@ describe('historical player catalog', () => {
     expect(historicalCatalogCoverage.allStarSeasons).toEqual(allStarSeasons);
     expect(historicalCatalogCoverage.allNbaSeasons).toEqual(annualSeasons);
     expect(historicalCatalogCoverage.allDefenseSeasons).toEqual(annualSeasons);
+    expect(historicalCatalogCoverage.fmvpSeasons).toEqual(annualSeasons);
   });
 
   it('keeps names, physical data and generated ratings valid', () => {
