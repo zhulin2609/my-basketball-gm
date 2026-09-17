@@ -26,6 +26,7 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 - `src/lib/repository.ts` 是组件与浏览器存储之间的边界。
 - `src/lib/api.ts` 是组件与后端 REST API 之间的边界，同时负责 JWT 会话读写。
 - `src/lib/simulator.ts` 提供游客和登录用户都可以使用的本地规则引擎。
+- `src/lib/player-of-the-game.ts` 从战报统计中评选本场最佳球员，本地战报与云端战报复用同一公式。
 
 ### 游客数据
 

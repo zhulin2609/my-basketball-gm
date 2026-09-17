@@ -1354,6 +1354,66 @@ nav button.active:after {
   color: #809087;
   font-size: 8px;
 }
+.pog-card {
+  margin-top: 21px;
+  background: #17211d;
+  border: 1px solid #35483b;
+  border-left: 3px solid #c3ec8b;
+  padding: 18px 22px;
+}
+.pog-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pog-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font: 700 13px 'DM Mono';
+  color: #122017;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  flex-shrink: 0;
+}
+.pog-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pog-info .eyebrow {
+  margin: 0;
+}
+.pog-info b {
+  font: 700 19px 'Playfair Display';
+}
+.pog-info small {
+  font: 10px 'DM Mono';
+  color: #92a092;
+}
+.pog-score {
+  margin-left: auto;
+  text-align: right;
+}
+.pog-score strong {
+  display: block;
+  color: #c3ec8b;
+  font: 700 32px 'DM Mono';
+}
+.pog-score small {
+  font: 9px 'DM Mono';
+  color: #92a092;
+  letter-spacing: 1px;
+}
+.pog-stats {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #27342d;
+  font: 10px 'DM Mono';
+  color: #aeb8ad;
+  letter-spacing: 0.5px;
+}
 .stat-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;

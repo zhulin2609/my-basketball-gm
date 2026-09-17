@@ -14,6 +14,7 @@ import {
   starterLineup,
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
+import { selectPlayerOfTheGame } from '@/lib/player-of-the-game';
 import { simulate } from '@/lib/simulator';
 import { usePagination } from '@/lib/use-pagination';
 import type {
@@ -2080,6 +2081,13 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
   const expirationIsNear = remainingDays <= 3;
   const homeName = game.homeLineupName ?? t('battle.home');
   const awayName = game.awayLineupName ?? t('battle.away');
+  const pog = selectPlayerOfTheGame(game);
+  const pogPlayer = pog ? players.find((x) => x.id === pog.stat.playerId) : undefined;
+  const pogIsHome = pog ? game.homeStats.some((s) => s.playerId === pog.stat.playerId) : false;
+  const pogFgPct =
+    pog && pog.stat.fgAttempted > 0
+      ? Math.round((pog.stat.fgMade / pog.stat.fgAttempted) * 100)
+      : 0;
   const engineLabel = game.engineVersion?.startsWith('llm:')
     ? t('battle.aiEngine', { model: game.engineVersion.slice(4) })
     : t('battle.localEngine');
@@ -2113,6 +2121,35 @@ function GameResult({ game, players, isCloudReport }: GameResultProps) {
           <strong>{game.awayScore}</strong>
         </div>
       </div>
+      {pog && (
+        <div className="pog-card">
+          <div className="pog-main">
+            <i
+              className="pog-avatar"
+              style={{ background: pog.stat.playerAccent ?? pogPlayer?.accent ?? '#777' }}
+            >
+              {pog.stat.playerInitials ?? pogPlayer?.initials ?? '?'}
+            </i>
+            <div className="pog-info">
+              <p className="eyebrow">{t('battle.playerOfTheGame')}</p>
+              <b>
+                {pog.stat.playerName ??
+                  pogPlayer?.name ??
+                  t('battle.playerRemoved', { id: pog.stat.playerId })}
+              </b>
+              <small>{pogIsHome ? homeName : awayName}</small>
+            </div>
+            <div className="pog-score">
+              <strong>{pog.score.toFixed(1)}</strong>
+              <small>{t('battle.pogScore')}</small>
+            </div>
+          </div>
+          <p className="pog-stats">
+            {pog.stat.minutes} MIN · {pog.stat.points} PTS · {pog.stat.rebounds} REB ·{' '}
+            {pog.stat.assists} AST · {pog.stat.steals} STL · {pog.stat.blocks} BLK · {pogFgPct}% FG
+          </p>
+        </div>
+      )}
       <div className="stat-columns">
         <StatTable name={homeName} rows={rows(game.homeStats)} />
         <StatTable name={awayName} rows={rows(game.awayStats)} />

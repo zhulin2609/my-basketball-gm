@@ -211,6 +211,8 @@ export const resources = {
         home: '主队',
         away: '客队',
         playerRemoved: '已移除球员（{{id}}）',
+        playerOfTheGame: '本场最佳球员',
+        pogScore: '表现分',
       },
       community: {
         title: '社区阵容',
@@ -485,6 +487,8 @@ export const resources = {
         home: 'Home',
         away: 'Away',
         playerRemoved: 'Removed player ({{id}})',
+        playerOfTheGame: 'Player of the Game',
+        pogScore: 'Impact score',
       },
       community: {
         title: 'Community rosters',

@@ -199,3 +199,32 @@ describe('community rosters', () => {
     expect(screen.queryByRole('button', { name: /公开到社区|Share to community/i })).toBeNull();
   });
 });
+
+describe('player of the game', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    // 指向不可达地址：本地引擎在浏览器内完成模拟，不依赖服务端。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('shows the player of the game after a local simulation', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /梦幻对战|Dream Match/i }));
+    await user.click(
+      screen.getByRole('button', { name: /使用本地引擎模拟|Simulate with local engine/i }),
+    );
+
+    expect(await screen.findByText(/本场最佳球员|Player of the Game/i)).toBeTruthy();
+    expect(container.querySelector('.pog-score strong')?.textContent).toMatch(/^\d+\.\d$/);
+    expect(container.querySelector('.pog-stats')?.textContent).toMatch(/\d+ PTS/);
+  });
+});
