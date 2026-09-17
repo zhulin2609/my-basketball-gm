@@ -14,6 +14,30 @@
 
 @docs/ARCHITECTURE.md
 
+## Required Context
+
+开始任何开发任务前，必须主动读取：
+
+- docs/ARCHITECTURE.md
+- docs/AI_HANDOFF.md
+- docs/plans/current.md
+- docs/DECISIONS.md
+
+不要假设这些文件内容已经在上下文中。
+
+## Before Coding
+
+开始修改代码前：
+
+1. 阅读 docs/AI_HANDOFF.md
+2. 阅读 docs/plans/current.md
+3. 检查 git status
+4. 检查 git diff
+5. 查看 git log -5 --oneline
+6. 阅读与当前任务相关的代码
+7. 总结当前项目状态
+8. 再开始修改
+
 # TypeScript + React + Vite 开发规范
 
 ## 1. 技术栈 & 版本
@@ -54,21 +78,6 @@
 ## 5. Main 分支推送前测试门禁
 
 - 向远端推送 `main` 分支之前，必须完整运行项目的全部测试用例并全部通过。若测试未运行或任一测试失败，不得执行 `git push` 到远端 `main`。
-
-## Before Coding
-
-请先阅读：
-
-docs/AI_HANDOFF.md
-docs/plans/current.md
-
-然后：
-
-1. git status
-2. git diff
-3. git log -5 --oneline
-
-理解当前开发状态之后再修改代码。
 
 ## 语言
 
