@@ -5,6 +5,7 @@ import { api, isApiEnabled, type AuthSession, type LlmCredential } from '@/lib/a
 import { communityWriteError } from '@/lib/errors';
 import { createGuestImportRequest } from '@/lib/guest-import';
 import { guestWorkspaceRepository } from '@/lib/guest-workspace';
+import { useHashRoute, type RouteView } from '@/lib/hash-route';
 import {
   bootstrapLineups,
   classicLineup,
@@ -32,7 +33,7 @@ import type {
   SimulationMode,
 } from '@/types';
 
-type View = 'players' | 'lineups' | 'battle' | 'community' | 'ai-settings' | 'auth';
+type View = RouteView;
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
@@ -276,7 +277,7 @@ interface AiSettingsProps {
 export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const { t } = useTranslation();
-  const [view, setView] = useState<View>('players');
+  const [route, navigate] = useHashRoute();
   const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
   const [lineups, setLineups] = useState<Lineup[]>(() =>
     isApiEnabled && authSession ? [starterLineup(), classicLineup()] : bootstrapLineups(),
@@ -291,10 +292,16 @@ export function App() {
     isApiEnabled && authSession ? [] : simulationRepository.list(),
   );
   const [game, setGame] = useState<Simulation | null>(() => games[0] ?? null);
-  const [communityPostId, setCommunityPostId] = useState<string | null>(null);
   // 同一阵容的请求串行化，防止用户连续输入名称时较早的网络请求覆盖较晚的修改。
   const lineupSaveQueues = useRef<Map<string, Promise<void>>>(new Map());
   const isAuthenticatedApi = isApiEnabled && authSession !== null;
+  // 未满足条件的受限视图回退到球员库，URL 中的 hash 保持不变。
+  const view: View =
+    (route.view === 'ai-settings' && !isAuthenticatedApi) ||
+    (route.view === 'community' && !isApiEnabled)
+      ? 'players'
+      : route.view;
+  const communityPostId = route.view === 'community' ? route.postId : null;
   // 阵容的唯一写入口：离线模式写 localStorage；API 模式乐观更新并排队写入 PostgreSQL。
   // 返回的 Promise 在数据真正写入完成后才 resolve，供保存按钮展示反馈。
   const persist = (next: Lineup): Promise<void> => {
@@ -413,7 +420,7 @@ export function App() {
     // persist 在云端模式只更新已选中的阵容；新阵容需先切换焦点，才能避免仍停在旧阵容。
     setSelected(next);
     persist(next);
-    setView('lineups');
+    navigate({ view: 'lineups' });
   };
   // 云端模式先等待阵容同步，再由 Java 引擎计算并原子保存；离线演示继续使用纯 TS 引擎。
   const play = async (
@@ -421,7 +428,7 @@ export function App() {
     away: Lineup,
     mode: SimulationMode = 'local',
   ): Promise<void> => {
-    setView('battle');
+    navigate({ view: 'battle' });
     setIsSimulating(true);
     setSimulationError(null);
 
@@ -477,14 +484,13 @@ export function App() {
     return post.id;
   };
   const openSharedPost = (postId: string) => {
-    setCommunityPostId(postId);
-    setView('community');
+    navigate({ view: 'community', postId });
   };
   // 复制成功后新阵容直接进入阵容列表并设为当前编辑对象。
   const communityCopied = (lineup: Lineup) => {
     setLineups((current) => [lineup, ...current]);
     setSelected(lineup);
-    setView('lineups');
+    navigate({ view: 'lineups' });
   };
 
   if (view === 'auth') {
@@ -492,9 +498,9 @@ export function App() {
       <AuthScreen
         onAuthenticated={(session) => {
           setAuthSession(session);
-          setView('players');
+          navigate({ view: 'players' });
         }}
-        onCancel={() => setView('players')}
+        onCancel={() => navigate({ view: 'players' })}
       />
     );
   }
@@ -502,7 +508,7 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={() => setView('players')}>
+        <button className="brand" onClick={() => navigate({ view: 'players' })}>
           <span className="brand-mark">DC</span>
           <span>
             Dream Court<small>HISTORY LAB</small>
@@ -518,7 +524,11 @@ export function App() {
               ...(isApiEnabled ? [['community', t('nav.community')] as [View, string]] : []),
             ] as [View, string][]
           ).map(([id, label]) => (
-            <button className={view === id ? 'active' : ''} onClick={() => setView(id)} key={id}>
+            <button
+              className={view === id ? 'active' : ''}
+              onClick={() => navigate({ view: id })}
+              key={id}
+            >
               {label}
             </button>
           ))}
@@ -530,7 +540,7 @@ export function App() {
               <span className="guest-label">{t('guest.status')}</span>
               <button
                 className="secondary compact guest-auth-button"
-                onClick={() => setView('auth')}
+                onClick={() => navigate({ view: 'auth' })}
               >
                 {t('guest.login')}
               </button>
@@ -539,7 +549,10 @@ export function App() {
           {isApiEnabled && authSession && (
             <>
               <span className="account-name">{authSession.user.username}</span>
-              <button className="secondary compact" onClick={() => setView('ai-settings')}>
+              <button
+                className="secondary compact"
+                onClick={() => navigate({ view: 'ai-settings' })}
+              >
                 {t('nav.aiSettings')}
               </button>
               <button
@@ -554,7 +567,7 @@ export function App() {
                   setSelected(guestLineups[0]);
                   setGames(guestGames);
                   setGame(guestGames[0] ?? null);
-                  setView('players');
+                  navigate({ view: 'players' });
                 }}
               >
                 {t('nav.logout')}
@@ -571,7 +584,7 @@ export function App() {
           <strong>{t('guest.noticeTitle')}</strong>
           <span>{t('guest.noticeBody')}</span>
           {guestWorkspaceRepository.load().hasUserProgress && (
-            <button onClick={() => setView('auth')} type="button">
+            <button onClick={() => navigate({ view: 'auth' })} type="button">
               {t('guest.saveProgress')}
             </button>
           )}
@@ -595,7 +608,7 @@ export function App() {
             persist({ ...selected, members: [...selected.members, member] });
           }}
           onSavePlayer={persistPlayer}
-          onOpenLineup={() => setView('lineups')}
+          onOpenLineup={() => navigate({ view: 'lineups' })}
           loadError={playerLoadError}
           onRetry={() => {
             void api
@@ -631,7 +644,7 @@ export function App() {
           game={game}
           onSelectGame={setGame}
           onPlay={play}
-          onOpenAiSettings={() => setView('ai-settings')}
+          onOpenAiSettings={() => navigate({ view: 'ai-settings' })}
           isSimulating={isSimulating}
           simulationError={simulationError}
           isCloudMode={isAuthenticatedApi}
@@ -642,15 +655,15 @@ export function App() {
           isAdmin={authSession?.user.admin ?? false}
           isAuthenticated={isAuthenticatedApi}
           postId={communityPostId}
-          onOpenPost={setCommunityPostId}
-          onClosePost={() => setCommunityPostId(null)}
-          onRequireAuth={() => setView('auth')}
+          onOpenPost={(postId) => navigate({ view: 'community', postId })}
+          onClosePost={() => navigate({ view: 'community', postId: null })}
+          onRequireAuth={() => navigate({ view: 'auth' })}
           onCopied={communityCopied}
           onLineupsChanged={refreshLineups}
         />
       )}
       {view === 'ai-settings' && isAuthenticatedApi && (
-        <AiSettings onBack={() => setView('battle')} />
+        <AiSettings onBack={() => navigate({ view: 'battle' })} />
       )}
       <footer>{t('footer')}</footer>
     </main>

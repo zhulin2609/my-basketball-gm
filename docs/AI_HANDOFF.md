@@ -31,6 +31,8 @@ git log -5 --oneline
 
 当前完成的工作是「社区内容治理（上线前置批次）」：公开阵容与评论写入前经过本地 DFA 词表与腾讯云 CMS 同步审核，服务端限频与新账号链接限制防御灌水，管理员可删除任何帖子与评论，错误改为结构化错误码并由前端按码映射文案。方案与验收标准见 `docs/plans/current.md`。
 
+随后完成的工作是「hash 路由」：页面状态以 URL hash 为准，刷新后停留在当前页面，浏览器前进/后退可用，社区帖子详情有 `#/community/<帖子id>` 形式的可分享链接。
+
 ## 已完成工作
 
 ### 前端游客体验
@@ -141,9 +143,17 @@ git log -5 --oneline
 - 前端 `api.ts` 抛出携带 `status` 与 `code` 的 `ApiError`；`src/lib/errors.ts` 的 `communityWriteError` 按 code 映射到四类新文案，无 code 时保持拼接后端 message 的既有行为；发表评论与公开阵容两条路径接入映射，失败时保留草稿。
 - 后端 `ForumModerationTest` 新增 8 项真实 PostgreSQL 集成测试（收紧限频配置 + `@DynamicPropertySource` 注入管理员用户名），`SensitiveWordFilterTest` 新增 4 项单元测试；前端 `src/lib/errors.test.ts` 新增 4 项映射测试。
 
+### Hash 路由
+
+- `src/lib/hash-route.ts` 新增 `useHashRoute`：挂载时解析 `window.location.hash` 恢复视图，`navigate` 同步更新状态并写入 hash，`hashchange` 监听让浏览器前进/后退切换视图。
+- hash 格式为 `#/players`、`#/lineups`、`#/battle`、`#/community`、`#/community/<帖子id>`、`#/ai-settings`、`#/auth`；无法识别的 hash 回退到球员库。
+- `App.tsx` 的视图状态改为由 `useHashRoute` 提供，删除了独立的 `communityPostId` 状态；受限视图（`ai-settings` 要求登录、`community` 要求 API 启用）条件不满足时回退到球员库，URL 保持不变。
+- 帖子被撤回后打开旧链接，沿用帖子详情既有的加载失败提示，不展示空白页。
+- `src/App.test.tsx` 新增 6 项 hash 路由测试：加载恢复、导航写 hash、前进/后退、帖子详情直达、受限与未知 hash 回退；各测试块的 `beforeEach` 增加 hash 重置，避免 jsdom 内跨用例残留。
+
 ## 未完成工作
 
-- 社区内容治理的全部改动尚未提交。
+- hash 路由与 README（含英文版 `docs/README.en.md`）的改动尚未提交。
 - 腾讯云 CMS 需要真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 才会激活；当前代码就绪、配置门控默认关闭，本地词表始终生效。
 - 腾讯云部署仍属于后续工作，当前仓库只验证本地运行。
 
@@ -173,16 +183,18 @@ FMVP 补齐改动已经包含在提交 `c854c1e feat: 球员库补齐 1978-2026 
 
 球员列表排序改动已经包含在提交 `6cceac3 feat: 我的阵容候选球员列表按能力值降序`。
 
-社区内容治理改动（尚未提交）：
+社区内容治理改动已经包含在提交 `a3d2af8 feat: 社区内容治理：敏感词审核、限频、新账号链接限制与管理员删除通道`。
 
-- 后端：`backend/pom.xml`、`config/ApiException.java`、`config/ApiExceptionHandler.java`、`moderation/`（`SensitiveWordFilter`、`TencentModerationClient`、`ModerationService`）、`user/AdminRegistry.java`、`forum/ForumWriteGuard.java`、`forum/ForumController.java`、`forum/ForumService.java`、`forum/ForumMapper.java`、`auth/AuthService.java`、`auth/AuthUserResponse.java`、`application.yml`、`moderation-words.txt`
-- 后端测试：`ForumModerationTest.java`、`SensitiveWordFilterTest.java`
-- 前端：`src/lib/api.ts`、`src/lib/errors.ts`、`src/lib/errors.test.ts`、`src/i18n/resources.ts`、`src/App.tsx`
-- 文档：`docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/plans/current.md`
+hash 路由改动（尚未提交）：
+
+- 前端：`src/lib/hash-route.ts`（新）、`src/App.tsx`、`src/App.test.tsx`
+- 文档：`docs/ARCHITECTURE.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+
+README 更新（尚未提交）：`README.md` 按当前玩法、架构与启动方式重写，`docs/README.en.md` 为对应英文版。
 
 ## 修改中的文件
 
-社区内容治理的全部源码文件与交接文档处于未提交状态，清单见上一节。
+hash 路由与 README 的源码与文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -294,6 +306,10 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 当前只有「删除任意帖子与评论」一个管理动作。用环境变量配置用户名即可覆盖，不值得为此引入角色表。`AdminRegistry` 统一判定，认证响应带 `admin` 字段让前端控制按钮显隐，服务端接口仍做最终鉴权。
 
+### 页面状态以 URL hash 为准
+
+此前视图是 `App.tsx` 的内存状态，刷新即回到球员库。改用 hash 路由后，刷新从 hash 恢复当前页面，浏览器前进/后退可用，社区帖子详情获得可分享的独立链接。项目没有路由库，`useHashRoute` 手写 hash 读写与 `hashchange` 监听即可覆盖需求，不值得为此引入 react-router。受限视图条件不满足时只回退渲染结果、不改写 URL，用户登录后前进/后退仍能回到原链接。
+
 ## 本地运行条件
 
 - Node.js 与 npm 已安装。
@@ -363,10 +379,16 @@ mvn test
 
 2026-09-19 词表扩充后复验：`mvn package` 重新打包（34 项测试通过，词表共 237 行）并以 `java -jar` 重启后端；真实请求验证命中新增词条的评论返回 422 `CONTENT_REJECTED`，正常评论 201，验证产生的数据已清理。
 
+2026-09-19 hash 路由完成后验证：
+
+- 前端：10 个测试文件、47 项测试全部通过（新增 6 项 hash 路由测试）。
+- 生产构建：通过。Prettier：通过。
+- 真实浏览器（Vite dev server + 运行中的后端）：`#/lineups` 加载恢复与刷新停留、`#/community` 切换、浏览器后退返回阵容页、`#/community/<帖子id>` 直达帖子详情与刷新保持，均验证通过。
+
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交社区内容治理与本次交接文档。
+2. 提交 hash 路由、README（含英文版）与本次交接文档。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
@@ -374,6 +396,6 @@ mvn test
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`6cceac3 feat: 我的阵容候选球员列表按能力值降序`
+- 基线提交：`a3d2af8 feat: 社区内容治理：敏感词审核、限频、新账号链接限制与管理员删除通道`
 - 上游：`origin/develop`
-- 未提交改动：社区内容治理的全部源码与交接文档。
+- 未提交改动：hash 路由（`src/lib/hash-route.ts`、`src/App.tsx`、`src/App.test.tsx`）、`README.md` 重写与 `docs/README.en.md`、三份交接文档。

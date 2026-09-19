@@ -16,6 +16,8 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 `src/App.tsx` 管理当前页面、认证会话、球员、阵容和战报的共享状态。主要页面包括球员库、我的阵容、梦幻对战、社区、AI 设置和登录或注册。
 
+页面状态以 URL hash 为准（`src/lib/hash-route.ts` 的 `useHashRoute`）：格式为 `#/players`、`#/lineups`、`#/battle`、`#/community`、`#/community/<帖子id>`、`#/ai-settings`、`#/auth`。挂载时从 hash 恢复当前页面，`navigate` 同步更新状态并写 hash，`hashchange` 监听支持浏览器前进/后退。无法识别的 hash 回退到球员库；`ai-settings` 要求登录、`community` 要求 API 启用，条件不满足时回退到球员库且 URL 保持不变。
+
 球员库网格（每页 12 名）与我的阵容候选列表（每页 9 名）通过 `src/lib/use-pagination.ts` 分页；搜索、过滤或排序条件变化时回到第 1 页。社区帖子列表（每页 10 帖）与评论（每页 20 条）由服务端分页，前端复用同一个分页组件。
 
 页面文案位于 `src/i18n/resources.ts`，当前支持简体中文和英文。

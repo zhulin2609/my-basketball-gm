@@ -8,6 +8,7 @@ describe('guest entry experience', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080/api/v1');
   });
 
@@ -45,6 +46,7 @@ describe('player list pagination', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080/api/v1');
   });
 
@@ -109,6 +111,7 @@ describe('roster save feedback', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     // 指向不可达地址：游客模式的保存写入本地存储，不依赖服务端。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
   });
@@ -159,6 +162,7 @@ describe('community rosters', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     // 指向不可达地址：社区数据只来自服务端，测试必须验证服务不可用时的界面行为。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
   });
@@ -204,6 +208,7 @@ describe('player of the game', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     // 指向不可达地址：本地引擎在浏览器内完成模拟，不依赖服务端。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
   });
@@ -233,6 +238,7 @@ describe('player ordering by overall rating', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    window.location.hash = '';
     // 指向不可达地址：球员列表来自内置目录，不依赖服务端。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
   });
@@ -272,5 +278,88 @@ describe('player ordering by overall rating', () => {
     );
 
     expectDescending(ovrs);
+  });
+});
+
+describe('hash routing', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    window.location.hash = '';
+    // 指向不可达地址：hash 路由只决定渲染哪个视图，不依赖服务端响应。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+    window.location.hash = '';
+  });
+
+  it('restores the view from the URL hash on load', async () => {
+    window.location.hash = '#/battle';
+    const { App } = await import('@/App');
+
+    render(<App />);
+
+    expect(
+      screen.getByRole('button', { name: /使用本地引擎模拟|Simulate with local engine/i }),
+    ).toBeTruthy();
+  });
+
+  it('updates the URL hash when navigating', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+
+    expect(window.location.hash).toBe('#/lineups');
+  });
+
+  it('follows hash changes from the browser back and forward buttons', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+    expect(screen.getByLabelText(/阵容名称|Roster name/i)).toBeTruthy();
+
+    window.location.hash = '#/players';
+    fireEvent(window, new HashChangeEvent('hashchange'));
+
+    expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
+  });
+
+  it('restores the shared post detail from the URL hash', async () => {
+    window.location.hash = '#/community/post-1';
+    const { App } = await import('@/App');
+
+    render(<App />);
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /社区内容加载失败|Unable to load community content/i,
+    );
+    expect(
+      screen.getByRole('button', { name: /返回社区列表|Back to community list/i }),
+    ).toBeTruthy();
+  });
+
+  it('falls back to the player archive when a guest opens a restricted view hash', async () => {
+    window.location.hash = '#/ai-settings';
+    const { App } = await import('@/App');
+
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
+  });
+
+  it('falls back to the player archive for an unknown hash', async () => {
+    window.location.hash = '#/nonsense';
+    const { App } = await import('@/App');
+
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
   });
 });
