@@ -1,6 +1,6 @@
 # AI Handoff
 
-更新时间：2026-09-17
+更新时间：2026-09-19
 
 ## 开始工作前
 
@@ -29,7 +29,7 @@ git log -5 --oneline
 
 该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染；以及「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。
 
-当前完成的工作是「球员列表按能力值排序」：球员库网格默认按能力值降序，我的阵容页候选球员列表同样改为能力值降序。方案与验收标准见 `docs/plans/current.md`。
+当前完成的工作是「社区内容治理（上线前置批次）」：公开阵容与评论写入前经过本地 DFA 词表与腾讯云 CMS 同步审核，服务端限频与新账号链接限制防御灌水，管理员可删除任何帖子与评论，错误改为结构化错误码并由前端按码映射文案。方案与验收标准见 `docs/plans/current.md`。
 
 ## 已完成工作
 
@@ -130,10 +130,22 @@ git log -5 --oneline
 - 阵容成员表保持首发状态与位置的结构性排序，不属于浏览用球员列表。
 - `src/App.test.tsx` 新增 2 项回归测试，分别断言球员库网格与阵容页候选列表按 OVR 降序。
 
+### 社区内容治理
+
+- 新增 `moderation` 后端模块：`SensitiveWordFilter` 从 `moderation-words.txt` 构建 DFA 词表做前置过滤；`TencentModerationClient` 以腾讯云 TMS `TextModeration` 做云端审核（3 秒超时），未配置密钥时保持关闭；`ModerationService` 串联两者，先本地后云端。
+- 词表位置由 `app.moderation.word-list`（环境变量 `MODERATION_WORD_LIST`）指定，注入 Spring Resource：默认 `classpath:moderation-words.txt`，支持 `file:` 前缀外置。以 jar 方式运行且用默认 classpath 词表时，修改词表后需要重新 `mvn package` 并重启进程；外置词表只需重启。
+- 审核在 Controller 层、数据库事务之外同步执行；云端调用失败或超时拒绝写入（503），未审内容不会落库。命中词条不回显给用户。
+- `ForumWriteGuard` 在写事务内做计数限频：评论每秒钟 1 条、每天 50 条，发帖每小时 3 次（只计新建帖子，更新公开内容不占额度）；注册不满 24 小时的账号不能发布含链接的内容。全部额度可在 `application.yml` 配置并经环境变量覆盖。
+- 新增 `ApiException`（HttpStatus + code + message），统一错误处理器输出 `{message, code}`；错误码为 `CONTENT_REJECTED`（422）、`RATE_LIMITED`（429）、`MODERATION_UNAVAILABLE`（503）、`LINK_RESTRICTED`（403）。
+- 管理员由 `app.admin.usernames`（`FORUM_ADMIN_USERNAMES`）配置：`AdminRegistry` 提供大小写不敏感的判定，删除帖子与评论接口放行管理员；`AuthUserResponse` 新增 `admin` 字段，前端据此对他人的帖子与评论显示删除按钮。
+- 前端 `api.ts` 抛出携带 `status` 与 `code` 的 `ApiError`；`src/lib/errors.ts` 的 `communityWriteError` 按 code 映射到四类新文案，无 code 时保持拼接后端 message 的既有行为；发表评论与公开阵容两条路径接入映射，失败时保留草稿。
+- 后端 `ForumModerationTest` 新增 8 项真实 PostgreSQL 集成测试（收紧限频配置 + `@DynamicPropertySource` 注入管理员用户名），`SensitiveWordFilterTest` 新增 4 项单元测试；前端 `src/lib/errors.test.ts` 新增 4 项映射测试。
+
 ## 未完成工作
 
-- 球员列表排序与文档的改动尚未提交。
-- 腾讯云 TKE 部署仍属于后续工作，当前仓库只验证本地运行。
+- 社区内容治理的全部改动尚未提交。
+- 腾讯云 CMS 需要真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 才会激活；当前代码就绪、配置门控默认关闭，本地词表始终生效。
+- 腾讯云部署仍属于后续工作，当前仓库只验证本地运行。
 
 ## 本轮修改过的文件
 
@@ -159,14 +171,18 @@ git log -5 --oneline
 
 FMVP 补齐改动已经包含在提交 `c854c1e feat: 球员库补齐 1978-2026 年全部总决赛 FMVP`。
 
-球员列表排序改动（尚未提交）：
+球员列表排序改动已经包含在提交 `6cceac3 feat: 我的阵容候选球员列表按能力值降序`。
 
-- `src/App.tsx`、`src/App.test.tsx`
-- `docs/AI_HANDOFF.md`、`docs/plans/current.md`
+社区内容治理改动（尚未提交）：
+
+- 后端：`backend/pom.xml`、`config/ApiException.java`、`config/ApiExceptionHandler.java`、`moderation/`（`SensitiveWordFilter`、`TencentModerationClient`、`ModerationService`）、`user/AdminRegistry.java`、`forum/ForumWriteGuard.java`、`forum/ForumController.java`、`forum/ForumService.java`、`forum/ForumMapper.java`、`auth/AuthService.java`、`auth/AuthUserResponse.java`、`application.yml`、`moderation-words.txt`
+- 后端测试：`ForumModerationTest.java`、`SensitiveWordFilterTest.java`
+- 前端：`src/lib/api.ts`、`src/lib/errors.ts`、`src/lib/errors.test.ts`、`src/i18n/resources.ts`、`src/App.tsx`
+- 文档：`docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-球员列表排序的全部源码文件与交接文档处于未提交状态，清单见上一节。
+社区内容治理的全部源码文件与交接文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -258,6 +274,26 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 `src/data/README.md` 把目录与 V9 定义为一对生成物，再生成时两者一起重写。已应用旧版 V9 的本地数据库删除 `flyway_schema_history` 中的 V9 行并以 `SPRING_FLYWAY_OUT_OF_ORDER=true` 启动一次即可重新应用；V9 是幂等 upsert，重新运行只新增新球员，不影响既有行与用户覆盖。全新数据库按序应用，不需要这些步骤。
 
+### 审核放在数据库事务之外
+
+腾讯云 CMS 是一次 HTTP 调用。放在事务内会让数据库连接被外部调用占住，云服务的延迟会直接拖垮写路径。`ForumController` 在调用写方法前完成审核；限频与链接判断是纯数据库计数，留在 `ForumService` 事务内，被拒绝的写入不会消耗额度。
+
+### 本地词表先行，云端审核全量同步
+
+明显的违规内容在本地直接拒绝，不消耗云端调用；其余内容全量同步过腾讯云 CMS，返回 `Block` 或 `Review` 都按拒绝处理。云服务失败或超时（3 秒）同样拒绝写入：社区写操作短暂不可用可以接受，未审内容上线不能接受。
+
+### 命中词条不回显
+
+审核失败的响应只含统一文案与错误码，不告诉用户命中了哪个词。回显词条等于把词库暴露给试探者。前端按 code 映射本地文案，也不拼后端原始 message；无 code 的错误（例如含自定义球员的 422）保持原有 message 展示，因为球员名单本来就是用户自己的数据。
+
+### 发帖限频只计新建帖子
+
+帖子列表按创建时间排序，更新已公开帖子不会改变排序，无法用于顶帖刷屏。限频只统计窗口内新建的帖子，用户修正阵容后更新公开内容不受额度影响。
+
+### 管理员名单走配置而不是数据库角色
+
+当前只有「删除任意帖子与评论」一个管理动作。用环境变量配置用户名即可覆盖，不值得为此引入角色表。`AdminRegistry` 统一判定，认证响应带 `admin` 字段让前端控制按钮显隐，服务端接口仍做最终鉴权。
+
 ## 本地运行条件
 
 - Node.js 与 npm 已安装。
@@ -317,23 +353,27 @@ mvn test
 
 ## 测试状态
 
-2026-09-17 最近一次完整验证：
+2026-09-18 最近一次完整验证：
 
-- 前端：9 个测试文件、37 项测试全部通过（含 2 项能力值排序回归测试）。
+- 前端：10 个测试文件、41 项测试全部通过（含 4 项社区错误码映射测试）。
 - 生产构建：通过。
 - Prettier：通过。
-- 后端：22 项测试全部通过（真实 PostgreSQL，V9 重新应用后常规运行）。
+- 后端：34 项测试全部通过（真实 PostgreSQL，含 8 项内容治理集成测试与 4 项词表单元测试）。
+- 端到端：以真实运行的后端验证 `/auth/me` 的 `admin` 字段、正常评论 201、一分钟内重复评论 429 `RATE_LIMITED`、命中词表 422 `CONTENT_REJECTED`（不回显词条）、新账号含链接评论与发帖 403 `LINK_RESTRICTED`。
+
+2026-09-19 词表扩充后复验：`mvn package` 重新打包（34 项测试通过，词表共 237 行）并以 `java -jar` 重启后端；真实请求验证命中新增词条的评论返回 422 `CONTENT_REJECTED`，正常评论 201，验证产生的数据已清理。
 
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交球员列表排序与本次交接文档。
+2. 提交社区内容治理与本次交接文档。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
+5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`c854c1e feat: 球员库补齐 1978-2026 年全部总决赛 FMVP`
+- 基线提交：`6cceac3 feat: 我的阵容候选球员列表按能力值降序`
 - 上游：`origin/develop`
-- 未提交改动：候选球员列表能力值排序、排序回归测试，以及交接文档。
+- 未提交改动：社区内容治理的全部源码与交接文档。

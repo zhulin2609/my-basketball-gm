@@ -17,6 +17,23 @@ app:
   auth:
     jwt-secret: ${JWT_SECRET:}
     token-ttl: ${JWT_TOKEN_TTL:PT8H}
+  admin:
+    # Comma-separated usernames allowed to delete any community post or comment.
+    usernames: ${FORUM_ADMIN_USERNAMES:}
+  forum:
+    rate-limit:
+      comment-per-second: ${FORUM_COMMENT_PER_SECOND:1}
+      comment-per-day: ${FORUM_COMMENT_PER_DAY:50}
+      publish-per-hour: ${FORUM_PUBLISH_PER_HOUR:3}
+    new-account-link-hours: ${FORUM_NEW_ACCOUNT_LINK_HOURS:24}
+  moderation:
+    word-list: ${MODERATION_WORD_LIST:classpath:moderation-words.txt}
+    # Cloud text moderation stays disabled until both credentials are provided; the local word
+    # filter keeps running either way.
+    tencent:
+      secret-id: ${TENCENT_SECRET_ID:}
+      secret-key: ${TENCENT_SECRET_KEY:}
+      region: ${TENCENT_REGION:ap-guangzhou}
   simulation-retention:
     cron: ${SIMULATION_RETENTION_CRON:0 0 3 * * *}
     zone: ${SIMULATION_RETENTION_ZONE:Asia/Shanghai}

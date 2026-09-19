@@ -1,5 +1,6 @@
 package com.links.basketballgm.auth;
 
+import com.links.basketballgm.user.AdminRegistry;
 import com.links.basketballgm.user.CurrentUser;
 import com.links.basketballgm.user.UserMapper;
 import com.links.basketballgm.user.UserRow;
@@ -25,6 +26,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtEncoder jwtEncoder;
   private final CurrentUser currentUser;
+  private final AdminRegistry adminRegistry;
   private final Duration tokenTtl;
 
   public AuthService(
@@ -32,12 +34,14 @@ public class AuthService {
       PasswordEncoder passwordEncoder,
       JwtEncoder jwtEncoder,
       CurrentUser currentUser,
+      AdminRegistry adminRegistry,
       @Value("${app.auth.token-ttl}") Duration tokenTtl
   ) {
     this.userMapper = userMapper;
     this.passwordEncoder = passwordEncoder;
     this.jwtEncoder = jwtEncoder;
     this.currentUser = currentUser;
+    this.adminRegistry = adminRegistry;
     this.tokenTtl = tokenTtl;
   }
 
@@ -89,6 +93,6 @@ public class AuthService {
   }
 
   private AuthUserResponse toResponse(UserRow user) {
-    return new AuthUserResponse(user.id(), user.username(), user.displayName());
+    return new AuthUserResponse(user.id(), user.username(), user.displayName(), adminRegistry.isAdmin(user.username()));
   }
 }

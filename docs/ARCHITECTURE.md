@@ -24,7 +24,8 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 - 公共球员目录由 `src/data/players.ts` 和 `src/data/historical-players.generated.ts` 提供。
 - `src/lib/repository.ts` 是组件与浏览器存储之间的边界。
-- `src/lib/api.ts` 是组件与后端 REST API 之间的边界，同时负责 JWT 会话读写。
+- `src/lib/api.ts` 是组件与后端 REST API 之间的边界，同时负责 JWT 会话读写；非 2xx 响应抛出携带 `status` 与 `code` 的 `ApiError`。
+- `src/lib/errors.ts` 把社区写操作的错误码映射为本地文案；无 code 的错误保持拼接后端 message 的既有行为。
 - `src/lib/simulator.ts` 提供游客和登录用户都可以使用的本地规则引擎。
 - `src/lib/player-of-the-game.ts` 从战报统计中评选本场最佳球员，本地战报与云端战报复用同一公式。
 
@@ -49,9 +50,23 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 - `llm`：OpenAI 兼容接口配置、API Key 加密和 AI 模拟。
 - `guest`：游客工作区导入、幂等控制和球员 ID 转换。
 - `forum`：社区公开阵容的发布、浏览、评论和复制。
+- `moderation`：社区写路径的内容审核（本地 DFA 词表加腾讯云 CMS）与滥用限频。
+- `user`：当前用户解析与管理员名单（`AdminRegistry`）。
 - `config`：Spring Security、统一错误响应和跨模块配置。
 
 Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，MyBatis Mapper 负责 SQL。用户归属从 JWT 中读取，客户端不能指定 owner ID。
+
+### 社区内容治理
+
+公开阵容（名称与描述）和发表评论这两条写路径在写入前依次经过三层检查：
+
+1. `ModerationService.check` 在 Controller 层、数据库事务之外执行：先过本地 DFA 词表（`moderation-words.txt`），配置腾讯云密钥后再同步调用 TMS `TextModeration`（3 秒超时）。词表命中返回 422，云服务失败或超时返回 503，未审内容不会写入数据库。
+2. `ForumWriteGuard` 在 Service 事务内做计数限频：评论每秒钟 1 条、每天 50 条，发帖每小时 3 次（只计新建帖子；帖子列表按创建时间排序，更新公开内容不会顶帖，因此不占额度）。超限返回 429。
+3. 同一 Guard 做新账号链接限制：注册不满 24 小时的账号发布含 `http://`、`https://`、`www.` 的内容返回 403。
+
+审核失败不消耗限频额度（限频只统计已落库的行），限频失败不触发审核之外的写入。错误的结构化码（`CONTENT_REJECTED`、`RATE_LIMITED`、`MODERATION_UNAVAILABLE`、`LINK_RESTRICTED`）由 `ApiException` 携带，统一错误处理器输出 `{message, code}`；命中的词条不会出现在响应中。
+
+管理员名单来自配置 `app.admin.usernames`（环境变量 `FORUM_ADMIN_USERNAMES`）。管理员可以删除任何人的帖子与评论；`/auth/me` 与登录、注册响应的用户对象带 `admin` 字段，前端据此对他人的内容显示删除按钮。
 
 ## 数据库
 
@@ -68,9 +83,10 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 
 ## 测试边界
 
-- Vitest 覆盖前端规则、游客存储、导入转换、入口交互、分页和社区界面。
-- 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密。
+- Vitest 覆盖前端规则、游客存储、导入转换、入口交互、分页、社区界面与社区错误码映射。
+- 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密、本地敏感词过滤。
 - `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
+- `ForumModerationTest` 使用同一测试库，用收紧的限频配置真实触发词表拦截、秒级与天级限频、新账号链接限制、管理员删除与错误码响应体。
 
 具体执行命令和当前测试状态见 `docs/AI_HANDOFF.md` 与 `docs/plans/current.md`。

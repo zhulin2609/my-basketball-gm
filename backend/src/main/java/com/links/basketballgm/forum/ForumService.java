@@ -10,6 +10,9 @@ import com.links.basketballgm.lineup.LineupRow;
 import com.links.basketballgm.lineup.ShareBlockedPlayerRow;
 import com.links.basketballgm.player.PlayerMapper;
 import com.links.basketballgm.player.PlayerResponse;
+import com.links.basketballgm.user.AdminRegistry;
+import com.links.basketballgm.user.UserMapper;
+import com.links.basketballgm.user.UserRow;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -25,12 +28,25 @@ public class ForumService {
   private final ForumMapper forumMapper;
   private final PlayerMapper playerMapper;
   private final LineupMapper lineupMapper;
+  private final UserMapper userMapper;
+  private final AdminRegistry adminRegistry;
+  private final ForumWriteGuard writeGuard;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public ForumService(ForumMapper forumMapper, PlayerMapper playerMapper, LineupMapper lineupMapper) {
+  public ForumService(
+      ForumMapper forumMapper,
+      PlayerMapper playerMapper,
+      LineupMapper lineupMapper,
+      UserMapper userMapper,
+      AdminRegistry adminRegistry,
+      ForumWriteGuard writeGuard
+  ) {
     this.forumMapper = forumMapper;
     this.playerMapper = playerMapper;
     this.lineupMapper = lineupMapper;
+    this.userMapper = userMapper;
+    this.adminRegistry = adminRegistry;
+    this.writeGuard = writeGuard;
   }
 
   public PagedResponse<PostSummary> listPosts(UUID viewerId, int page, int pageSize) {
@@ -54,6 +70,16 @@ public class ForumService {
         .map(row -> toCommentResponse(row, viewerId))
         .toList();
     return new PagedResponse<>(items, forumMapper.countComments(postId), safePage, safePageSize);
+  }
+
+  /**
+   * Text that represents the lineup on the community page. Read outside the write transaction so
+   * the controller can run synchronous moderation before any database write begins.
+   */
+  public String findPublishText(UUID ownerId, String lineupId) {
+    OwnedLineupRow lineup = forumMapper.findOwnedLineup(ownerId, lineupId);
+    if (lineup == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该阵容。");
+    return lineup.name() + "\n" + lineup.description();
   }
 
   @Transactional
@@ -81,6 +107,7 @@ public class ForumService {
 
     PostRow existing = forumMapper.findPostBySource(lineup.id());
     if (existing == null) {
+      writeGuard.checkPublish(ownerId, lineup.name() + "\n" + lineup.description());
       String postId = forumMapper.insertPost(ownerId, lineup.id(), lineup.name(), lineup.description(), membersJson);
       return new PublishResult(true, toDetail(forumMapper.findPost(postId), ownerId));
     }
@@ -91,7 +118,7 @@ public class ForumService {
   @Transactional
   public void deletePost(UUID ownerId, String postId) {
     PostRow post = requirePost(postId);
-    if (!post.ownerId().equals(ownerId.toString())) {
+    if (!post.ownerId().equals(ownerId.toString()) && !isAdmin(ownerId)) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能删除自己公开的阵容。");
     }
     forumMapper.deletePost(postId);
@@ -107,6 +134,7 @@ public class ForumService {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "只能回复该帖子下的一级评论。");
       }
     }
+    writeGuard.checkComment(authorId, request.content());
     String commentId = forumMapper.insertComment(postId, authorId, parent == null ? null : parent.id(), request.content());
     forumMapper.addCommentCount(postId, 1);
     return toCommentResponse(forumMapper.findComment(commentId), authorId);
@@ -116,7 +144,7 @@ public class ForumService {
   public void deleteComment(UUID authorId, String commentId) {
     CommentRow comment = forumMapper.findComment(commentId);
     if (comment == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该评论。");
-    if (!comment.authorId().equals(authorId.toString())) {
+    if (!comment.authorId().equals(authorId.toString()) && !isAdmin(authorId)) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能删除自己的评论。");
     }
     int removed = 1 + forumMapper.countReplies(commentId);
@@ -166,6 +194,12 @@ public class ForumService {
     PostRow post = forumMapper.findPost(postId);
     if (post == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该帖子。");
     return post;
+  }
+
+  /** Configured operators may remove any post or comment; everyone else only their own. */
+  private boolean isAdmin(UUID userId) {
+    UserRow user = userMapper.findById(userId);
+    return user != null && adminRegistry.isAdmin(user.username());
   }
 
   private SnapshotMember toSnapshotMember(PublishMemberRow member) {

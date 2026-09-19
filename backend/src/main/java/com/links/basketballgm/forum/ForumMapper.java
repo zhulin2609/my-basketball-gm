@@ -116,6 +116,18 @@ public interface ForumMapper {
   @Select("select count(*) from lineup_comments where parent_id = cast(#{id} as uuid)")
   int countReplies(@Param("id") String id);
 
+  @Select("select count(*) from lineup_comments where author_id = #{authorId} and created_at > now() - interval '1 second'")
+  int countCommentsInLastSecond(@Param("authorId") UUID authorId);
+
+  @Select("select count(*) from lineup_comments where author_id = #{authorId} and created_at > now() - interval '1 day'")
+  int countCommentsInLastDay(@Param("authorId") UUID authorId);
+
+  @Select("select count(*) from shared_lineups where owner_id = #{ownerId} and created_at > now() - interval '1 hour'")
+  int countPostsInLastHour(@Param("ownerId") UUID ownerId);
+
+  @Select("select created_at from users where id = #{id}")
+  java.time.OffsetDateTime findUserCreatedAt(@Param("id") UUID id);
+
   @Delete("delete from lineup_comments where id = cast(#{id} as uuid)")
   int deleteComment(@Param("id") String id);
 

@@ -15,10 +15,27 @@ import type {
 
 const SESSION_STORAGE_KEY = 'dream-court.auth-session.v1';
 
+/**
+ * 非 2xx 响应的结构化错误。code 由后端按错误类别下发（例如 CONTENT_REJECTED），
+ * 前端据此映射到本地文案；没有 code 时保持展示后端 message 的既有行为。
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
+  admin: boolean;
 }
 
 export interface AuthSession {
@@ -155,8 +172,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     if (response.status === 401) clearSession();
-    const body = (await response.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(body?.message ?? `API ${response.status}`);
+    const body = (await response.json().catch(() => null)) as {
+      message?: string;
+      code?: string;
+    } | null;
+    throw new ApiError(
+      body?.message ?? `API ${response.status}`,
+      response.status,
+      body?.code ?? null,
+    );
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

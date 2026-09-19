@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { useTranslation } from 'react-i18next';
 import { changeLocale, supportedLocales, type AppLocale } from '@/i18n';
 import { api, isApiEnabled, type AuthSession, type LlmCredential } from '@/lib/api';
+import { communityWriteError } from '@/lib/errors';
 import { createGuestImportRequest } from '@/lib/guest-import';
 import { guestWorkspaceRepository } from '@/lib/guest-workspace';
 import {
@@ -183,6 +184,7 @@ interface LineupWorkbenchProps {
 
 interface CommunityHubProps {
   isAuthenticated: boolean;
+  isAdmin: boolean;
   postId: string | null;
   onOpenPost: (postId: string) => void;
   onClosePost: () => void;
@@ -198,6 +200,7 @@ interface CommunityListViewProps {
 interface CommunityPostViewProps {
   postId: string;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   onBack: () => void;
   onRequireAuth: () => void;
   onCopied: (lineup: Lineup) => void;
@@ -636,6 +639,7 @@ export function App() {
       )}
       {view === 'community' && isApiEnabled && (
         <CommunityHub
+          isAdmin={authSession?.user.admin ?? false}
           isAuthenticated={isAuthenticatedApi}
           postId={communityPostId}
           onOpenPost={setCommunityPostId}
@@ -1568,8 +1572,7 @@ function LineupWorkbench({
       const postId = await onShare(selected);
       onOpenSharedPost(postId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('errors.unknown');
-      setShareError(t('community.shareFailed', { message }));
+      setShareError(communityWriteError(t, error, 'community.shareFailed'));
     } finally {
       setIsSharing(false);
     }
@@ -2186,6 +2189,7 @@ function StatTable({ name, rows }: StatTableProps) {
 
 function CommunityHub({
   isAuthenticated,
+  isAdmin,
   postId,
   onOpenPost,
   onClosePost,
@@ -2196,6 +2200,7 @@ function CommunityHub({
   if (postId) {
     return (
       <CommunityPostView
+        isAdmin={isAdmin}
         isAuthenticated={isAuthenticated}
         onBack={onClosePost}
         onCopied={onCopied}
@@ -2289,6 +2294,7 @@ function CommunityListView({ onOpen }: CommunityListViewProps) {
 function CommunityPostView({
   postId,
   isAuthenticated,
+  isAdmin,
   onBack,
   onRequireAuth,
   onCopied,
@@ -2366,8 +2372,7 @@ function CommunityPostView({
       setCommentPage(1);
       await reloadAfterAction(1);
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('errors.unknown');
-      setActionError(t('community.commentFailed', { message }));
+      setActionError(communityWriteError(t, error, 'community.commentFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -2454,7 +2459,7 @@ function CommunityPostView({
           </p>
         </div>
         <div className="page-heading-actions">
-          {post.mine && (
+          {(post.mine || isAdmin) && (
             <button
               className="secondary danger-button"
               disabled={isSubmitting}
@@ -2530,7 +2535,7 @@ function CommunityPostView({
                     {t('community.reply')}
                   </button>
                 )}
-                {comment.mine && (
+                {(comment.mine || isAdmin) && (
                   <button
                     className="ghost"
                     disabled={isSubmitting}

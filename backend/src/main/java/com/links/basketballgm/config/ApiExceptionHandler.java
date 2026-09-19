@@ -39,6 +39,16 @@ public class ApiExceptionHandler {
   }
 
   /**
+   * ApiException carries a stable code the browser maps to localized copy; the server message is
+   * kept as a fallback for other clients.
+   */
+  @ExceptionHandler(ApiException.class)
+  public ResponseEntity<Map<String, String>> handleApiException(ApiException exception) {
+    return ResponseEntity.status(exception.status())
+        .body(Map.of("message", exception.getMessage(), "code", exception.code()));
+  }
+
+  /**
    * Keeps explicit business-status failures in the same JSON shape as validation failures,
    * so the browser can display a useful error message without knowing Spring's ProblemDetail.
    */

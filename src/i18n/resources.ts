@@ -246,6 +246,10 @@ export const resources = {
         commentFailed: '评论失败：{{message}}',
         copyFailed: '复制阵容失败：{{message}}',
         withdrawFailed: '撤回公开失败：{{message}}',
+        errorContentRejected: '内容包含违规信息，请修改后重新发布。',
+        errorRateLimited: '操作太频繁，请稍后再试。',
+        errorUnavailable: '发布失败，请稍后重试。',
+        errorLinkRestricted: '新账号注册满 24 小时后才能发布包含链接的内容。',
       },
       defaults: {
         dreamTeam: '我的梦之队',
@@ -523,6 +527,10 @@ export const resources = {
         commentFailed: 'Unable to post the comment: {{message}}',
         copyFailed: 'Unable to copy the roster: {{message}}',
         withdrawFailed: 'Unable to withdraw: {{message}}',
+        errorContentRejected: 'The content violates community rules. Please revise and post again.',
+        errorRateLimited: 'Too many attempts. Please try again later.',
+        errorUnavailable: 'Posting failed. Please try again later.',
+        errorLinkRestricted: 'New accounts can post content with links 24 hours after signing up.',
       },
       defaults: {
         dreamTeam: 'My Dream Team',

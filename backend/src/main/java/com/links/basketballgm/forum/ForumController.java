@@ -1,6 +1,7 @@
 package com.links.basketballgm.forum;
 
 import com.links.basketballgm.lineup.LineupResponse;
+import com.links.basketballgm.moderation.ModerationService;
 import com.links.basketballgm.user.CurrentUser;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -26,10 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ForumController {
   private final ForumService service;
   private final CurrentUser currentUser;
+  private final ModerationService moderation;
 
-  public ForumController(ForumService service, CurrentUser currentUser) {
+  public ForumController(ForumService service, CurrentUser currentUser, ModerationService moderation) {
     this.service = service;
     this.currentUser = currentUser;
+    this.moderation = moderation;
   }
 
   @GetMapping("/posts")
@@ -61,7 +64,11 @@ public class ForumController {
       @AuthenticationPrincipal Jwt jwt,
       @Valid @RequestBody PublishPostRequest request
   ) {
-    PublishResult result = service.publish(currentUser.id(jwt), request);
+    UUID ownerId = currentUser.id(jwt);
+    // Moderation runs before the write transaction so the cloud HTTP call never holds a
+    // database connection.
+    moderation.check(service.findPublishText(ownerId, request.lineupId()));
+    PublishResult result = service.publish(ownerId, request);
     HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
     return ResponseEntity.status(status).body(result.post());
   }
@@ -78,7 +85,9 @@ public class ForumController {
       @PathVariable String id,
       @Valid @RequestBody CommentRequest request
   ) {
-    CommentResponse comment = service.addComment(currentUser.id(jwt), id, request);
+    UUID authorId = currentUser.id(jwt);
+    moderation.check(request.content());
+    CommentResponse comment = service.addComment(authorId, id, request);
     return ResponseEntity.status(HttpStatus.CREATED).body(comment);
   }
 
