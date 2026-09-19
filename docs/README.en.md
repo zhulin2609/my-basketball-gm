@@ -19,7 +19,7 @@ A historical basketball star database, lineup editor, and fantasy matchup simula
 The system has three parts; see `docs/ARCHITECTURE.md` (in Chinese) for details:
 
 - Frontend: React, TypeScript, Vite. Entry points are `src/main.tsx` and `src/App.tsx`; the dev server runs on `127.0.0.1:5173`.
-- Backend: Java 21, Spring Boot, MyBatis. Entry point is `backend/src/main/java/com/links/basketballgm/BasketballGmApplication.java`; it runs on `127.0.0.1:8080` and is organized by business module (auth, player, lineup, simulation, llm, guest, forum, moderation, user, config).
+- Backend: Java 21, Spring Boot, MyBatis. Entry point is `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`; it runs on `127.0.0.1:8080` and is organized by business module (auth, player, lineup, simulation, llm, guest, forum, moderation, user, config).
 - Database: PostgreSQL 16. The schema is maintained by Flyway migrations in `backend/src/main/resources/db/migration/`.
 
 Authentication uses JWT, with the token stored in localStorage. In local development, Vite proxies `/api` requests to the backend.

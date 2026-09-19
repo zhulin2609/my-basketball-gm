@@ -5,7 +5,7 @@
 Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成。
 
 - 前端：React、TypeScript、Vite，入口为 `src/main.tsx` 和 `src/App.tsx`。
-- 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/links/basketballgm/BasketballGmApplication.java`。
+- 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
 
 本地开发时，前端运行在 `127.0.0.1:5173`，Vite 将 `/api` 请求代理到后端 `127.0.0.1:8080`。

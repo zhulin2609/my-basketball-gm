@@ -19,7 +19,7 @@
 系统由三部分组成，详细说明见 `docs/ARCHITECTURE.md`：
 
 - 前端：React、TypeScript、Vite，入口为 `src/main.tsx` 和 `src/App.tsx`，开发时运行在 `127.0.0.1:5173`。
-- 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/links/basketballgm/BasketballGmApplication.java`，运行在 `127.0.0.1:8080`，按业务模块组织（auth、player、lineup、simulation、llm、guest、forum、moderation、user、config）。
+- 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`，运行在 `127.0.0.1:8080`，按业务模块组织（auth、player、lineup、simulation、llm、guest、forum、moderation、user、config）。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
 
 认证使用 JWT，前端把令牌保存在 localStorage。本地开发时 Vite 将 `/api` 请求代理到后端。

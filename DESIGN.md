@@ -5,7 +5,7 @@
 - Status: Active
 - Last refreshed: 2026-09-16
 - Primary product surfaces: 球员库、我的阵容、梦幻对战
-- Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/lib/repository.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/links/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
+- Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/lib/repository.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
 
 ## Brand
 

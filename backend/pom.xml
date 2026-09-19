@@ -11,7 +11,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>com.links</groupId>
+  <groupId>com.basketballgm</groupId>
   <artifactId>basketball-gm-api</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>basketball-gm-api</name>

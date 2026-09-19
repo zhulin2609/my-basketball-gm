@@ -33,6 +33,8 @@ git log -5 --oneline
 
 随后完成的工作是「hash 路由」：页面状态以 URL hash 为准，刷新后停留在当前页面，浏览器前进/后退可用，社区帖子详情有 `#/community/<帖子id>` 形式的可分享链接。
 
+当前完成的工作是「后端包名重命名」：Java 包从 `com.links.basketballgm` 改为 `com.basketballgm`，Maven groupId 同步改为 `com.basketballgm`。方案与验收标准见 `docs/plans/current.md`。
+
 ## 已完成工作
 
 ### 前端游客体验
@@ -165,10 +167,10 @@ git log -5 --oneline
 - 前端入口与界面：`src/App.tsx`、`src/styles.css`、`src/i18n/resources.ts`
 - 前端数据边界：`src/lib/api.ts`、`src/lib/repository.ts`、`src/lib/guest-workspace.ts`、`src/lib/guest-import.ts`
 - 前端测试：`src/App.test.tsx`、`src/lib/repository.test.ts`、`src/lib/guest-workspace.test.ts`、`src/lib/guest-import.test.ts`
-- 后端游客导入：`backend/src/main/java/com/links/basketballgm/guest/` 下全部 Java 文件
-- 后端战报导入支持：`backend/src/main/java/com/links/basketballgm/simulation/SimulationMapper.java`
+- 后端游客导入：`backend/src/main/java/com/basketballgm/guest/` 下全部 Java 文件
+- 后端战报导入支持：`backend/src/main/java/com/basketballgm/simulation/SimulationMapper.java`
 - 数据库迁移：`backend/src/main/resources/db/migration/V10__add_guest_imports.sql`
-- 后端测试：`backend/src/test/java/com/links/basketballgm/guest/GuestImportApiTest.java`、`backend/src/test/resources/application-test.yml`
+- 后端测试：`backend/src/test/java/com/basketballgm/guest/GuestImportApiTest.java`、`backend/src/test/resources/application-test.yml`
 - 文档骨架：`docs/AI_HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/DECISIONS.md`、`docs/plans/current.md`
 
 提交 `13d11b1 docs: 完善 AI 交接规范` 更新了 `AGENTS.md`，提交 `17ef87e docs: Codex 完善交接文档` 更新了三份交接文档。
@@ -185,16 +187,19 @@ FMVP 补齐改动已经包含在提交 `c854c1e feat: 球员库补齐 1978-2026 
 
 社区内容治理改动已经包含在提交 `a3d2af8 feat: 社区内容治理：敏感词审核、限频、新账号链接限制与管理员删除通道`。
 
-hash 路由改动（尚未提交）：
+hash 路由改动已经包含在提交 `9de4388 feat: hash 路由：刷新停留在当前页面，支持前进后退与帖子详情链接`。
 
-- 前端：`src/lib/hash-route.ts`（新）、`src/App.tsx`、`src/App.test.tsx`
-- 文档：`docs/ARCHITECTURE.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+README 重写与英文版已经包含在提交 `1bcee76 docs: 按当前玩法重写 README 并增加英文版`。
 
-README 更新（尚未提交）：`README.md` 按当前玩法、架构与启动方式重写，`docs/README.en.md` 为对应英文版。
+包名重命名改动（尚未提交）：
+
+- 后端源码：`backend/src/main/java/com/basketballgm/` 与 `backend/src/test/java/com/basketballgm/` 下全部 98 个 Java 文件，目录、package 声明与 import 从 `com.links.basketballgm` 改为 `com.basketballgm`
+- 构建坐标：`backend/pom.xml` 的 groupId 改为 `com.basketballgm`
+- 文档：`README.md`、`docs/README.en.md`、`docs/ARCHITECTURE.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-hash 路由与 README 的源码与文档处于未提交状态，清单见上一节。
+包名重命名的源码与文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -385,17 +390,20 @@ mvn test
 - 生产构建：通过。Prettier：通过。
 - 真实浏览器（Vite dev server + 运行中的后端）：`#/lineups` 加载恢复与刷新停留、`#/community` 切换、浏览器后退返回阵容页、`#/community/<帖子id>` 直达帖子详情与刷新保持，均验证通过。
 
+2026-09-19 包名重命名后验证：`mvn test` 34 项全部通过（真实 PostgreSQL），`npm run format:check` 通过。前端源码不引用 Java 包名，无需改动。
+
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交 hash 路由、README（含英文版）与本次交接文档。
-3. 新功能从 `develop` 分支继续开发和验证。
-4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
-5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
+2. 提交包名重命名与本次交接文档。
+3. 本地功能验证前重新 `mvn package` 并重启后端：正在运行的旧 jar 仍是重命名前的构建产物。
+4. 新功能从 `develop` 分支继续开发和验证。
+5. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
+6. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`a3d2af8 feat: 社区内容治理：敏感词审核、限频、新账号链接限制与管理员删除通道`
+- 基线提交：`96f3a70 docs: 在 AGENTS.md 中添加禁止 AI 修改的文件`
 - 上游：`origin/develop`
-- 未提交改动：hash 路由（`src/lib/hash-route.ts`、`src/App.tsx`、`src/App.test.tsx`）、`README.md` 重写与 `docs/README.en.md`、三份交接文档。
+- 未提交改动：包名重命名（98 个 Java 文件、`backend/pom.xml`）与文档更新（`README.md`、`docs/README.en.md`、`docs/ARCHITECTURE.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`）。
