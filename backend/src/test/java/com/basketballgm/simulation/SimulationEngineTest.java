@@ -36,10 +36,16 @@ class SimulationEngineTest {
     SimulationResult repeated = engine.simulate(home, away, playerMap, 42);
 
     assertThat(result).isEqualTo(repeated);
-    assertThat(result.homeScore()).isEqualTo(101);
-    assertThat(result.awayScore()).isEqualTo(112);
+    assertThat(result.homeScore()).isEqualTo(145);
+    assertThat(result.awayScore()).isEqualTo(153);
     assertThat(result.homeStats()).extracting(SimulationPlayerStatResponse::playerName)
-        .containsExactly("Michael Jordan", "Stephen Curry", "LeBron James", "Shaquille O'Neal", "Tim Duncan");
+        .containsExactly("Michael Jordan", "Stephen Curry", "LeBron James", "Tim Duncan", "Shaquille O'Neal");
+    assertThat(result.homeStats().stream().mapToInt(SimulationPlayerStatResponse::minutes).sum())
+        .isEqualTo(240);
+    assertThat(result.awayStats().stream().mapToInt(SimulationPlayerStatResponse::minutes).sum())
+        .isEqualTo(240);
+    assertThat(result.homeStats()).allSatisfy(stat -> assertThat(stat.minutes()).isLessThanOrEqualTo(48));
+    assertThat(result.awayStats()).allSatisfy(stat -> assertThat(stat.minutes()).isLessThanOrEqualTo(48));
   }
 
   private List<LineupMemberRow> lineup(String lineupId, List<String> playerIds) {

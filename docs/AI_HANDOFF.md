@@ -35,6 +35,12 @@ git log -5 --oneline
 
 当前完成的工作是「后端包名重命名」：Java 包从 `com.links.basketballgm` 改为 `com.basketballgm`，Maven groupId 同步改为 `com.basketballgm`。方案与验收标准见 `docs/plans/current.md`。
 
+随后完成的工作是「LLM 请求参数按服务商适配」：公共请求体只保留所有 OpenAI 兼容服务都接受的字段（model、messages、max_tokens），temperature 移出公共层；服务商差异收敛到 `LlmProviderProfiles` 注册表，按 baseUrl 的 host 匹配档案定制请求。方案与验收标准见 `docs/plans/current.md`。
+
+当前完成的工作是「球队总上场时间约束」：本地规则引擎把每队总分钟归一化到 `240 + 25 × 加时次数`、把单人分钟钳制到 `48 + 5 × 加时次数` 以内（V1 无加时，恒为 240 与 48），AI 模拟的提示词写入同一组公式。约束同时落在两个本地引擎实现上：登录用户的本地对战走后端 `SimulationEngine.java`，游客走前端 `src/lib/simulator.ts`。方案与验收标准见 `docs/plans/current.md`。
+
+随后完成的工作是「社区总开关」：`app.forum.enabled`（环境变量 `FORUM_ENABLED`，默认 `true`）为 false 时整个 `ForumController` 不配进容器，社区 8 个接口全部返回 404，数据表与数据不受影响；配套修复 `SecurityConfig` 放行 ERROR 分发，否则未映射路径会经 `/error` 被入口点拦截成 401。`FORUM_ADMIN_USERNAMES` 在社区治理批次已实现，本次未改动。
+
 ## 已完成工作
 
 ### 前端游客体验
@@ -191,15 +197,31 @@ hash 路由改动已经包含在提交 `9de4388 feat: hash 路由：刷新停留
 
 README 重写与英文版已经包含在提交 `1bcee76 docs: 按当前玩法重写 README 并增加英文版`。
 
-包名重命名改动（尚未提交）：
+包名重命名改动已经包含在提交 `84e53ba refactor: 后端 Java 包从 com.links.basketballgm 重命名为 com.basketballgm`。
 
-- 后端源码：`backend/src/main/java/com/basketballgm/` 与 `backend/src/test/java/com/basketballgm/` 下全部 98 个 Java 文件，目录、package 声明与 import 从 `com.links.basketballgm` 改为 `com.basketballgm`
-- 构建坐标：`backend/pom.xml` 的 groupId 改为 `com.basketballgm`
-- 文档：`README.md`、`docs/README.en.md`、`docs/ARCHITECTURE.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+LLM 请求参数按服务商适配改动（尚未提交）：
+
+- 后端：`backend/src/main/java/com/basketballgm/llm/LlmProviderProfiles.java`（新）、`backend/src/main/java/com/basketballgm/llm/LlmSimulationClient.java`
+- 后端测试：`backend/src/test/java/com/basketballgm/llm/LlmProviderProfilesTest.java`（新）、`backend/src/test/java/com/basketballgm/llm/LlmSimulationClientRequestBodyTest.java`（新），删除 `LlmSimulationClientProviderOptionsTest.java`
+- 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+
+球队总上场时间约束改动（尚未提交）：
+
+- 前端引擎：`src/lib/simulator.ts`（新增 `distributeTeamMinutes` 归一化，派生统计基于归一化后的分钟）、`src/lib/simulator.test.ts`
+- 后端引擎：`backend/src/main/java/com/basketballgm/simulation/SimulationEngine.java`（与前端同算法的 `distributeTeamMinutes`，登录用户的本地对战走这里）、`backend/src/test/java/com/basketballgm/simulation/SimulationEngineTest.java`
+- 后端提示词：`backend/src/main/java/com/basketballgm/llm/LlmSimulationClient.java` 的 system 消息加入总分钟公式
+- 后端测试：`backend/src/test/java/com/basketballgm/llm/LlmSimulationClientRequestBodyTest.java` 断言提示词含约束文本
+- 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+
+社区总开关改动（尚未提交）：
+
+- 后端：`backend/src/main/resources/application.yml`（`app.forum.enabled`，环境变量 `FORUM_ENABLED`，默认 true）、`backend/src/main/java/com/basketballgm/forum/ForumController.java`（`@ConditionalOnProperty`）、`backend/src/main/java/com/basketballgm/config/SecurityConfig.java`（放行 ERROR 分发）
+- 后端测试：`backend/src/test/java/com/basketballgm/forum/ForumDisabledTest.java`（新）
+- 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
 ## 修改中的文件
 
-包名重命名的源码与文档处于未提交状态，清单见上一节。
+LLM 请求参数适配、球队总上场时间约束与社区总开关的源码与文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -311,9 +333,29 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 当前只有「删除任意帖子与评论」一个管理动作。用环境变量配置用户名即可覆盖，不值得为此引入角色表。`AdminRegistry` 统一判定，认证响应带 `admin` 字段让前端控制按钮显隐，服务端接口仍做最终鉴权。
 
+### 社区总开关用条件装配摘掉整个控制器
+
+个人 ICP 备案对社区功能敏感，被要求整改时响应必须是一次运维操作而不是一次开发任务。`ForumController` 标注 `@ConditionalOnProperty(name = "app.forum.enabled", havingValue = "true", matchIfMissing = true)`：开关关闭时控制器不进容器，8 个接口的映射全部消失返回 404，比在每个方法里加判断更难漏。`ForumService`、`ForumMapper`、`ModerationService` 不被其他模块引用，控制器消失后它们留在容器里不影响任何功能。数据表与数据不动，开关打开即恢复。前端不做功能标志下发：接口 404 时社区页沿用既有的加载失败提示。
+
+### 安全链放行 ERROR 分发
+
+未映射路径在真实容器里会经 `sendError` 触发 ERROR 分发到 `/error`；安全过滤链默认覆盖 ERROR 分发，`/error` 命中 `anyRequest().authenticated()`，未映射路径因此返回 401 而不是 404。MockMvc 不走真实 ERROR 分发，集成测试看不到这个差异，只有真实进程能复现。按 Spring 官方推荐加 `dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()` 后，`/error` 由 `BasicErrorController` 渲染出真实状态码。
+
 ### 页面状态以 URL hash 为准
 
 此前视图是 `App.tsx` 的内存状态，刷新即回到球员库。改用 hash 路由后，刷新从 hash 恢复当前页面，浏览器前进/后退可用，社区帖子详情获得可分享的独立链接。项目没有路由库，`useHashRoute` 手写 hash 读写与 `hashchange` 监听即可覆盖需求，不值得为此引入 react-router。受限视图条件不满足时只回退渲染结果、不改写 URL，用户登录后前进/后退仍能回到原链接。
+
+### LLM 请求参数按服务商档案适配
+
+用户可以配置任意 OpenAI 兼容服务，而各服务商对调优参数的约束互相冲突：Kimi K2.6/K2.7/K3 固定 temperature 值，传入其他值直接 400；OpenAI 推理模型拒绝 max_tokens，要求 max_completion_tokens。公共请求体因此只保留所有服务都接受的 model、messages、max_tokens，temperature 不再显式传入，各模型使用自己的默认值。服务商差异收敛到 `LlmProviderProfiles` 注册表：按 baseUrl 的 host 匹配档案后定制请求，Kimi 档案对 kimi-k2.5/kimi-k2.6 关闭思考（思考链会与战报 JSON 争抢输出预算），OpenAI 档案改写 max_completion_tokens 并开启 JSON 模式，OpenRouter 档案压低推理输出，未识别 host 保持保守请求体不动。新增一家服务商只是加一条档案，请求管线不变。
+
+### 球队总上场时间用最大余数法归一化
+
+篮球比赛每队总上场时间恒为 `240 + 25 × 加时次数`（48 分钟 × 5 人，加时 5 分钟 × 5 人）。本地引擎此前的分钟按角色独立随机生成，总和不满足这个约束。现在先按角色生成原始分钟，再用最大余数法把比例分配为恰好 240 的整数分钟：取整后的小数余量按从大到小逐个补齐，平手按球员顺序，同一种子结果可复现。归一化先于出手、篮板等派生统计，保证战报内部数据一致。引擎 V1 没有加时战报，加时次数恒为 0，公式保留在函数参数里供未来加时支持直接传入。同一公式也写入 AI 模拟的 system 提示词，约束云端战报满足同样的总分钟数；响应校验层不对总分钟做硬校验，模型偶发偏离时战报照常展示、由用户重试解决，这是已确认的取舍，避免校验过严导致可用战报被误拒。
+
+约束必须同时落在两个本地引擎实现上：登录用户的「本地引擎对战」由 `App.tsx` 调 `api.simulate` 走后端 `SimulationEngine.java`，只有游客走前端 `src/lib/simulator.ts`。两端算法保持逐行一致，同一种子在两端产出同一战报。
+
+单人上限与球队总分钟在同一个归一化函数里完成：取整后先钳制到 `48 + 5 × 加时` 上限，余量只分配给未达到上限的球员（被钳制球员的余数份额为负，自然排在分配队尾），直到余量分完。五人阵容在 240 总分钟与 48 上限下每人恰好 48 分钟，与真实比赛一致；人数更多时余量流向低分钟球员。提示词侧同样写入 "No player may exceed 48 minutes plus 5 per overtime period."，校验层不做硬校验的取舍不变。
 
 ## 本地运行条件
 
@@ -392,18 +434,27 @@ mvn test
 
 2026-09-19 包名重命名后验证：`mvn test` 34 项全部通过（真实 PostgreSQL），`npm run format:check` 通过。前端源码不引用 Java 包名，无需改动。
 
+2026-09-20 LLM 请求参数适配后验证：`mvn test` 41 项全部通过（新增 7 项服务商档案测试与 1 项真实 HTTP 请求体测试），`npm run format:check` 通过；`mvn package` 重新打包并以 `java -jar` 重启后端，健康检查通过。
+
+2026-09-20 球队总上场时间约束后验证：前端 49 项测试全部通过（新增 2 项总分钟归一化测试，种子 42 在归一化后恰为平局，总分一致性断言改用非平局种子 7 与基线 153:150），`npm run build` 与 `npm run format:check` 通过；后端 41 项测试全部通过（请求体测试新增提示词约束断言）；前后端服务均已重启，健康检查通过。
+
+2026-09-20 后端引擎同步总分钟约束后验证：后端 41 项测试全部通过（`SimulationEngineTest` 基线由 101:112 更新为 150:153，与前端同种子结果一致，并新增两队总分钟各为 240 的断言），`npm run format:check` 通过；`mvn package` 重新打包，前后端服务均已重启并通过健康检查。
+
+2026-09-20 单人上场时间上限后验证：前端 50 项测试全部通过（`simulator.test.ts` 新增单人不超过 48 分钟断言，种子 7 基线更新为 149:156），`npm run build` 与 `npm run format:check` 通过；后端 41 项测试全部通过（`SimulationEngineTest` 基线更新为 145:153 并新增单人上限断言，请求体测试新增提示词上限断言）；`mvn package` 重新打包，前后端服务均已重启并通过健康检查。
+
+2026-09-20 社区总开关后验证：后端 42 项测试全部通过（新增 `ForumDisabledTest` 断言开关关闭时 8 个接口全部 404），`npm run format:check` 通过；真实进程实测：`FORUM_ENABLED=false` 启动后匿名 GET 帖子列表与详情均 404，默认配置重启后恢复 200；前后端服务以默认配置运行中。
+
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交包名重命名与本次交接文档。
-3. 本地功能验证前重新 `mvn package` 并重启后端：正在运行的旧 jar 仍是重命名前的构建产物。
-4. 新功能从 `develop` 分支继续开发和验证。
-5. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
-6. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
+2. 提交 LLM 请求参数适配、球队总上场时间约束、社区总开关与本次交接文档。
+3. 新功能从 `develop` 分支继续开发和验证。
+4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
+5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
 
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`96f3a70 docs: 在 AGENTS.md 中添加禁止 AI 修改的文件`
+- 基线提交：`84e53ba refactor: 后端 Java 包从 com.links.basketballgm 重命名为 com.basketballgm`
 - 上游：`origin/develop`
-- 未提交改动：包名重命名（98 个 Java 文件、`backend/pom.xml`）与文档更新（`README.md`、`docs/README.en.md`、`docs/ARCHITECTURE.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`）。
+- 未提交改动：LLM 请求参数按服务商适配、球队总上场时间约束、社区总开关与交接文档更新。

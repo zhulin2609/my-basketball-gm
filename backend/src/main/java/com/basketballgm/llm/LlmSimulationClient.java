@@ -144,9 +144,8 @@ public class LlmSimulationClient {
   ) {
     ObjectNode root = objectMapper.createObjectNode();
     root.put("model", credential.model());
-    root.put("temperature", 0.4);
     root.put("max_tokens", outputTokenBudget(home.size() + away.size()));
-    addProviderOptions(root, credential.baseUrl());
+    LlmProviderProfiles.apply(root, credential.baseUrl());
     ArrayNode messages = root.putArray("messages");
     messages.addObject()
         .put("role", "system")
@@ -155,6 +154,8 @@ public class LlmSimulationClient {
             + REPORT_CONTRACT
             + "Include every supplied player exactly once in the matching side and copy playerId verbatim. "
             + "Use only non-negative integers. Use realistic minutes and box-score values. "
+            + "Minutes for each team must sum to exactly 240 plus 25 per overtime period. "
+            + "No player may exceed 48 minutes plus 5 per overtime period. "
             + "fgMade <= fgAttempted; threeMade <= threeAttempted <= fgAttempted. "
             + "points must be at least 2 * fgMade + threeMade and may exceed it only by plausible free throws. "
             + "The two teams must not finish tied. Output the JSON immediately.");
@@ -167,21 +168,6 @@ public class LlmSimulationClient {
       return objectMapper.writeValueAsString(root);
     } catch (JsonProcessingException exception) {
       throw new IllegalStateException("无法构造模型请求。", exception);
-    }
-  }
-
-  /** Provider-specific options stay at this boundary so the common report contract remains portable. */
-  void addProviderOptions(ObjectNode request, String baseUrl) {
-    URI uri = URI.create(baseUrl);
-    String host = uri.getHost();
-    if (host == null) return;
-
-    if (host.equals("api.openai.com")) {
-      request.set("response_format", objectMapper.createObjectNode().put("type", "json_object"));
-    } else if (host.equals("openrouter.ai") || host.endsWith(".openrouter.ai")) {
-      request.putObject("reasoning")
-          .put("effort", "minimal")
-          .put("exclude", true);
     }
   }
 

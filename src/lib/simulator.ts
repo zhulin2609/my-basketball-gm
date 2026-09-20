@@ -8,6 +8,47 @@ const seeded = (seed: number) => {
 // 非激活球员不会获得分钟数，也不会出现在技术统计中。
 const active = (lineup: Lineup) => lineup.members.filter((item) => !item.inactive);
 
+// 球队总上场时间 = 240 + 25 × 加时次数（48 分钟 × 5 人，每次加时 5 分钟 × 5 人）。
+// 单人上场时间上限 = 48 + 5 × 加时次数。
+// V1 不提供加时战报，加时次数恒为 0；公式保留在参数里，未来支持加时时直接传入。
+const REGULATION_TEAM_MINUTES = 240;
+const OVERTIME_TEAM_MINUTES = 25;
+const REGULATION_PLAYER_MINUTES = 48;
+const OVERTIME_PLAYER_MINUTES = 5;
+
+// 最大余数法把球队总分钟归一化到目标值：先按原始分钟的比例取整并钳制到单人上限，
+// 余数按小数部分从大到小分配给未达到上限的球员。平手按数组顺序，保证同一种子结果可复现。
+function distributeTeamMinutes(rawMinutes: number[], overtimePeriods: number): number[] {
+  const target = REGULATION_TEAM_MINUTES + OVERTIME_TEAM_MINUTES * overtimePeriods;
+  const playerCap = REGULATION_PLAYER_MINUTES + OVERTIME_PLAYER_MINUTES * overtimePeriods;
+  const rawTotal = rawMinutes.reduce((sum, value) => sum + value, 0);
+  if (rawTotal <= 0) return rawMinutes;
+  const bases = rawMinutes.map((value) =>
+    Math.min(playerCap, Math.max(1, Math.floor((value * target) / rawTotal))),
+  );
+  let remainder = target - bases.reduce((sum, value) => sum + value, 0);
+  const order = rawMinutes
+    .map((value, index) => ({
+      index,
+      fraction: (value * target) / rawTotal - bases[index],
+    }))
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  const result = [...bases];
+  let progress = true;
+  while (remainder > 0 && progress) {
+    progress = false;
+    for (const entry of order) {
+      if (remainder <= 0) break;
+      if (result[entry.index] < playerCap) {
+        result[entry.index] += 1;
+        remainder -= 1;
+        progress = true;
+      }
+    }
+  }
+  return result;
+}
+
 function makeStats(
   lineup: Lineup,
   playerMap: Map<string, Player>,
@@ -19,10 +60,15 @@ function makeStats(
     (sum, m) => sum + (playerMap.get(m.playerId)?.shotTendency ?? 70),
     0,
   );
+  // 先按角色生成原始分钟并归一化，派生统计全部基于归一化后的分钟，保持数据内部一致。
+  const rawMinutes = members.map((member) =>
+    Math.max(10, Math.round((member.starter ? 32 : 18) + (rand() - 0.5) * 8)),
+  );
+  const minutesList = distributeTeamMinutes(rawMinutes, 0);
   return members
     .map((member, index) => {
       const p = playerMap.get(member.playerId)!;
-      const minutes = Math.max(10, Math.round((member.starter ? 32 : 18) + (rand() - 0.5) * 8));
+      const minutes = minutesList[index];
       // 48 is a team-level shot budget distributed by offensive role; the remainder is
       // represented by the small random term and free throws, keeping V1 scores credible.
       const share = p.shotTendency / totalUsage;

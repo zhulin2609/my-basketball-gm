@@ -40,10 +40,52 @@ describe('simulate', () => {
   });
 
   it('reports team scores that equal the individual player points', () => {
-    const result = simulate(home, away, players, 42);
+    const result = simulate(home, away, players, 7);
 
     expect(result.homeScore).toBe(result.homeStats.reduce((sum, stat) => sum + stat.points, 0));
     expect(result.awayScore).toBe(result.awayStats.reduce((sum, stat) => sum + stat.points, 0));
-    expect([result.homeScore, result.awayScore]).toEqual([101, 112]);
+    expect([result.homeScore, result.awayScore]).toEqual([149, 156]);
+  });
+
+  it('normalizes each team to exactly 240 total minutes without overtime', () => {
+    for (const seed of [42, 7, 1998]) {
+      const result = simulate(home, away, players, seed);
+
+      expect(result.homeStats.reduce((sum, stat) => sum + stat.minutes, 0)).toBe(240);
+      expect(result.awayStats.reduce((sum, stat) => sum + stat.minutes, 0)).toBe(240);
+    }
+  });
+
+  it('caps every player at 48 minutes without overtime', () => {
+    for (const seed of [42, 7, 1998]) {
+      const result = simulate(home, away, players, seed);
+
+      [...result.homeStats, ...result.awayStats].forEach((stat) =>
+        expect(stat.minutes).toBeLessThanOrEqual(48),
+      );
+    }
+  });
+
+  it('keeps the 240-minute total and positive minutes with a bench rotation', () => {
+    const deepHome = createLineup('deep', [
+      'curry',
+      'jordan',
+      'lebron',
+      'duncan',
+      'shaq',
+      'kobe',
+      'bird',
+      'garnett',
+      'olajuwon',
+    ]);
+    deepHome.members.forEach((member, index) => {
+      member.starter = index < 5;
+    });
+
+    const result = simulate(deepHome, away, players, 42);
+
+    expect(result.homeStats).toHaveLength(9);
+    expect(result.homeStats.reduce((sum, stat) => sum + stat.minutes, 0)).toBe(240);
+    result.homeStats.forEach((stat) => expect(stat.minutes).toBeGreaterThan(0));
   });
 });

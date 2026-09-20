@@ -21,6 +21,9 @@ app:
     # Comma-separated usernames allowed to delete any community post or comment.
     usernames: ${FORUM_ADMIN_USERNAMES:}
   forum:
+    # Master switch for the whole community feature: false unmaps every forum endpoint (404)
+    # while tables and data stay untouched, so rectification is an env change plus a restart.
+    enabled: ${FORUM_ENABLED:true}
     rate-limit:
       comment-per-second: ${FORUM_COMMENT_PER_SECOND:1}
       comment-per-day: ${FORUM_COMMENT_PER_DAY:50}

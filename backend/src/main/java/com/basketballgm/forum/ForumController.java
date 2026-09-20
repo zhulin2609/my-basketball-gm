@@ -5,6 +5,7 @@ import com.basketballgm.moderation.ModerationService;
 import com.basketballgm.user.CurrentUser;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,10 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Community forum for shared lineups. The three GET endpoints also serve anonymous visitors,
- * so the JWT principal is nullable there and only personalizes the mine flag.
+ * so the JWT principal is nullable there and only personalizes the mine flag. The whole
+ * controller is unmapped (404) when app.forum.enabled is false.
  */
 @RestController
 @RequestMapping("/api/v1/forum")
+@ConditionalOnProperty(name = "app.forum.enabled", havingValue = "true", matchIfMissing = true)
 public class ForumController {
   private final ForumService service;
   private final CurrentUser currentUser;

@@ -1,6 +1,7 @@
 package com.basketballgm.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import jakarta.servlet.DispatcherType;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -41,6 +42,9 @@ public class SecurityConfig {
         .cors(Customizer.withDefaults())
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authorize -> authorize
+            // Error dispatches must stay public, otherwise an unmapped URL (e.g. the forum with
+            // app.forum.enabled=false) surfaces as 401 instead of the real 404.
+            .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
             // Only credential submission is public. Keeping /auth/me protected prevents
             // an accidental future auth endpoint from becoming anonymous by wildcard.
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
