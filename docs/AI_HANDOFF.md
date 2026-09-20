@@ -161,7 +161,6 @@ git log -5 --oneline
 
 ## 未完成工作
 
-- hash 路由与 README（含英文版 `docs/README.en.md`）的改动尚未提交。
 - 腾讯云 CMS 需要真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 才会激活；当前代码就绪、配置门控默认关闭，本地词表始终生效。
 - 腾讯云部署仍属于后续工作，当前仓库只验证本地运行。
 
@@ -199,13 +198,13 @@ README 重写与英文版已经包含在提交 `1bcee76 docs: 按当前玩法重
 
 包名重命名改动已经包含在提交 `84e53ba refactor: 后端 Java 包从 com.links.basketballgm 重命名为 com.basketballgm`。
 
-LLM 请求参数按服务商适配改动（尚未提交）：
+LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 
 - 后端：`backend/src/main/java/com/basketballgm/llm/LlmProviderProfiles.java`（新）、`backend/src/main/java/com/basketballgm/llm/LlmSimulationClient.java`
 - 后端测试：`backend/src/test/java/com/basketballgm/llm/LlmProviderProfilesTest.java`（新）、`backend/src/test/java/com/basketballgm/llm/LlmSimulationClientRequestBodyTest.java`（新），删除 `LlmSimulationClientProviderOptionsTest.java`
 - 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
-球队总上场时间约束改动（尚未提交）：
+球队总上场时间约束改动已经包含在提交 `74e5bf5`：
 
 - 前端引擎：`src/lib/simulator.ts`（新增 `distributeTeamMinutes` 归一化，派生统计基于归一化后的分钟）、`src/lib/simulator.test.ts`
 - 后端引擎：`backend/src/main/java/com/basketballgm/simulation/SimulationEngine.java`（与前端同算法的 `distributeTeamMinutes`，登录用户的本地对战走这里）、`backend/src/test/java/com/basketballgm/simulation/SimulationEngineTest.java`
@@ -213,7 +212,7 @@ LLM 请求参数按服务商适配改动（尚未提交）：
 - 后端测试：`backend/src/test/java/com/basketballgm/llm/LlmSimulationClientRequestBodyTest.java` 断言提示词含约束文本
 - 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
-社区总开关改动（尚未提交）：
+社区总开关改动已经包含在提交 `74e5bf5`：
 
 - 后端：`backend/src/main/resources/application.yml`（`app.forum.enabled`，环境变量 `FORUM_ENABLED`，默认 true）、`backend/src/main/java/com/basketballgm/forum/ForumController.java`（`@ConditionalOnProperty`）、`backend/src/main/java/com/basketballgm/config/SecurityConfig.java`（放行 ERROR 分发）
 - 后端测试：`backend/src/test/java/com/basketballgm/forum/ForumDisabledTest.java`（新）
@@ -221,7 +220,7 @@ LLM 请求参数按服务商适配改动（尚未提交）：
 
 ## 修改中的文件
 
-LLM 请求参数适配、球队总上场时间约束与社区总开关的源码与文档处于未提交状态，清单见上一节。
+LLM 请求参数适配、球队总上场时间约束与社区总开关改动已经包含在提交 `74e5bf5 feat: LLM 请求参数按服务商适配、对战上场时间约束与社区总开关`。
 
 ## 当前已知 bug
 
@@ -447,7 +446,7 @@ mvn test
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
-2. 提交 LLM 请求参数适配、球队总上场时间约束、社区总开关与本次交接文档。
+2. 新功能从 `develop` 分支继续开发和验证。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
@@ -455,6 +454,6 @@ mvn test
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`84e53ba refactor: 后端 Java 包从 com.links.basketballgm 重命名为 com.basketballgm`
+- 基线提交：`74e5bf5 feat: LLM 请求参数按服务商适配、对战上场时间约束与社区总开关`
 - 上游：`origin/develop`
-- 未提交改动：LLM 请求参数按服务商适配、球队总上场时间约束、社区总开关与交接文档更新。
+- 未提交改动：无。

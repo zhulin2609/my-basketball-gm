@@ -38,5 +38,5 @@
 
 ## 当前 Git 状态
 
-- 分支：`develop`，基线提交：`84e53ba refactor: 后端 Java 包从 com.links.basketballgm 重命名为 com.basketballgm`。
-- LLM 请求参数适配、上场时间约束与社区总开关改动未提交，文件清单见 `docs/AI_HANDOFF.md`。
+- 分支：`develop`，基线提交：`74e5bf5 feat: LLM 请求参数按服务商适配、对战上场时间约束与社区总开关`。
+- 工作区干净，无未提交改动。
