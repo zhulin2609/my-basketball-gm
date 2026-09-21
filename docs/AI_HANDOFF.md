@@ -220,7 +220,7 @@ LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 - 后端测试：`backend/src/test/java/com/basketballgm/forum/ForumDisabledTest.java`（新）
 - 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
-阵容成员展示顺序改动（尚未提交）：
+阵容成员展示顺序改动已经包含在提交 `e9531f1`：
 
 - 前端：`src/lib/member-display-order.ts`（新，共享排序函数）、`src/App.tsx`（阵容编辑表与社区帖子成员表接入）
 - 前端测试：`src/lib/member-display-order.test.ts`（新）
@@ -228,7 +228,7 @@ LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 
 ## 修改中的文件
 
-阵容成员展示顺序的源码与文档处于未提交状态，清单见上一节。
+阵容成员展示顺序改动已经包含在提交 `e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`。
 
 ## 当前已知 bug
 
@@ -468,6 +468,6 @@ mvn test
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`bd26b91 docs: 同步交接文档的 Git 状态与提交记录`（`main` 已快进合并到同一提交）
+- 基线提交：`e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`
 - 上游：`origin/develop`
-- 未提交改动：阵容成员展示顺序统一与交接文档更新。
+- 未提交改动：无。`main` 停在 `bd26b91`，落后 `develop` 一个提交。
