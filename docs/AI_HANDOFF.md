@@ -469,5 +469,5 @@ mvn test
 ## 当前 Git 状态
 
 - 分支：`main`（本地停留分支；后续开发先切回 `develop`）。
-- `main`、`develop`、`origin/main`、`origin/develop` 全部指向同一提交 `f53c1fa docs: 同步交接文档的 Git 状态与提交记录`。
-- 未提交改动：无。
+- `main`、`develop` 与各自远端分支保持同步，指向同一提交；工作区干净，无未提交改动。
+- 最近的功能提交：`e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`。
