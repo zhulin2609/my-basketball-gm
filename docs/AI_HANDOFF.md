@@ -1,6 +1,6 @@
 # AI Handoff
 
-更新时间：2026-09-19
+更新时间：2026-09-21
 
 ## 开始工作前
 
@@ -228,7 +228,7 @@ LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 
 ## 修改中的文件
 
-阵容成员展示顺序改动已经包含在提交 `e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`。
+无。工作区干净，全部改动已提交并推送。
 
 ## 当前已知 bug
 
@@ -457,17 +457,17 @@ mvn test
 
 2026-09-20 阵容成员展示顺序统一后验证：前端 52 项测试全部通过（新增 `member-display-order.test.ts` 2 项），`npm run build` 与 `npm run format:check` 通过；纯前端改动，Vite 热更新生效，无需重启服务。
 
+2026-09-21 Session 收尾验证：前端 52 项测试全部通过，生产构建通过，Prettier 通过；后端 42 项测试全部通过（真实 PostgreSQL）。`main` 与 `develop` 及各自远端分支指向同一提交，工作区干净。
+
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
 2. 新功能从 `develop` 分支继续开发和验证。
-3. 新功能从 `develop` 分支继续开发和验证。
-4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
-5. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，并用 `FORUM_ADMIN_USERNAMES` 指定管理员。
+3. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
+4. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，用 `FORUM_ADMIN_USERNAMES` 指定管理员；需要关停社区时在服务器环境变量写 `FORUM_ENABLED=false` 并重启进程。
 
 ## 当前 Git 状态
 
-- 分支：`develop`
-- 基线提交：`e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`
-- 上游：`origin/develop`
-- 未提交改动：无。`main` 停在 `bd26b91`，落后 `develop` 一个提交。
+- 分支：`main`（本地停留分支；后续开发先切回 `develop`）。
+- `main`、`develop`、`origin/main`、`origin/develop` 全部指向同一提交 `f53c1fa docs: 同步交接文档的 Git 状态与提交记录`。
+- 未提交改动：无。
