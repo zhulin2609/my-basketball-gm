@@ -41,6 +41,8 @@ git log -5 --oneline
 
 随后完成的工作是「社区总开关」：`app.forum.enabled`（环境变量 `FORUM_ENABLED`，默认 `true`）为 false 时整个 `ForumController` 不配进容器，社区 8 个接口全部返回 404，数据表与数据不受影响；配套修复 `SecurityConfig` 放行 ERROR 分发，否则未映射路径会经 `/error` 被入口点拦截成 401。`FORUM_ADMIN_USERNAMES` 在社区治理批次已实现，本次未改动。
 
+当前完成的工作是「阵容成员展示顺序统一」：`src/lib/member-display-order.ts` 新增 `orderMembersForDisplay`，激活的首发按 C→PF→SF→SG→PG 排在前五位，其余成员保持原相对顺序；阵容编辑表与社区帖子成员表共用同一规则，展示排序不改写存储顺序。
+
 ## 已完成工作
 
 ### 前端游客体验
@@ -218,9 +220,15 @@ LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 - 后端测试：`backend/src/test/java/com/basketballgm/forum/ForumDisabledTest.java`（新）
 - 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
+阵容成员展示顺序改动（尚未提交）：
+
+- 前端：`src/lib/member-display-order.ts`（新，共享排序函数）、`src/App.tsx`（阵容编辑表与社区帖子成员表接入）
+- 前端测试：`src/lib/member-display-order.test.ts`（新）
+- 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+
 ## 修改中的文件
 
-LLM 请求参数适配、球队总上场时间约束与社区总开关改动已经包含在提交 `74e5bf5 feat: LLM 请求参数按服务商适配、对战上场时间约束与社区总开关`。
+阵容成员展示顺序的源码与文档处于未提交状态，清单见上一节。
 
 ## 当前已知 bug
 
@@ -340,6 +348,10 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 未映射路径在真实容器里会经 `sendError` 触发 ERROR 分发到 `/error`；安全过滤链默认覆盖 ERROR 分发，`/error` 命中 `anyRequest().authenticated()`，未映射路径因此返回 401 而不是 404。MockMvc 不走真实 ERROR 分发，集成测试看不到这个差异，只有真实进程能复现。按 Spring 官方推荐加 `dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()` 后，`/error` 由 `BasicErrorController` 渲染出真实状态码。
 
+### 阵容成员展示顺序收敛到一个函数
+
+阵容编辑表与社区帖子成员表需要同一条规则：激活的首发按 C→PF→SF→SG→PG 站位顺序排在前五位，未激活的首发按替补对待，其余成员保持原相对顺序。规则抽成 `orderMembersForDisplay` 供两处复用，避免两处各写一份比较器日后分叉。排序只作用于渲染入参，成员的存储顺序（`slot_index` 与快照 jsonb 数组）不变。
+
 ### 页面状态以 URL hash 为准
 
 此前视图是 `App.tsx` 的内存状态，刷新即回到球员库。改用 hash 路由后，刷新从 hash 恢复当前页面，浏览器前进/后退可用，社区帖子详情获得可分享的独立链接。项目没有路由库，`useHashRoute` 手写 hash 读写与 `hashchange` 监听即可覆盖需求，不值得为此引入 react-router。受限视图条件不满足时只回退渲染结果、不改写 URL，用户登录后前进/后退仍能回到原链接。
@@ -443,6 +455,8 @@ mvn test
 
 2026-09-20 社区总开关后验证：后端 42 项测试全部通过（新增 `ForumDisabledTest` 断言开关关闭时 8 个接口全部 404），`npm run format:check` 通过；真实进程实测：`FORUM_ENABLED=false` 启动后匿名 GET 帖子列表与详情均 404，默认配置重启后恢复 200；前后端服务以默认配置运行中。
 
+2026-09-20 阵容成员展示顺序统一后验证：前端 52 项测试全部通过（新增 `member-display-order.test.ts` 2 项），`npm run build` 与 `npm run format:check` 通过；纯前端改动，Vite 热更新生效，无需重启服务。
+
 ## 下一步具体行动
 
 1. 读取必需文档并检查 Git 状态。
@@ -454,6 +468,6 @@ mvn test
 ## 当前 Git 状态
 
 - 分支：`develop`
-- 基线提交：`74e5bf5 feat: LLM 请求参数按服务商适配、对战上场时间约束与社区总开关`
+- 基线提交：`bd26b91 docs: 同步交接文档的 Git 状态与提交记录`（`main` 已快进合并到同一提交）
 - 上游：`origin/develop`
-- 未提交改动：无。
+- 未提交改动：阵容成员展示顺序统一与交接文档更新。

@@ -16,6 +16,7 @@ import {
   starterLineup,
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
+import { orderMembersForDisplay } from '@/lib/member-display-order';
 import { selectPlayerOfTheGame } from '@/lib/player-of-the-game';
 import { simulate } from '@/lib/simulator';
 import { usePagination } from '@/lib/use-pagination';
@@ -37,7 +38,6 @@ type View = RouteView;
 
 // 位置是阵容条目的属性，而不是球员的固定属性：同一球员在不同阵容中可打不同位置。
 const positions = STARTER_POSITIONS;
-const starterDisplayOrder: Position[] = ['C', 'PF', 'SF', 'SG', 'PG'];
 const PLAYER_PAGE_SIZE = 12;
 const PICKER_PAGE_SIZE = 9;
 const COMMUNITY_PAGE_SIZE = 10;
@@ -1501,21 +1501,9 @@ function LineupWorkbench({
     return player ? [{ ...member, player }] : [];
   });
   // 仅改变编辑表格的显示顺序，不改写阵容成员的存储顺序，避免排序影响数据本身。
-  const displayMembers = members
-    .map((member, index) => ({ ...member, index }))
-    .sort((left, right) => {
-      const leftIsStarter = left.starter && !left.inactive;
-      const rightIsStarter = right.starter && !right.inactive;
-
-      if (leftIsStarter !== rightIsStarter) return leftIsStarter ? -1 : 1;
-      if (leftIsStarter && rightIsStarter) {
-        return (
-          starterDisplayOrder.indexOf(left.position) - starterDisplayOrder.indexOf(right.position)
-        );
-      }
-
-      return left.index - right.index;
-    });
+  const displayMembers = orderMembersForDisplay(
+    members.map((member, index) => ({ ...member, index })),
+  );
   const {
     activeCount,
     starterCount,
@@ -2504,7 +2492,7 @@ function CommunityPostView({
           <span>{t('common.role')}</span>
           <span>{t('common.status')}</span>
         </div>
-        {post.members.map((member) => (
+        {orderMembersForDisplay(post.members).map((member) => (
           <div className="roster-row" key={member.playerId}>
             <span className="name-cell">
               <i style={{ background: member.player.accent }}>{member.player.initials}</i>
