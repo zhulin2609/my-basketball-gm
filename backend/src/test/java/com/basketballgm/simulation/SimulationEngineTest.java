@@ -82,6 +82,7 @@ class SimulationEngineTest {
         id,
         false,
         name,
+        null,
         initials,
         "test",
         "test",

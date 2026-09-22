@@ -554,6 +554,13 @@ nav button.active:after {
 .player-info b {
   font-size: 13px;
 }
+.player-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .player-info small,
 .player-info em {
   font-size: 10px;
@@ -591,6 +598,9 @@ nav button.active:after {
   display: flex;
   gap: 15px;
   align-items: center;
+}
+.detail-top > div {
+  min-width: 0;
 }
 .detail-top h2 {
   font: 800 22px 'Playfair Display';
@@ -1020,6 +1030,7 @@ nav button.active:after {
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 .name-cell i,
 .stat-table i {
@@ -1035,6 +1046,7 @@ nav button.active:after {
 }
 .name-cell b {
   font-size: 12px;
+  min-width: 0;
 }
 .name-cell small {
   display: block;

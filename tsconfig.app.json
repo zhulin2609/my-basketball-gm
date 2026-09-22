@@ -10,7 +10,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@catalog/*": ["./backend/src/main/resources/*"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { historicalCatalogCoverage } from '@/data/historical-players.generated';
+import { historicalCatalogCoverage, historicalPlayers } from '@/data/historical-players.generated';
 import { players } from '@/data/players';
+import historicalPlayerChineseNames from '@catalog/player-catalog-chinese-names.json';
 import type { Ratings } from '@/types';
 
 const ratingKeys = [
@@ -60,6 +61,15 @@ describe('historical player catalog', () => {
     expect(historicalCatalogCoverage.allNbaSeasons).toEqual(annualSeasons);
     expect(historicalCatalogCoverage.allDefenseSeasons).toEqual(annualSeasons);
     expect(historicalCatalogCoverage.fmvpSeasons).toEqual(annualSeasons);
+  });
+
+  it('provides a Chinese name for every historical catalog player', () => {
+    expect(Object.keys(historicalPlayerChineseNames)).toHaveLength(historicalPlayers.length);
+    expect(
+      players
+        .filter((player) => historicalPlayers.some(({ id }) => id === player.id))
+        .every((player) => Boolean(player.chineseName?.trim())),
+    ).toBe(true);
   });
 
   it('keeps names, physical data and generated ratings valid', () => {

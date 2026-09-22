@@ -90,6 +90,49 @@ describe('player list pagination', () => {
     expect(container.querySelector('.pagination span')?.textContent).toMatch(/第 1 \/|Page 1 of/);
   });
 
+  it('finds players by Chinese name and keeps the full name on one visual line', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '中文' }));
+    await user.type(screen.getByPlaceholderText(/搜索球员或打法|Search players/i), '乔丹');
+
+    const playerNames = await screen.findAllByText('Michael Jordan(迈克尔·乔丹)');
+    expect(playerNames[0].classList.contains('player-name')).toBe(true);
+  });
+
+  it('finds available roster players by Chinese name', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '中文' }));
+    await user.click(screen.getByRole('button', { name: /我的阵容|My Roster/i }));
+    await user.type(screen.getByLabelText(/搜索未加入的球员|Search players not already/i), '乔丹');
+
+    const playerName = await screen.findByText('Michael Jordan(迈克尔·乔丹)');
+    expect(playerName.classList.contains('player-name')).toBe(true);
+  });
+
+  it('locks public-player identity fields in the editor', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '中文' }));
+    const playerNames = await screen.findAllByText('Michael Jordan(迈克尔·乔丹)');
+    await user.click(playerNames[0]);
+    await user.click(screen.getByRole('button', { name: /编辑球员属性|Edit player attributes/i }));
+
+    expect(screen.getByLabelText(/英文名|English name/i)).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText(/中文名|Chinese name/i)).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText(/缩写|Initials/i)).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText(/身高（英尺）|Height \(ft\)/i)).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText(/身高（英寸）|Height \(in\)/i)).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText(/体重（磅）|Weight \(lb\)/i)).toHaveProperty('disabled', true);
+  });
+
   it('paginates the candidate players on the roster page', async () => {
     const user = userEvent.setup();
     const { App } = await import('@/App');

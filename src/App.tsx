@@ -17,6 +17,7 @@ import {
 } from '@/lib/repository';
 import { STARTER_POSITIONS, validateLineup } from '@/lib/lineup-validation';
 import { orderMembersForDisplay } from '@/lib/member-display-order';
+import { displayPlayerName, playerSearchText } from '@/lib/player-display';
 import { selectPlayerOfTheGame } from '@/lib/player-of-the-game';
 import { simulate } from '@/lib/simulator';
 import { usePagination } from '@/lib/use-pagination';
@@ -1025,7 +1026,8 @@ function PlayerLibrary({
   loadError,
   onRetry,
 }: PlayerLibraryProps & { loadError: string | null; onRetry: () => void }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
   const [query, setQuery] = useState('');
   const [pos, setPos] = useState<'ALL' | Position>('ALL');
   const [sort, setSort] = useState<'overall' | 'threePoint' | 'salaryUsd'>('overall');
@@ -1037,7 +1039,7 @@ function PlayerLibrary({
       players
         .filter(
           (p) =>
-            (!query || `${p.name} ${p.archetype}`.toLowerCase().includes(query.toLowerCase())) &&
+            (!query || playerSearchText(p).includes(query.toLocaleLowerCase())) &&
             (pos === 'ALL' || p.defaultPosition === pos),
         )
         .sort((a, b) => (sort === 'overall' ? average(b) - average(a) : b[sort] - a[sort])),
@@ -1048,6 +1050,7 @@ function PlayerLibrary({
     setEditing({
       id: crypto.randomUUID(),
       name: 'Custom Player',
+      chineseName: '',
       initials: 'CP',
       peakSeason: 'Custom',
       peakTeam: 'Free Agent',
@@ -1134,7 +1137,9 @@ function PlayerLibrary({
                   {p.initials}
                 </span>
                 <span className="player-info">
-                  <b>{p.name}</b>
+                  <b className="player-name" title={displayPlayerName(p, locale)}>
+                    {displayPlayerName(p, locale)}
+                  </b>
                   <small>
                     {p.peakSeason} · {p.peakTeam}
                   </small>
@@ -1185,7 +1190,9 @@ function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
           <p className="eyebrow">
             {player.defaultPosition} · {player.peakSeason}
           </p>
-          <h2>{player.name}</h2>
+          <h2 className="player-name" title={displayPlayerName(player, locale)}>
+            {displayPlayerName(player, locale)}
+          </h2>
           <p>{player.archetype}</p>
         </div>
       </div>
@@ -1235,13 +1242,20 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
     label: t(`ratings.${key}`),
   }));
   // 编辑草稿与已保存数据分离，取消时不会污染当前球员档案或阵容中的能力值。
-  const [draft, setDraft] = useState<Player>(player);
+  const [draft, setDraft] = useState<Player>({ ...player, chineseName: player.chineseName ?? '' });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const setText = (
     key: keyof Pick<
       Player,
-      'name' | 'initials' | 'peakSeason' | 'peakTeam' | 'archetype' | 'bio' | 'accent'
+      | 'name'
+      | 'chineseName'
+      | 'initials'
+      | 'peakSeason'
+      | 'peakTeam'
+      | 'archetype'
+      | 'bio'
+      | 'accent'
     >,
     value: string,
   ) => {
@@ -1287,6 +1301,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
       await onSave({
         ...draft,
         name: draft.name.trim(),
+        chineseName: draft.chineseName?.trim() || undefined,
         initials: draft.initials.trim().slice(0, 4),
       });
     } catch (saveError) {
@@ -1308,12 +1323,25 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
       </div>
       <div className="editor-grid">
         <label>
-          {t('editor.name')}
-          <input value={draft.name} onChange={(event) => setText('name', event.target.value)} />
+          {t('editor.englishName')}
+          <input
+            disabled={!player.isCustom}
+            value={draft.name}
+            onChange={(event) => setText('name', event.target.value)}
+          />
+        </label>
+        <label>
+          {t('editor.chineseName')}
+          <input
+            disabled={!player.isCustom}
+            value={draft.chineseName ?? ''}
+            onChange={(event) => setText('chineseName', event.target.value)}
+          />
         </label>
         <label>
           {t('editor.initials')}
           <input
+            disabled={!player.isCustom}
             value={draft.initials}
             maxLength={4}
             onChange={(event) => setText('initials', event.target.value)}
@@ -1338,6 +1366,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
         <label>
           {t('editor.heightFeet')}
           <input
+            disabled={!player.isCustom}
             type="number"
             min="4"
             max="8"
@@ -1348,6 +1377,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
         <label>
           {t('editor.heightInches')}
           <input
+            disabled={!player.isCustom}
             type="number"
             min="0"
             max="11"
@@ -1358,6 +1388,7 @@ function PlayerEditor({ player, onCancel, onSave }: PlayerEditorProps) {
         <label>
           {t('editor.weight')}
           <input
+            disabled={!player.isCustom}
             type="number"
             min="80"
             max="500"
@@ -1443,7 +1474,8 @@ function LineupWorkbench({
   onOpenSharedPost,
   syncError,
 }: LineupWorkbenchProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
   const [opponentId, setOpponentId] = useState(lineups.find((l) => l.id !== selected.id)?.id ?? '');
   const [playerQuery, setPlayerQuery] = useState('');
   const [starterLimitMessage, setStarterLimitMessage] = useState<string | null>(null);
@@ -1517,7 +1549,7 @@ function LineupWorkbench({
     .filter(
       (player) =>
         !selected.members.some((member) => member.playerId === player.id) &&
-        `${player.name} ${player.archetype}`.toLowerCase().includes(playerQuery.toLowerCase()),
+        playerSearchText(player).includes(playerQuery.toLocaleLowerCase()),
     )
     .sort((a, b) => average(b) - average(a));
   const pagination = usePagination(availablePlayers, PICKER_PAGE_SIZE, playerQuery);
@@ -1697,7 +1729,9 @@ function LineupWorkbench({
               >
                 <i style={{ background: player.accent }}>{player.initials}</i>
                 <span>
-                  <b>{player.name}</b>
+                  <b className="player-name" title={displayPlayerName(player, locale)}>
+                    {displayPlayerName(player, locale)}
+                  </b>
                   <small>
                     {player.defaultPosition} · {average(player)} OVR · {player.archetype}
                   </small>
@@ -1731,7 +1765,9 @@ function LineupWorkbench({
               <span className="name-cell">
                 <i style={{ background: player.accent }}>{player.initials}</i>
                 <b>
-                  {player.name}
+                  <span className="player-name" title={displayPlayerName(player, locale)}>
+                    {displayPlayerName(player, locale)}
+                  </span>
                   <small>
                     {average(player)} OVR · {player.archetype}
                   </small>
@@ -2497,7 +2533,9 @@ function CommunityPostView({
             <span className="name-cell">
               <i style={{ background: member.player.accent }}>{member.player.initials}</i>
               <b>
-                {member.player.name}
+                <span className="player-name" title={displayPlayerName(member.player, locale)}>
+                  {displayPlayerName(member.player, locale)}
+                </span>
                 <small>
                   {average(member.player)} OVR · {member.player.archetype}
                 </small>

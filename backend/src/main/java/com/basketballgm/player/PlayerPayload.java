@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 /** The JSON shape shared by the browser and the player persistence boundary. */
 public record PlayerPayload(
     @NotBlank @Size(max = 120) String name,
+    @Size(max = 120) String chineseName,
     @NotBlank @Pattern(regexp = ".{1,4}") String initials,
     @NotBlank @Size(max = 20) String peakSeason,
     @Size(max = 120) String peakTeam,

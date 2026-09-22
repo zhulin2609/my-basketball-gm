@@ -1,5 +1,9 @@
 import type { Player } from '@/types';
 import { historicalPlayers } from '@/data/historical-players.generated';
+import historicalPlayerChineseNames from '@catalog/player-catalog-chinese-names.json';
+
+const historicalPlayerChineseNameById: Readonly<Record<string, string>> =
+  historicalPlayerChineseNames;
 
 const rating = (
   overrides: Partial<
@@ -48,6 +52,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'jordan',
     name: 'Michael Jordan',
+    chineseName: '迈克尔·乔丹',
     initials: 'MJ',
     peakSeason: '1990–91',
     peakTeam: 'Chicago',
@@ -76,6 +81,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'lebron',
     name: 'LeBron James',
+    chineseName: '勒布朗·詹姆斯',
     initials: 'LJ',
     peakSeason: '2012–13',
     peakTeam: 'Miami',
@@ -107,6 +113,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'curry',
     name: 'Stephen Curry',
+    chineseName: '斯蒂芬·库里',
     initials: 'SC',
     peakSeason: '2015–16',
     peakTeam: 'Golden State',
@@ -138,6 +145,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'duncan',
     name: 'Tim Duncan',
+    chineseName: '蒂姆·邓肯',
     initials: 'TD',
     peakSeason: '2002–03',
     peakTeam: 'San Antonio',
@@ -169,6 +177,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'shaq',
     name: "Shaquille O'Neal",
+    chineseName: '沙奎尔·奥尼尔',
     initials: 'SO',
     peakSeason: '1999–00',
     peakTeam: 'Los Angeles',
@@ -200,6 +209,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'magic',
     name: 'Magic Johnson',
+    chineseName: '埃尔文·约翰逊',
     initials: 'MJ',
     peakSeason: '1986–87',
     peakTeam: 'Los Angeles',
@@ -231,6 +241,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'bird',
     name: 'Larry Bird',
+    chineseName: '拉里·伯德',
     initials: 'LB',
     peakSeason: '1985–86',
     peakTeam: 'Boston',
@@ -262,6 +273,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'olajuwon',
     name: 'Hakeem Olajuwon',
+    chineseName: '哈基姆·奥拉朱旺',
     initials: 'HO',
     peakSeason: '1993–94',
     peakTeam: 'Houston',
@@ -293,6 +305,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'kobe',
     name: 'Kobe Bryant',
+    chineseName: '科比·布莱恩特',
     initials: 'KB',
     peakSeason: '2005–06',
     peakTeam: 'Los Angeles',
@@ -324,6 +337,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'garnett',
     name: 'Kevin Garnett',
+    chineseName: '凯文·加内特',
     initials: 'KG',
     peakSeason: '2003–04',
     peakTeam: 'Minnesota',
@@ -355,6 +369,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'durant',
     name: 'Kevin Durant',
+    chineseName: '凯文·杜兰特',
     initials: 'KD',
     peakSeason: '2013–14',
     peakTeam: 'Oklahoma City',
@@ -386,6 +401,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'rodman',
     name: 'Dennis Rodman',
+    chineseName: '丹尼斯·罗德曼',
     initials: 'DR',
     peakSeason: '1995–96',
     peakTeam: 'Chicago',
@@ -417,6 +433,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'harden',
     name: 'James Harden',
+    chineseName: '詹姆斯·哈登',
     initials: 'JH',
     peakSeason: '2018–19',
     peakTeam: 'Houston',
@@ -448,6 +465,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'leonard',
     name: 'Kawhi Leonard',
+    chineseName: '科怀·伦纳德',
     initials: 'KL',
     peakSeason: '2016–17',
     peakTeam: 'San Antonio',
@@ -479,6 +497,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'kerr',
     name: 'Steve Kerr',
+    chineseName: '史蒂夫·科尔',
     initials: 'SK',
     peakSeason: '1995–96',
     peakTeam: 'Chicago',
@@ -511,6 +530,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'miller',
     name: 'Reggie Miller',
+    chineseName: '雷吉·米勒',
     initials: 'RM',
     peakSeason: '1993–94',
     peakTeam: 'Indiana',
@@ -543,6 +563,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'allen',
     name: 'Ray Allen',
+    chineseName: '雷·阿伦',
     initials: 'RA',
     peakSeason: '2000–01',
     peakTeam: 'Milwaukee',
@@ -575,6 +596,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'thompson',
     name: 'Klay Thompson',
+    chineseName: '克莱·汤普森',
     initials: 'KT',
     peakSeason: '2015–16',
     peakTeam: 'Golden State',
@@ -607,6 +629,7 @@ const curatedPlayers: Player[] = [
   {
     id: 'jokic',
     name: 'Nikola Jokić',
+    chineseName: '尼古拉·约基奇',
     initials: 'NJ',
     peakSeason: '2022–23',
     peakTeam: 'Denver',
@@ -640,4 +663,9 @@ const curatedPlayers: Player[] = [
 
 // Keep the original hand-tuned stars first, then append the generated history
 // catalog. The generator excludes these names, so every player appears once.
-export const players: Player[] = [...curatedPlayers, ...historicalPlayers];
+const localizedHistoricalPlayers: Player[] = historicalPlayers.map((player) => ({
+  ...player,
+  chineseName: historicalPlayerChineseNameById[player.id],
+}));
+
+export const players: Player[] = [...curatedPlayers, ...localizedHistoricalPlayers];

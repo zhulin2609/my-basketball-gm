@@ -26,7 +26,7 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 ### 数据来源
 
-- 公共球员目录由 `src/data/players.ts` 和 `src/data/historical-players.generated.ts` 提供。
+- 公共球员目录由 `src/data/players.ts` 和 `src/data/historical-players.generated.ts` 提供；397 名历史球员的中文名称位于 `backend/src/main/resources/player-catalog-chinese-names.json`，Vite 与 Flyway 共享该资源；球员可带可选中文名称，简体中文界面用“英文名（中文名）”显示，并把中文名称纳入搜索。
 - `src/lib/repository.ts` 是组件与浏览器存储之间的边界。
 - `src/lib/api.ts` 是组件与后端 REST API 之间的边界，同时负责 JWT 会话读写；非 2xx 响应抛出携带 `status` 与 `code` 的 `ApiError`。
 - `src/lib/errors.ts` 把社区写操作的错误码映射为本地文案；无 code 的错误保持拼接后端 message 的既有行为。
@@ -78,6 +78,7 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 
 - `users` 拥有自定义球员、球员覆盖、阵容、战报、LLM 配置和游客导入记录。
 - 公共球员目录由迁移写入，所有用户共享。
+- `players.chinese_name` 保存可选中文名称；V12 初始化精选公共球员，V13 通过共享中文名称资源初始化历史公共球员；公共球员的英文名、中文名、缩写、身高和体重由目录维护，用户覆盖只保存可调节属性；自定义球员可以自行填写中文名称或留空。
 - 阵容成员引用公共球员或当前用户的自定义球员。
 - 战报保存阵容名称和球员显示快照，后续修改球员不会改写历史战报。
 - 战报创建 30 天后失效，每天北京时间 03:00 清理。

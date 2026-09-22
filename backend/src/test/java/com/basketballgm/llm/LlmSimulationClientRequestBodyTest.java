@@ -76,7 +76,7 @@ class LlmSimulationClientRequestBodyTest {
 
   private PlayerResponse testPlayer(String id) {
     return new PlayerResponse(
-        id, false, "Test Player", "TP", "2020", "TST", "PG",
+        id, false, "Test Player", null, "TP", "2020", "TST", "PG",
         6, 3, 200, 10_000_000, "Playmaker", "bio", "#777",
         80, 80, 80, 80, 80, 80,
         80, 80, 80, 80, 80, 80, 80,

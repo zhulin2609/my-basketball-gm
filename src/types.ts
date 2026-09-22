@@ -27,6 +27,8 @@ export interface Ratings {
 export interface Player extends Ratings {
   id: string;
   name: string;
+  /** 中文界面显示与中文搜索使用；自定义球员可以不填写。 */
+  chineseName?: string;
   initials: string;
   peakSeason: string;
   peakTeam: string;

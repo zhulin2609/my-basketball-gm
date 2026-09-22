@@ -1,6 +1,6 @@
 # AI Handoff
 
-更新时间：2026-09-21
+更新时间：2026-09-22
 
 ## 开始工作前
 
@@ -25,9 +25,9 @@ git log -5 --oneline
 
 ## 当前目标
 
-当前任务为 Docker Compose 部署改造：以容器运行前端 Nginx、Spring Boot API 与 PostgreSQL 16。本机构建和健康检查已经完成；腾讯云轻量应用服务器部署等待用户确认。部署文件、环境变量要求、备份恢复方式记录在 `docs/deployment.md`。
+当前任务为球员中文名称与身份字段保护：简体中文界面显示“英文名（中文名）”，球员库和我的阵容支持中文检索；416 名公共球员均有中文名称；公共球员的英文名、中文名、缩写、身高和体重不可修改；自定义球员的中文名可选。Docker Compose 本机构建和健康检查已经完成；腾讯云轻量应用服务器部署等待用户确认。部署文件、环境变量要求、备份恢复方式记录在 `docs/deployment.md`。
 
-本轮已新增 Dockerfile、`compose.yaml`、Nginx 反向代理配置、环境变量模板、部署说明与 production 数据源配置。`docker compose config --quiet`、`docker compose up --detach --build` 均已成功；`web`、`api`、`postgres` 健康检查通过，Nginx 转发的 `/api/v1/health` 返回 `{"status":"ok"}`，Flyway 迁移 1–11 全部成功。Nginx 保留浏览器请求的完整主机和端口，`http://localhost:8088` 的同源登录与注册请求已验证分别到达正常认证结果与 201 响应。前端 52 项测试、生产构建、格式检查以及后端 42 项真实 PostgreSQL 测试均已通过。
+本轮已新增 Dockerfile、`compose.yaml`、Nginx 反向代理配置、环境变量模板、部署说明与 production 数据源配置。`docker compose config --quiet`、`docker compose up --detach --build` 均已成功；`web`、`api`、`postgres` 健康检查通过，Nginx 转发的 `/api/v1/health` 返回 `{"status":"ok"}`，Flyway 迁移 1–13 全部成功。Nginx 保留浏览器请求的完整主机和端口，`http://localhost:8088` 的同源登录与注册请求已验证分别到达正常认证结果与 201 响应。前端 58 项测试、生产构建、格式检查以及后端 43 项真实 PostgreSQL 测试均已通过。
 
 游客无需注册即可浏览球员库、创建或编辑球员与阵容，并使用本地规则引擎进行梦幻对战。游客产生的数据保存在当前浏览器。注册后自动导入游客数据；登录已有账号时，由用户选择导入或暂不导入。
 
@@ -48,6 +48,17 @@ git log -5 --oneline
 当前完成的工作是「阵容成员展示顺序统一」：`src/lib/member-display-order.ts` 新增 `orderMembersForDisplay`，激活的首发按 C→PF→SF→SG→PG 排在前五位，其余成员保持原相对顺序；阵容编辑表与社区帖子成员表共用同一规则，展示排序不改写存储顺序。
 
 ## 已完成工作
+
+### 球员中文名称与身份字段保护
+
+- `Player`、前端 API 请求和后端响应新增可选 `chineseName`；中文名称为空时保持英文名称展示。
+- 简体中文界面以“英文名（中文名）”显示已有中文名称的球员；英文界面只显示英文名称。
+- 球员库与我的阵容候选列表的检索文本包含英文名、中文名和打法，可直接输入中文名称搜索。
+- 名称区域使用单行省略与完整名称提示，卡片、候选列表、阵容表、详情面板和社区帖子成员表不会因中文名称自动换行撑开布局。
+- 公共球员编辑器禁用英文名、中文名、缩写、身高和体重；后端写入公共球员覆盖时始终从公共目录读取这五项值，接口请求无法改写身份信息。
+- 自定义球员创建与编辑时中文名可留空；`V12__add_player_chinese_names.sql` 为 `players` 新增可空 `chinese_name` 列，并初始化 19 名精选球员的中文名称。
+- `backend/src/main/resources/player-catalog-chinese-names.json` 保存 397 名历史球员的中文名称；Vite 与 Flyway 共用该资源，浏览器目录和数据库不会维护两份名称清单。
+- `V13__seed_historical_player_chinese_names` 将该资源写入公共目录，逐条检查更新结果；加上精选球员后，416 名公共球员均有中文名称。
 
 ### 前端游客体验
 
@@ -235,9 +246,18 @@ Docker Compose 改造由当前部署提交包含：
 - 容器与环境配置：`.dockerignore`、`.env.docker.example`、`Dockerfile`、`backend/.dockerignore`、`backend/Dockerfile`、`backend/src/main/resources/application-production.yml`、`compose.yaml`、`deploy/nginx/default.conf`
 - 部署文档：`README.md`、`backend/README.md`、`docs/ARCHITECTURE.md`、`docs/deployment.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
+当前未提交的球员中文名称功能修改：
+
+- 前端模型、显示与界面：`src/types.ts`、`src/lib/player-display.ts`、`src/App.tsx`、`src/styles.css`、`src/i18n/resources.ts`、`src/data/players.ts`
+- 前端目录资源与配置：`backend/src/main/resources/player-catalog-chinese-names.json`、`vite.config.ts`、`tsconfig.app.json`
+- 前端测试：`src/lib/player-display.test.ts`、`src/App.test.tsx`、`src/data/historical-player-catalog.test.ts`
+- 后端模型与映射：`backend/src/main/java/com/basketballgm/player/PlayerPayload.java`、`PlayerResponse.java`、`PlayerMapper.java`
+- 数据库迁移：`backend/src/main/resources/db/migration/V12__add_player_chinese_names.sql`、`backend/src/main/java/db/migration/V13__seed_historical_player_chinese_names.java`
+- 后端测试：`backend/src/test/java/com/basketballgm/forum/ForumApiTest.java`、`backend/src/test/java/com/basketballgm/guest/GuestImportApiTest.java`、`backend/src/test/java/com/basketballgm/llm/LlmSimulationClientRequestBodyTest.java`、`backend/src/test/java/com/basketballgm/simulation/SimulationEngineTest.java`
+
 ## 修改中的文件
 
-当前无正在编辑的业务功能；开始新任务前仍须先检查工作区状态，保留用户已有改动。
+球员中文名称与身份字段保护功能处于已验证、未提交状态；具体文件见上一节。开始新任务前仍须先检查工作区状态，保留用户已有改动。
 
 ## 当前已知 bug
 
@@ -264,6 +284,10 @@ Vite 构建会报告单个 JavaScript chunk 超过 500 kB。这是构建警告�
 ### 浏览器只保存差异数据
 
 内置球员目录来自 `src/data/players.ts` 与生成的历史目录。localStorage 只保存自定义球员和用户覆盖，避免复制完整球员库。示例阵容只用于开始体验，不计为用户进度。
+
+### 公共球员身份字段以目录为准
+
+公共球员的名称、缩写、身高和体重用于识别目录条目，用户覆盖只保存可调节的属性。前端禁用相应输入项，`PlayerMapper` 读取公共目录的原始值组成覆盖记录并在查询时优先返回原始值，浏览器请求与旧覆盖记录都无法改变这些身份字段。自定义球员由用户创建，中文名保持可选。
 
 ### 游客只能使用本地模拟
 
@@ -468,14 +492,16 @@ mvn test
 
 2026-09-21 Session 收尾验证：前端 52 项测试全部通过，生产构建通过，Prettier 通过；后端 42 项测试全部通过（真实 PostgreSQL）。`main` 与 `develop` 及各自远端分支指向同一提交，工作区干净。
 
-2026-09-22 Docker Compose 本机验证：`docker compose config --quiet` 与 `docker compose up --detach --build` 通过；`web`、`api`、`postgres` 均为 healthy；经 Nginx 的 `http://localhost:8088/api/v1/health` 返回 `{"status":"ok"}`；Flyway 迁移 1–11 全部成功。前端 52 项测试、`npm run build`、`npm run format:check` 与后端 42 项测试均通过。
+2026-09-22 Docker Compose 本机验证：`docker compose config --quiet` 与 `docker compose up --detach --build` 通过；`web`、`api`、`postgres` 均为 healthy；经 Nginx 的 `http://localhost:8088/api/v1/health` 返回 `{"status":"ok"}`；Flyway 迁移 1–13 全部成功。前端 58 项测试、`npm run build`、`npm run format:check` 与后端 43 项测试均通过。
+
+2026-09-22 球员中文名称与身份字段保护验证：前端 58 项测试、`npm run build` 与 `npm run format:check` 通过；后端 43 项真实 PostgreSQL 测试通过，Flyway 已在测试库应用迁移 1–13。`ForumApiTest` 验证公共球员接口请求携带伪造英文名时，响应仍返回目录中的英文名与中文名；`GuestImportApiTest` 断言全部公共球员的数据库中文名称非空；测试库查询确认 V13 已执行且未命名公共球员数量为零。
 
 ## 下一步具体行动
 
-1. 等待用户确认腾讯云轻量应用服务器后，依照 `docs/deployment.md` 准备服务器环境、`.env`、防火墙、域名备案、HTTPS 证书与备份任务。
-2. 新功能从 `develop` 分支继续开发和验证。
-3. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
-4. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，用 `FORUM_ADMIN_USERNAMES` 指定管理员；需要关停社区时在服务器环境变量写 `FORUM_ENABLED=false` 并重启服务。
+1. 审阅并提交当前球员中文名称与身份字段保护功能。
+2. 依照 `docs/deployment.md` 准备腾讯云轻量应用服务器环境、`.env`、防火墙、域名备案、HTTPS 证书与备份任务。
+3. 新功能从 `develop` 分支继续开发和验证。
+4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 

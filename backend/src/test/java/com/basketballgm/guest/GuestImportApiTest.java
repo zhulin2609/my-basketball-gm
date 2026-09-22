@@ -1,5 +1,6 @@
 package com.basketballgm.guest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,6 +32,16 @@ class GuestImportApiTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final String usernamePrefix = "guest-" + UUID.randomUUID().toString().substring(0, 8);
+
+  @Test
+  void seedsChineseNamesForEveryPublicPlayer() {
+    Integer unnamedPublicPlayers = jdbcTemplate.queryForObject(
+        "select count(*) from players where is_custom = false and nullif(trim(chinese_name), '') is null",
+        Integer.class
+    );
+
+    assertEquals(0, unnamedPublicPlayers);
+  }
 
   @AfterEach
   void cleanUsers() {

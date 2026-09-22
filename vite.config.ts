@@ -15,6 +15,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@catalog': fileURLToPath(new URL('./backend/src/main/resources', import.meta.url)),
     },
   },
 });
