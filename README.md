@@ -67,12 +67,17 @@ cd backend && mvn test  # 后端全部测试（含真实 PostgreSQL 集成测试
 
 后端集成测试使用数据库 `basketball_gm_test`，需提前创建。
 
+## Docker Compose
+
+单机运行环境由 Docker Compose 管理前端 Nginx、Spring Boot API 与 PostgreSQL 16。完整的本机启动、测试、备份和腾讯云轻量应用服务器准备步骤见 [docs/deployment.md](docs/deployment.md)。
+
 ## 项目文档
 
 - `docs/ARCHITECTURE.md`：系统边界、前后端模块划分、数据库关系、测试边界。
 - `docs/AI_HANDOFF.md`：当前开发状态、已完成工作、本地运行条件与测试状态。
 - `docs/plans/current.md`：当前任务的方案、决策与验收标准。
 - `docs/DECISIONS.md`：历史设计决策。
+- `docs/deployment.md`：Docker Compose 本机与单机服务器部署说明。
 
 ## Disclaimer
 

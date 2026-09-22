@@ -1,0 +1,72 @@
+name: dream-court
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: /api/v1
+    ports:
+      - '${WEB_HTTP_PORT:-8088}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 192m
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --quiet --output-document=/dev/null http://127.0.0.1/ || exit 1']
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      LLM_CREDENTIAL_ENCRYPTION_KEY: ${LLM_CREDENTIAL_ENCRYPTION_KEY}
+      FORUM_ENABLED: ${FORUM_ENABLED:-true}
+      FORUM_ADMIN_USERNAMES: ${FORUM_ADMIN_USERNAMES:-}
+      TENCENT_SECRET_ID: ${TENCENT_SECRET_ID:-}
+      TENCENT_SECRET_KEY: ${TENCENT_SECRET_KEY:-}
+      TENCENT_REGION: ${TENCENT_REGION:-ap-guangzhou}
+      MODERATION_WORD_LIST: ${MODERATION_WORD_LIST:-classpath:moderation-words.txt}
+      SIMULATION_RETENTION_CRON: ${SIMULATION_RETENTION_CRON:-0 0 3 * * *}
+      SIMULATION_RETENTION_ZONE: ${SIMULATION_RETENTION_ZONE:-Asia/Shanghai}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 1024m
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --fail --silent http://127.0.0.1:8080/api/v1/health > /dev/null']
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  postgres:
+    image: postgres:16.10-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 1024m
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+
+volumes:
+  postgres_data:

@@ -1,16 +1,40 @@
 # Current Plan
 
-更新时间：2026-09-21
+更新时间：2026-09-22
 
 ## 当前状态
 
-没有进行中的任务。上一个开发 Session 已完成并收尾：社区功能（公开阵容、评论、复制）、内容治理（敏感词审核、限频、管理员删除）、hash 路由、LLM 请求参数按服务商适配、梦幻对战上场时间约束（球队总分钟 240 + 25 × 加时，单人上限 48 + 5 × 加时，双引擎同步）、社区总开关（`FORUM_ENABLED`）、阵容成员展示顺序统一。
+Docker Compose 本机验证已经完成。前端 Nginx、Spring Boot API 与 PostgreSQL 16 由同一组容器运行，后续工作是在用户确认后准备腾讯云轻量应用服务器部署。
 
-全部改动已提交，`main` 与 `develop` 及各自远端分支指向同一提交，工作区干净。
+当前工作分支为 `develop`。部署改造作为完整提交维护，开始新任务时先检查工作区状态。
 
-## 下一步候选方向
+## 当前实施内容
 
-- 腾讯云部署：按 `README.md` 与 `docs/AI_HANDOFF.md` 的运行条件准备服务器，配置 `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY` / `FORUM_ADMIN_USERNAMES` 等环境变量；域名走大陆 ICP 备案，个人主体备案期间社区功能可用 `FORUM_ENABLED=false` 关停兜底。
+- 根目录前端 Dockerfile：构建 Vite 产物后由 Nginx 提供静态文件和 `/api` 反向代理。
+- 后端 Dockerfile：以 Maven 与 Java 21 构建并运行 Spring Boot Jar。
+- `compose.yaml`：固定 PostgreSQL 16，定义服务依赖、健康检查、内存上限、重启策略和数据库命名卷。
+- `.env.docker.example`：列出本机和服务器必须提供的环境变量，不保存真实密钥。
+- `docs/deployment.md`：记录本机验证、备份恢复和腾讯云服务器准备步骤。
+
+## 验收标准
+
+- `docker compose config` 可以解析生产服务定义。
+- `docker compose up --build --detach` 后，三个服务均正常运行，`web`、`api`、`postgres` 健康检查通过。
+- `curl http://localhost:8088/api/v1/health` 经由 Nginx 返回健康响应。
+- `http://localhost:8088` 返回前端页面，浏览器交互回归保留给服务器部署前的发布检查。
+- 前端测试、生产构建、格式检查与后端真实 PostgreSQL 测试全部通过。
+
+## 当前验证状态
+
+- 前端：`npm test` 已通过，11 个测试文件、52 项测试全部成功；`npm run build` 与 `npm run format:check` 已通过。
+- 后端：`mvn test` 已通过，42 项测试全部成功，包含真实本机 PostgreSQL 的集成测试。
+- Compose：`docker compose config --quiet`、`docker compose up --detach --build` 均已成功；`web`、`api`、`postgres` 持续健康。经 Nginx 访问 `http://localhost:8088/api/v1/health` 返回 `{"status":"ok"}`，Flyway 迁移 1–11 全部成功。
+- Docker 认证链路：Nginx 反向代理保留请求的完整主机和端口，浏览器同源的 `http://localhost:8088` 已验证登录请求返回正常认证结果、注册请求返回 201，不再触发 CORS 403。
+- Production 配置：新增 `backend/src/main/resources/application-production.yml`，将 Compose 提供的 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 映射为 Spring 数据源配置。
+
+## 完成后的下一步
+
+- 将 Docker CE 方案部署至上海腾讯云轻量应用服务器，配置服务器 `.env`、防火墙、域名备案、HTTPS 证书与备份任务。
 - 引擎 V2：加时战报（`distributeTeamMinutes(rawMinutes, overtimePeriods)` 的加时参数已预留）、逐回合播放等。
 
 ## 测试方法
@@ -26,6 +50,4 @@ cd backend && mvn test
 
 ## 当前 Git 状态
 
-- 分支：`main`（本地停留分支；后续开发先切回 `develop`）。
-- `main`、`develop` 与各自远端分支保持同步，指向同一提交；工作区干净，无未提交改动。
-- 最近的功能提交：`e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`。
+- 当前开发分支为 `develop`。开始新任务时运行 `git status --short --branch`、`git diff` 与 `git log -5 --oneline` 获取实时状态。

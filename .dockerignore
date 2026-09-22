@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+!.env.docker.example
+node_modules
+dist
+backend
+backend/target
+.DS_Store
+.cache
+.omx

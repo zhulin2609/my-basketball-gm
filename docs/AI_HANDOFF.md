@@ -25,6 +25,10 @@ git log -5 --oneline
 
 ## 当前目标
 
+当前任务为 Docker Compose 部署改造：以容器运行前端 Nginx、Spring Boot API 与 PostgreSQL 16。本机构建和健康检查已经完成；腾讯云轻量应用服务器部署等待用户确认。部署文件、环境变量要求、备份恢复方式记录在 `docs/deployment.md`。
+
+本轮已新增 Dockerfile、`compose.yaml`、Nginx 反向代理配置、环境变量模板、部署说明与 production 数据源配置。`docker compose config --quiet`、`docker compose up --detach --build` 均已成功；`web`、`api`、`postgres` 健康检查通过，Nginx 转发的 `/api/v1/health` 返回 `{"status":"ok"}`，Flyway 迁移 1–11 全部成功。Nginx 保留浏览器请求的完整主机和端口，`http://localhost:8088` 的同源登录与注册请求已验证分别到达正常认证结果与 201 响应。前端 52 项测试、生产构建、格式检查以及后端 42 项真实 PostgreSQL 测试均已通过。
+
 游客无需注册即可浏览球员库、创建或编辑球员与阵容，并使用本地规则引擎进行梦幻对战。游客产生的数据保存在当前浏览器。注册后自动导入游客数据；登录已有账号时，由用户选择导入或暂不导入。
 
 该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染；以及「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。
@@ -164,7 +168,7 @@ git log -5 --oneline
 ## 未完成工作
 
 - 腾讯云 CMS 需要真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 才会激活；当前代码就绪、配置门控默认关闭，本地词表始终生效。
-- 腾讯云部署仍属于后续工作，当前仓库只验证本地运行。
+- 腾讯云轻量应用服务器部署仍属于后续工作；本机 Docker Compose 验证已经完成。
 
 ## 本轮修改过的文件
 
@@ -226,9 +230,14 @@ LLM 请求参数按服务商适配改动已经包含在提交 `74e5bf5`：
 - 前端测试：`src/lib/member-display-order.test.ts`（新）
 - 文档：`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
+Docker Compose 改造由当前部署提交包含：
+
+- 容器与环境配置：`.dockerignore`、`.env.docker.example`、`Dockerfile`、`backend/.dockerignore`、`backend/Dockerfile`、`backend/src/main/resources/application-production.yml`、`compose.yaml`、`deploy/nginx/default.conf`
+- 部署文档：`README.md`、`backend/README.md`、`docs/ARCHITECTURE.md`、`docs/deployment.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
+
 ## 修改中的文件
 
-无。工作区干净，全部改动已提交并推送。
+当前无正在编辑的业务功能；开始新任务前仍须先检查工作区状态，保留用户已有改动。
 
 ## 当前已知 bug
 
@@ -459,15 +468,15 @@ mvn test
 
 2026-09-21 Session 收尾验证：前端 52 项测试全部通过，生产构建通过，Prettier 通过；后端 42 项测试全部通过（真实 PostgreSQL）。`main` 与 `develop` 及各自远端分支指向同一提交，工作区干净。
 
+2026-09-22 Docker Compose 本机验证：`docker compose config --quiet` 与 `docker compose up --detach --build` 通过；`web`、`api`、`postgres` 均为 healthy；经 Nginx 的 `http://localhost:8088/api/v1/health` 返回 `{"status":"ok"}`；Flyway 迁移 1–11 全部成功。前端 52 项测试、`npm run build`、`npm run format:check` 与后端 42 项测试均通过。
+
 ## 下一步具体行动
 
-1. 读取必需文档并检查 Git 状态。
+1. 等待用户确认腾讯云轻量应用服务器后，依照 `docs/deployment.md` 准备服务器环境、`.env`、防火墙、域名备案、HTTPS 证书与备份任务。
 2. 新功能从 `develop` 分支继续开发和验证。
 3. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
-4. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，用 `FORUM_ADMIN_USERNAMES` 指定管理员；需要关停社区时在服务器环境变量写 `FORUM_ENABLED=false` 并重启进程。
+4. 腾讯云部署时配置 `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` 激活云端审核，用 `FORUM_ADMIN_USERNAMES` 指定管理员；需要关停社区时在服务器环境变量写 `FORUM_ENABLED=false` 并重启服务。
 
 ## 当前 Git 状态
 
-- 分支：`main`（本地停留分支；后续开发先切回 `develop`）。
-- `main`、`develop` 与各自远端分支保持同步，指向同一提交；工作区干净，无未提交改动。
-- 最近的功能提交：`e9531f1 feat: 阵容编辑表与社区帖子成员表统一首发在前的展示顺序`。
+- 当前开发分支为 `develop`。开始工作时运行 `git status --short --branch`、`git diff` 与 `git log -5 --oneline` 获取实时状态。

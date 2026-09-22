@@ -10,6 +10,8 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 本地开发时，前端运行在 `127.0.0.1:5173`，Vite 将 `/api` 请求代理到后端 `127.0.0.1:8080`。
 
+单机部署使用根目录 `compose.yaml`：`web` 容器构建并通过 Nginx 提供前端，同时把 `/api` 反向代理至 `api`；`api` 运行 Spring Boot 与 Flyway；`postgres` 运行 PostgreSQL 16，数据写入命名卷。生产环境变量由服务器上的 `.env` 注入，详细操作见 `docs/deployment.md`。
+
 ## 前端
 
 ### 页面和共享状态
