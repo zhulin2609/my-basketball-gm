@@ -1919,6 +1919,19 @@ function Battle({
   const awayIsEligible = away ? validateLineup(away).isEligibleForSimulation : false;
   const aiIsAvailable = isCloudMode && credential?.configured === true;
 
+  // 云端阵容异步到达后，挂载时占位阵容的 id 会失效；把失效的选择校正到真实阵容，
+  // 否则主页选择停留在幻影 id 上，模拟按钮被 !home 禁用。
+  useEffect(() => {
+    if (!lineups.length) return;
+    const nextHome = lineups.some((l) => l.id === homeId) ? homeId : lineups[0].id;
+    const nextAway =
+      awayId !== nextHome && lineups.some((l) => l.id === awayId)
+        ? awayId
+        : (lineups.find((l) => l.id !== nextHome)?.id ?? '');
+    if (nextHome !== homeId) setHomeId(nextHome);
+    if (nextAway !== awayId) setAwayId(nextAway);
+  }, [lineups, homeId, awayId]);
+
   // 每次进入对战页都读取最新的脱敏配置，从 AI 设置返回后无需刷新页面。
   useEffect(() => {
     if (!isCloudMode) return;
