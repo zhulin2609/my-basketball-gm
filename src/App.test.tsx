@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -274,6 +274,42 @@ describe('player of the game', () => {
     expect(await screen.findByText(/本场最佳球员|Player of the Game/i)).toBeTruthy();
     expect(container.querySelector('.pog-score strong')?.textContent).toMatch(/^\d+\.\d$/);
     expect(container.querySelector('.pog-stats')?.textContent).toMatch(/\d+ PTS/);
+  });
+});
+
+describe('matchup picker', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    window.location.hash = '';
+    // 指向不可达地址：对战选择器只读取本地阵容，不依赖服务端。
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('excludes the opposing selection from each lineup select', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /梦幻对战|Dream Match/i }));
+
+    const [homeSelect, awaySelect] = screen.getAllByRole('combobox');
+    const homeOptions = within(homeSelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    const awayOptions = within(awaySelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+
+    expect(homeOptions.length).toBeGreaterThan(0);
+    expect(awayOptions.length).toBeGreaterThan(0);
+    expect(homeOptions).not.toContain(awayOptions[0]);
+    expect(awayOptions).not.toContain(homeOptions[0]);
   });
 });
 

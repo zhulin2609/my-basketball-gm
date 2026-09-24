@@ -1672,9 +1672,9 @@ function LineupWorkbench({
           <p>{t('lineup.rulesText')}</p>
         </div>
         {syncError && (
-          <p className="editor-error" role="alert">
-            {t('lineup.syncFailed', { message: syncError })}
-          </p>
+          <div className="starter-rule-alert error" role="alert">
+            <strong>{t('lineup.syncFailed', { message: syncError })}</strong>
+          </div>
         )}
         {missingPlayerIds.length > 0 && (
           <div className="starter-rule-alert error" role="alert">
@@ -2003,19 +2003,23 @@ function Battle({
         </div>
         <div className="matchup-picker">
           <select value={homeId} onChange={(e) => setHomeId(e.target.value)}>
-            {lineups.map((l) => (
-              <option value={l.id} key={l.id}>
-                {l.name}
-              </option>
-            ))}
+            {lineups
+              .filter((l) => l.id !== awayId)
+              .map((l) => (
+                <option value={l.id} key={l.id}>
+                  {l.name}
+                </option>
+              ))}
           </select>
           <span>VS</span>
           <select value={awayId} onChange={(e) => setAwayId(e.target.value)}>
-            {lineups.map((l) => (
-              <option value={l.id} key={l.id}>
-                {l.name}
-              </option>
-            ))}
+            {lineups
+              .filter((l) => l.id !== homeId)
+              .map((l) => (
+                <option value={l.id} key={l.id}>
+                  {l.name}
+                </option>
+              ))}
           </select>
           <button
             className="primary"

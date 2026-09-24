@@ -39,6 +39,7 @@ git log -5 --oneline
 - 登录用户可保存球员覆盖、自定义球员、阵容、战报与加密的大模型连接配置。战报保存 30 天，每天北京时间 03:00 清理。
 - 本地引擎和 AI 对战均遵守每队 240 分钟与单人 48 分钟上限；战报展示本场最佳球员。
 - 社区支持公开合规阵容、评论、一级回复、复制阵容、敏感词过滤、可选腾讯云 CMS 审核、限频、新账号链接限制与管理员删除。`FORUM_ENABLED=false` 会关闭社区 HTTP 接口。
+- 注册接口拒绝保留用户名：`admin`、`administrator`、`root`、`system`、`support`、`official`、`moderator`、`staff`、`dreamcourt`，大小写不敏感，命中返回 409「该用户名不可用。」。校验位于 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`，由 `AuthService.register` 在查重前调用。
 - 页面以 URL hash 管理球员库、阵容、对战、社区、AI 设置和认证视图；支持简体中文与英文。
 
 ### 前端公网兼容性
@@ -52,33 +53,28 @@ git log -5 --oneline
 - Flyway 迁移已到 V13：包含用户、公共球员、阵容、战报、账户认证、加密大模型凭据、游客导入、社区与球员中文名称。
 - 历史球员中文名称维护在 `backend/src/main/resources/player-catalog-chinese-names.json`，前端 Vite 读取该资源，Flyway V13 Java 迁移也读取它写入 PostgreSQL。
 - 根目录 `compose.yaml` 构建 `web`、`api`、`postgres`：Nginx 提供前端并代理 `/api`；Flyway 随 API 启动执行；PostgreSQL 数据写入命名卷。
-- `main` 已合并 `develop` 并已推送远端，当前远端 `main` 为 `6817208 merge: 合并 develop 分支`。
+- `main` 已合并 `develop` 并已推送远端，当前远端 `main` 为 `788cad5 merge: 合并 develop 分支`。
 
 ## 最近完成的提交
 
 - `a4853fd fix: 去除前端以外链形式引用的第三方库；去除 \`crypto.randomUUID()\` ; 更新文档`
 - `218b224 feat:`：球员中文名称、中文搜索与公共球员身份字段保护。
 - `c533640 feat: 添加 Docker Compose 单机部署`
-- `6817208 merge: 合并 develop 分支`：已推送到远端 `main`。
+- `788cad5 merge: 合并 develop 分支`：已推送到远端 `main`。
 
 旧功能的完整变更索引可通过 `git log --oneline` 与 `docs/ARCHITECTURE.md` 追溯；本文件仅保留继续开发所需的有效信息。
 
 ## 修改过的文件
 
-最近完成的公网 HTTP 兼容修改涉及：
+注册保留用户名功能涉及：
 
-- 前端依赖与样式：`package.json`、`package-lock.json`、`src/styles.css`。
-- UUID 工具与调用方：`src/lib/identifier.ts`、`src/lib/identifier.test.ts`、`src/lib/guest-workspace.ts`、`src/lib/repository.ts`、`src/lib/simulator.ts`、`src/App.tsx`。
-- 交接与部署说明：`README.md`、`docs/README.en.md`、`backend/README.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/DECISIONS.md`、`docs/deployment.md`、`docs/plans/current.md`。
+- 新增 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`：固定保留名单与精确、大小写不敏感的匹配。
+- 修改 `backend/src/main/java/com/basketballgm/auth/AuthService.java`：`register` 在用户名查重之前执行保留名单校验。
+- 新增 `backend/src/test/java/com/basketballgm/auth/AuthApiTest.java`：覆盖保留名拒绝、大小写不敏感拒绝、正常注册与重复注册冲突。
 
 ## 修改中的文件
 
-本次 Session 收尾已更新以下文档，尚未提交：
-
-- `docs/AI_HANDOFF.md`
-- `docs/plans/current.md`
-- `docs/DECISIONS.md`
-- `docs/deployment.md`
+上述三个文件已在 `develop` 工作区完成修改并通过全部测试，尚未提交。
 
 ## 当前已知问题
 
@@ -106,6 +102,10 @@ AI 服务商响应与额度存在差异，游客也没有服务端 API Key 配�
 ### 前端资源随制品交付
 
 字体通过 npm 依赖随 Vite 制品发布，避免公网访问依赖第三方字体服务。UUID 由 `uuid` 统一生成，可覆盖缺少浏览器 `crypto.randomUUID()` 的公网 HTTP 环境。
+
+### 保留用户名只拦截固定名单
+
+保留名单仅包含固定的官方观感词汇，不并入 `FORUM_ADMIN_USERNAMES` 配置。管理员需要先通过注册接口创建自己的账号，再把账号名写入配置；若配置里的名字被禁止注册，管理员账号将无法建立。管理员注册后，用户名唯一性约束阻止其他人占用同名账号。
 
 ## 本地运行
 
@@ -152,7 +152,7 @@ mvn test
 ## 测试状态
 
 - 2026-09-24：`npm test` 通过，13 个测试文件、59 项测试全部成功；`npm run build` 与 `npm run format:check` 通过。
-- 2026-09-24：`mvn test` 使用临时 PostgreSQL 16 执行，43 项测试全部成功；Flyway 已验证 V1–V13 迁移。
+- 2026-09-24：`mvn test` 使用临时 PostgreSQL 16 执行，46 项测试全部成功（含注册保留用户名的 3 项新用例）；Flyway 已验证 V1–V13 迁移。
 - 2026-09-24：`docker compose up --build --detach` 完成；`web`、`api`、`postgres` 均通过健康检查，`http://localhost:8088/api/v1/health` 返回 `status: ok`。
 - Apple 芯片版 JDK 21 位于 `/opt/homebrew/opt/openjdk@21`，本机 Maven 测试可使用该 JDK。
 
