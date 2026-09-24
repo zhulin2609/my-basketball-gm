@@ -3,8 +3,8 @@
 ## Source of truth
 
 - Status: Active
-- Last refreshed: 2026-09-16
-- Primary product surfaces: 球员库、我的阵容、梦幻对战
+- Last refreshed: 2026-09-24
+- Primary product surfaces: 球员库、我的阵容、梦幻对战、社区
 - Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/lib/repository.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
 
 ## Brand
@@ -16,7 +16,7 @@
 ## Product goals
 
 - Goals: 让用户快速浏览或创建球员、调整能力档案、组建阵容并进行对战模拟。
-- Non-goals: 复刻真实联赛、提供实时数据或社交功能。
+- Non-goals: 复刻真实联赛、提供实时数据。
 - Success signals: 用户无需切换页面即可完成阵容增删与位置设置。
 
 ## Personas and jobs
@@ -27,8 +27,8 @@
 
 ## Information architecture
 
-- Primary navigation: 球员库 / 我的阵容 / 梦幻对战。
-- Core routes/screens: 球员浏览页、阵容编辑工作台、比赛战报页。
+- Primary navigation: 球员库 / 我的阵容 / 梦幻对战 / 社区。
+- Core routes/screens: 球员浏览页、阵容编辑工作台、比赛战报页、社区帖子列表与详情页。
 - Content hierarchy: 当前阵容与编辑动作优先于辅助说明；详情用于确认而非阻塞编辑。
 
 ## Design principles
@@ -53,7 +53,7 @@
 ## Components
 
 - Existing components to reuse: `primary`、`ghost`、`search`、`tag`、`portrait`、`roster-row`。
-- New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示、对战页的“本地模拟 / AI 模拟”模式选择器、全局中英语言切换控件，以及球员详情中的各项能力值。
+- New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示、对战页的“本地模拟 / AI 模拟”模式选择器、全局中英语言切换控件、球员详情中的各项能力值，以及社区帖子与评论视图。
 - Variants and states: 默认、编辑中、输入校验失败、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐、本地模拟已选中、AI 已配置可选、AI 未配置禁用、模拟中、模拟失败。
 - Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`，本地球员覆盖在 `src/lib/repository.ts`。
 
@@ -76,7 +76,7 @@
 
 - Loading: 离线 MVP 立即显示；后端接入时在候选列表显示加载状态。
 - Empty: 无候选时说明可能已全部加入或搜索无结果。
-- Error: 球员名称和缩写为空时阻止保存并提示；身高限制为 4–8 英尺和 0–11 英寸，体重限制为 80–500 磅；后端接入时显示可恢复错误。
+- Error: 球员名称和缩写为空时阻止保存并提示；身高限制为 4–8 英尺和 0–11 英寸，体重限制为 80–500 磅；后端接入时显示可恢复错误。公共球员的英文名、中文名、缩写、身高和体重保持只读。
 - Success: 保存球员后立即更新球员库、阵容选择器和模拟数据源；单击候选球员立即进入名单，候选项随即消失。
 - Disabled: 达到 15 人时禁用加入并说明原因；对战前高亮缺失的首发位置；未配置 API Key 时禁用 AI 选项但保持本地模拟主操作可用。
 - Offline/slow network, if applicable: 离线 MVP 将自定义球员和对默认档案的覆盖写入 localStorage，不依赖网络；云端版本以当前登录用户归属自定义球员，并以用户覆盖档案合并预置球员的调节值。

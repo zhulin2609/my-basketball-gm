@@ -94,14 +94,14 @@ curl --fail --silent http://localhost:8088/api/v1/health
 部署前与数据库迁移前执行逻辑备份：
 
 ```bash
-docker compose exec --no-TTY postgres sh -c 'pg_dump --username="$POSTGRES_USER" --format=custom "$POSTGRES_DB"' > dream-court.backup
+docker compose exec --no-TTY postgres sh -c 'pg_dump --username="$POSTGRES_USER" --format=custom "$POSTGRES_DB"' > my-basketball-gm.backup
 ```
 
 恢复到同名数据库前先停止 `api`，然后执行：
 
 ```bash
 docker compose stop api
-docker compose exec --no-TTY postgres sh -c 'pg_restore --username="$POSTGRES_USER" --clean --if-exists --dbname="$POSTGRES_DB"' < dream-court.backup
+docker compose exec --no-TTY postgres sh -c 'pg_restore --username="$POSTGRES_USER" --clean --if-exists --dbname="$POSTGRES_DB"' < my-basketball-gm.backup
 docker compose start api
 ```
 

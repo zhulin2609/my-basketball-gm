@@ -6,6 +6,7 @@ import { communityWriteError } from '@/lib/errors';
 import { createGuestImportRequest } from '@/lib/guest-import';
 import { guestWorkspaceRepository } from '@/lib/guest-workspace';
 import { useHashRoute, type RouteView } from '@/lib/hash-route';
+import { createIdentifier } from '@/lib/identifier';
 import {
   bootstrapLineups,
   classicLineup,
@@ -411,7 +412,7 @@ export function App() {
   const newLineup = () => {
     const now = new Date().toISOString();
     const next: Lineup = {
-      id: crypto.randomUUID(),
+      id: createIdentifier(),
       name: t('lineup.newLineup').replace('+ ', ''),
       description: '',
       members: [],
@@ -1048,7 +1049,7 @@ function PlayerLibrary({
   const pagination = usePagination(list, PLAYER_PAGE_SIZE, `${query}|${pos}|${sort}`);
   const createCustomPlayer = () => {
     setEditing({
-      id: crypto.randomUUID(),
+      id: createIdentifier(),
       name: 'Custom Player',
       chineseName: '',
       initials: 'CP',

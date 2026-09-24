@@ -1,6 +1,6 @@
 # AI Handoff
 
-更新时间：2026-09-22
+更新时间：2026-09-24
 
 ## 开始工作前
 
@@ -25,27 +25,9 @@ git log -5 --oneline
 
 ## 当前目标
 
-当前任务为球员中文名称与身份字段保护：简体中文界面显示“英文名（中文名）”，球员库和我的阵容支持中文检索；416 名公共球员均有中文名称；公共球员的英文名、中文名、缩写、身高和体重不可修改；自定义球员的中文名可选。Docker Compose 本机构建和健康检查已经完成；腾讯云轻量应用服务器部署等待用户确认。部署文件、环境变量要求、备份恢复方式记录在 `docs/deployment.md`。
-
-本轮已新增 Dockerfile、`compose.yaml`、Nginx 反向代理配置、环境变量模板、部署说明与 production 数据源配置。`docker compose config --quiet`、`docker compose up --detach --build` 均已成功；`web`、`api`、`postgres` 健康检查通过，Nginx 转发的 `/api/v1/health` 返回 `{"status":"ok"}`，Flyway 迁移 1–13 全部成功。Nginx 保留浏览器请求的完整主机和端口，`http://localhost:8088` 的同源登录与注册请求已验证分别到达正常认证结果与 201 响应。前端 58 项测试、生产构建、格式检查以及后端 43 项真实 PostgreSQL 测试均已通过。
+当前目标是保持 `develop` 分支可部署、可验证，并在用户发出后续需求后继续开发。球员中文名称与身份字段保护已经包含在 `218b224`；Docker Compose 本机构建和健康检查已经完成。腾讯云轻量应用服务器部署等待用户确认，部署文件、环境变量要求、备份恢复方式记录在 `docs/deployment.md`。
 
 游客无需注册即可浏览球员库、创建或编辑球员与阵容，并使用本地规则引擎进行梦幻对战。游客产生的数据保存在当前浏览器。注册后自动导入游客数据；登录已有账号时，由用户选择导入或暂不导入。
-
-该目标已经完成。随后完成的目标是：为球员库和我的阵容页面的球员列表提供分页，避免数百名球员一次性渲染；以及「社区」功能：登录用户可以把符合条件的自建阵容公开到社区，其他用户浏览、评论（含一级回复）、一键复制到自己的阵容；游客只读浏览。
-
-当前完成的工作是「社区内容治理（上线前置批次）」：公开阵容与评论写入前经过本地 DFA 词表与腾讯云 CMS 同步审核，服务端限频与新账号链接限制防御灌水，管理员可删除任何帖子与评论，错误改为结构化错误码并由前端按码映射文案。方案与验收标准见 `docs/plans/current.md`。
-
-随后完成的工作是「hash 路由」：页面状态以 URL hash 为准，刷新后停留在当前页面，浏览器前进/后退可用，社区帖子详情有 `#/community/<帖子id>` 形式的可分享链接。
-
-当前完成的工作是「后端包名重命名」：Java 包从 `com.links.basketballgm` 改为 `com.basketballgm`，Maven groupId 同步改为 `com.basketballgm`。方案与验收标准见 `docs/plans/current.md`。
-
-随后完成的工作是「LLM 请求参数按服务商适配」：公共请求体只保留所有 OpenAI 兼容服务都接受的字段（model、messages、max_tokens），temperature 移出公共层；服务商差异收敛到 `LlmProviderProfiles` 注册表，按 baseUrl 的 host 匹配档案定制请求。方案与验收标准见 `docs/plans/current.md`。
-
-当前完成的工作是「球队总上场时间约束」：本地规则引擎把每队总分钟归一化到 `240 + 25 × 加时次数`、把单人分钟钳制到 `48 + 5 × 加时次数` 以内（V1 无加时，恒为 240 与 48），AI 模拟的提示词写入同一组公式。约束同时落在两个本地引擎实现上：登录用户的本地对战走后端 `SimulationEngine.java`，游客走前端 `src/lib/simulator.ts`。方案与验收标准见 `docs/plans/current.md`。
-
-随后完成的工作是「社区总开关」：`app.forum.enabled`（环境变量 `FORUM_ENABLED`，默认 `true`）为 false 时整个 `ForumController` 不配进容器，社区 8 个接口全部返回 404，数据表与数据不受影响；配套修复 `SecurityConfig` 放行 ERROR 分发，否则未映射路径会经 `/error` 被入口点拦截成 401。`FORUM_ADMIN_USERNAMES` 在社区治理批次已实现，本次未改动。
-
-当前完成的工作是「阵容成员展示顺序统一」：`src/lib/member-display-order.ts` 新增 `orderMembersForDisplay`，激活的首发按 C→PF→SF→SG→PG 排在前五位，其余成员保持原相对顺序；阵容编辑表与社区帖子成员表共用同一规则，展示排序不改写存储顺序。
 
 ## 已完成工作
 
@@ -59,6 +41,21 @@ git log -5 --oneline
 - 自定义球员创建与编辑时中文名可留空；`V12__add_player_chinese_names.sql` 为 `players` 新增可空 `chinese_name` 列，并初始化 19 名精选球员的中文名称。
 - `backend/src/main/resources/player-catalog-chinese-names.json` 保存 397 名历史球员的中文名称；Vite 与 Flyway 共用该资源，浏览器目录和数据库不会维护两份名称清单。
 - `V13__seed_historical_player_chinese_names` 将该资源写入公共目录，逐条检查更新结果；加上精选球员后，416 名公共球员均有中文名称。
+
+### 公网 HTTP 前端兼容性
+
+- 字体从 Google Fonts 外链改为 npm 的 `@fontsource/dm-mono`、`@fontsource/manrope`、`@fontsource/playfair-display`；`src/styles.css` 只导入当前实际使用的拉丁字符集与字重。
+- Vite 生产构建将 20 个 `.woff`、`.woff2` 字体资源写入 `dist/assets`；源码与构建制品均不再包含 Google Fonts 或 Google 静态资源地址。
+- `src/lib/identifier.ts` 统一使用 `uuid` 的 `v4()` 生成 RFC 4122 UUID，游客工作区、内置阵容、本地战报、新阵容和自定义球员均通过该模块生成 ID。
+- 该依赖在安全上下文中可使用浏览器 UUID API；公网 HTTP 环境缺少 `crypto.randomUUID()` 时会使用 `crypto.getRandomValues()`，现有 UUID 字段和游客导入协议保持兼容。
+
+## 本轮修改过的文件
+
+提交 `218b224` 完成球员中文名称与身份字段保护：
+
+- 前端：`src/App.tsx`、`src/types.ts`、`src/styles.css`、`src/i18n/resources.ts`、`src/data/players.ts`、`src/lib/player-display.ts`、`src/lib/player-display.test.ts`、`src/App.test.tsx`、`src/data/historical-player-catalog.test.ts`、`tsconfig.app.json`、`vite.config.ts`。
+- 后端与数据库：`PlayerMapper.java`、`PlayerPayload.java`、`PlayerResponse.java`、`V12__add_player_chinese_names.sql`、`V13__seed_historical_player_chinese_names.java`、`player-catalog-chinese-names.json`，以及关联的后端回归测试。
+- 部署与文档：`compose.yaml`、`docs/ARCHITECTURE.md`、本文件和 `docs/plans/current.md`。
 
 ### 前端游客体验
 
@@ -181,7 +178,7 @@ git log -5 --oneline
 - 腾讯云 CMS 需要真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 才会激活；当前代码就绪、配置门控默认关闭，本地词表始终生效。
 - 腾讯云轻量应用服务器部署仍属于后续工作；本机 Docker Compose 验证已经完成。
 
-## 本轮修改过的文件
+## 历史提交索引
 
 游客态业务改动已经包含在提交 `47d8020 feat: 支持游客态，更新 AGENTS.md 中的交接规范`：
 
@@ -246,7 +243,7 @@ Docker Compose 改造由当前部署提交包含：
 - 容器与环境配置：`.dockerignore`、`.env.docker.example`、`Dockerfile`、`backend/.dockerignore`、`backend/Dockerfile`、`backend/src/main/resources/application-production.yml`、`compose.yaml`、`deploy/nginx/default.conf`
 - 部署文档：`README.md`、`backend/README.md`、`docs/ARCHITECTURE.md`、`docs/deployment.md`、`docs/AI_HANDOFF.md`、`docs/plans/current.md`
 
-当前未提交的球员中文名称功能修改：
+球员中文名称功能已包含在提交 `218b224`：
 
 - 前端模型、显示与界面：`src/types.ts`、`src/lib/player-display.ts`、`src/App.tsx`、`src/styles.css`、`src/i18n/resources.ts`、`src/data/players.ts`
 - 前端目录资源与配置：`backend/src/main/resources/player-catalog-chinese-names.json`、`vite.config.ts`、`tsconfig.app.json`
@@ -257,15 +254,19 @@ Docker Compose 改造由当前部署提交包含：
 
 ## 修改中的文件
 
-球员中文名称与身份字段保护功能处于已验证、未提交状态；具体文件见上一节。开始新任务前仍须先检查工作区状态，保留用户已有改动。
+未提交的前端兼容性修改：`package.json`、`package-lock.json`、`src/styles.css`、`src/lib/identifier.ts`、`src/lib/identifier.test.ts`、`src/lib/guest-workspace.ts`、`src/lib/repository.ts`、`src/lib/simulator.ts`、`src/App.tsx`。同时保留本轮 Session 收尾文档改动：`README.md`、`docs/README.en.md`、`backend/README.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/DECISIONS.md`、`docs/deployment.md`、`docs/plans/current.md`。
 
 ## 当前已知 bug
 
 当前没有已确认且可以复现的产品 bug。
 
-本地曾存在一个已经处理的运行状态问题：5173 端口上的旧 Vite 进程仍提供旧模块，导致登出后看到登录页。重启 Vite 后已确认服务返回当前游客态源码。切换分支或更改依赖后，如果浏览器显示内容与源码不一致，先检查 5173 端口上的进程和实际响应内容。
+公网 HTTP 访问旧版前端时，Google Fonts 请求会失败，且浏览器不提供 `crypto.randomUUID()`；当前工作区已完成本地字体与 UUID 兼容修改，等待构建并发布到服务器。
 
-Vite 构建会报告单个 JavaScript chunk 超过 500 kB。这是构建警告，当前不会阻止运行或测试。
+本机已安装 Apple 芯片版 JDK 21。`/opt/homebrew/opt/openjdk@21/bin/java` 已验证为 `arm64`，新的登录终端中 `java -version` 与 `mvn -version` 均使用该 JDK。
+
+切换分支或更改依赖后，如果浏览器显示内容与源码不一致，检查 5173 端口上的 Vite 进程和实际响应内容；Docker Compose 环境则重新构建 `web` 服务。
+
+Vite 构建会报告单个 JavaScript chunk 超过 500 kB。该警告当前不会阻止运行或测试。
 
 ## 设计决策及原因
 
@@ -288,6 +289,10 @@ Vite 构建会报告单个 JavaScript chunk 超过 500 kB。这是构建警告�
 ### 公共球员身份字段以目录为准
 
 公共球员的名称、缩写、身高和体重用于识别目录条目，用户覆盖只保存可调节的属性。前端禁用相应输入项，`PlayerMapper` 读取公共目录的原始值组成覆盖记录并在查询时优先返回原始值，浏览器请求与旧覆盖记录都无法改变这些身份字段。自定义球员由用户创建，中文名保持可选。
+
+### 历史球员中文名称使用共享资源
+
+`backend/src/main/resources/player-catalog-chinese-names.json` 是 397 名历史球员中文名称的唯一来源。Vite 通过别名读取该文件，Flyway 的 V13 Java 迁移也读取同一份资源写入数据库。后续扩充历史目录时，需同步更新该资源、前端目录映射与覆盖数量测试；已经应用的 V13 迁移保持不变。
 
 ### 游客只能使用本地模拟
 
@@ -405,7 +410,7 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 
 - Node.js 与 npm 已安装。
 - Java 必须使用 JDK 21。
-- Maven 位于 `/usr/local/opt/maven/bin`。
+- JDK 21 与 Maven 应通过 `brew --prefix` 解析实际安装位置，适配 Apple 芯片与 Intel 芯片环境。
 - PostgreSQL 16 本地开发库为 `basketball_gm_dev`。
 - 后端集成测试库为 `basketball_gm_test`，测试配置见 `backend/src/test/resources/application-test.yml`。
 - 根目录 `.env.local` 设置 `VITE_API_BASE_URL=/api/v1`，Vite 将 `/api` 代理到 `127.0.0.1:8080`。
@@ -413,8 +418,8 @@ AI API Key 在服务端按账号加密保存。游客没有服务端身份，所
 启动后端：
 
 ```bash
-export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-export PATH=/usr/local/opt/maven/bin:$JAVA_HOME/bin:$PATH
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn spring-boot:run
 ```
@@ -450,15 +455,34 @@ npm run format:check
 后端全部测试，包含真实本地 PostgreSQL 的游客导入接口测试：
 
 ```bash
-export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-export PATH=/usr/local/opt/maven/bin:$JAVA_HOME/bin:$PATH
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn test
 ```
 
 `GuestImportApiTest` 会连接 `basketball_gm_test`，运行 Flyway，并验证幂等导入、跨账号冲突、自定义球员 ID 转换和过期战报过滤。`ForumApiTest` 连接同一测试库，验证社区公开、评论、复制、权限与分页。测试清理自己创建的用户数据。
 
-## 测试状态
+Docker Compose 验证：
+
+```bash
+docker compose config --quiet
+docker compose up --detach --build
+docker compose ps
+curl --fail --silent http://localhost:8088/api/v1/health
+```
+
+## 当前测试状态
+
+2026-09-24 Session 收尾验证：
+
+- 前端：`npm test` 通过，12 个测试文件、58 项测试全部成功；`npm run build` 通过；`npm run format:check` 通过。
+- 后端：在一次性 Java 21 Maven 容器与一次性 PostgreSQL 16 容器中运行 43 项测试，全部成功。测试报告没有 failures 或 errors；临时 PostgreSQL 容器已删除。
+- Compose：`docker compose config --quiet` 通过，`docker compose build` 通过；`web`、`api`、`postgres` 均为 healthy，经 Nginx 的 `http://localhost:8088/api/v1/health` 返回健康响应。
+- 本机 JDK：Apple 芯片版 JDK 21 已安装于 `/opt/homebrew/opt/openjdk@21`，可直接按本文件的 `brew --prefix` 命令运行 `mvn test`。
+- 公网 HTTP 前端兼容：`npm test` 通过 13 个测试文件、59 项测试；`npm run build` 和 `npm run format:check` 通过。构建制品中有 20 个本地字体文件，未检索到 Google Fonts 地址；源码未检索到直接调用 `crypto.randomUUID()`。
+
+## 历史验证记录
 
 2026-09-18 最近一次完整验证：
 
@@ -490,19 +514,13 @@ mvn test
 
 2026-09-20 阵容成员展示顺序统一后验证：前端 52 项测试全部通过（新增 `member-display-order.test.ts` 2 项），`npm run build` 与 `npm run format:check` 通过；纯前端改动，Vite 热更新生效，无需重启服务。
 
-2026-09-21 Session 收尾验证：前端 52 项测试全部通过，生产构建通过，Prettier 通过；后端 42 项测试全部通过（真实 PostgreSQL）。`main` 与 `develop` 及各自远端分支指向同一提交，工作区干净。
-
-2026-09-22 Docker Compose 本机验证：`docker compose config --quiet` 与 `docker compose up --detach --build` 通过；`web`、`api`、`postgres` 均为 healthy；经 Nginx 的 `http://localhost:8088/api/v1/health` 返回 `{"status":"ok"}`；Flyway 迁移 1–13 全部成功。前端 58 项测试、`npm run build`、`npm run format:check` 与后端 43 项测试均通过。
-
-2026-09-22 球员中文名称与身份字段保护验证：前端 58 项测试、`npm run build` 与 `npm run format:check` 通过；后端 43 项真实 PostgreSQL 测试通过，Flyway 已在测试库应用迁移 1–13。`ForumApiTest` 验证公共球员接口请求携带伪造英文名时，响应仍返回目录中的英文名与中文名；`GuestImportApiTest` 断言全部公共球员的数据库中文名称非空；测试库查询确认 V13 已执行且未命名公共球员数量为零。
-
 ## 下一步具体行动
 
-1. 审阅并提交当前球员中文名称与身份字段保护功能。
-2. 依照 `docs/deployment.md` 准备腾讯云轻量应用服务器环境、`.env`、防火墙、域名备案、HTTPS 证书与备份任务。
+1. 用户确认后，依照 `docs/deployment.md` 准备腾讯云轻量应用服务器环境、`.env`、防火墙、HTTPS 证书与备份任务。
+2. 提供真实 `TENCENT_SECRET_ID` 与 `TENCENT_SECRET_KEY` 后，验证腾讯云 CMS 审核链路。
 3. 新功能从 `develop` 分支继续开发和验证。
 4. 合并或推送 `main` 前，遵守 `AGENTS.md`：完整运行全部测试并确保全部通过。
 
 ## 当前 Git 状态
 
-- 当前开发分支为 `develop`。开始工作时运行 `git status --short --branch`、`git diff` 与 `git log -5 --oneline` 获取实时状态。
+- 当前开发分支为 `develop`，最新提交为 `218b224 feat:`。本轮文档更新尚未提交，测试完成后再次检查工作区状态。
