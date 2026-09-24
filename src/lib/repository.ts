@@ -1,6 +1,7 @@
 import { players as seedPlayers } from '@/data/players';
 import i18n from '@/i18n';
 import { guestWorkspaceRepository } from '@/lib/guest-workspace';
+import { createIdentifier } from '@/lib/identifier';
 import type { Lineup, Player, Position, Simulation } from '@/types';
 
 export const lineupRepository = {
@@ -77,7 +78,7 @@ export function listPlayers(): Player[] {
 export function starterLineup(): Lineup {
   const now = new Date().toISOString();
   return {
-    id: crypto.randomUUID(),
+    id: createIdentifier(),
     name: i18n.t('defaults.dreamTeam'),
     description: i18n.t('defaults.dreamTeamDescription'),
     createdAt: now,

@@ -59,6 +59,8 @@
 - 所有异步调用必须处理 error
 - 修改代码后必须运行 typecheck
 - 不允许为了让测试通过删除测试
+- 不允许前端代码以外链的形式引用第三方库，可以通过 npm 的形式引入第三方库，并在打包构建的时候集成到前端制品中。base case: `https://fonts.googleapis.com/css2`
+- 不要在代码中去写只能跑在 localhost 下的代码。bad case: `crypto.randomUUID()`
 
 ## 3. TypeScript 最佳实践
 

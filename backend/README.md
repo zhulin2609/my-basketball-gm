@@ -13,8 +13,8 @@
 ## Local run
 
 ```bash
-export JAVA_HOME="/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
-export PATH="$JAVA_HOME/bin:/usr/local/opt/maven/bin:$PATH"
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn spring-boot:run
 ```

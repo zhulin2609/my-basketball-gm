@@ -1,4 +1,5 @@
 import type { Lineup, Player, Simulation } from '@/types';
+import { createIdentifier } from '@/lib/identifier';
 
 const GUEST_WORKSPACE_KEY = 'dream-court.guest-workspace.v1';
 const GUEST_WORKSPACE_SCHEMA_VERSION = 1;
@@ -27,7 +28,7 @@ export interface GuestWorkspaceSummary {
 function createWorkspace(): GuestWorkspace {
   const timestamp = new Date().toISOString();
   return {
-    id: crypto.randomUUID(),
+    id: createIdentifier(),
     schemaVersion: GUEST_WORKSPACE_SCHEMA_VERSION,
     createdAt: timestamp,
     updatedAt: timestamp,

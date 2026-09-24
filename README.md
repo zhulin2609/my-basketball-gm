@@ -6,7 +6,7 @@
 
 ## 游戏玩法
 
-- **球员库**：416 名球星（19 名精选球员 + 397 名历史球星，覆盖 NBA 75 大、全明星、最佳阵容、最佳防守阵容与 1978–2026 年全部总决赛 FMVP）。支持分页浏览、搜索、位置过滤与按能力值排序。99 分制，一名球员只保存一个巅峰赛季的评价。
+- **球员库**：416 名球星（19 名精选球员 + 397 名历史球星，覆盖 NBA 75 大、全明星、最佳阵容、最佳防守阵容与 1978–2026 年全部总决赛 FMVP）。支持分页浏览、搜索、位置过滤与按能力值排序。简体中文界面显示英文名与中文名，并支持中文检索。99 分制，一名球员只保存一个巅峰赛季的评价。
 - **自定义球员**：可以创建自己的球员，也可以覆盖公共球员的属性评价；自定义数据归属当前账号。
 - **我的阵容**：阵容为 5–15 人，最多 13 人激活；首发必须各有一位 PG / SG / SF / PF / C。
 - **梦幻对战**：所有人都可以使用本地规则引擎对战；登录用户额外可以选择 AI 模拟（在 AI 设置中配置 OpenAI 兼容接口的 API Key，Key 在服务端加密保存）。战报自动评选本场最佳球员，创建 30 天后过期，每天北京时间 03:00 物理清理。
@@ -31,8 +31,8 @@
 启动后端：
 
 ```bash
-export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-export PATH=/usr/local/opt/maven/bin:$JAVA_HOME/bin:$PATH
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn spring-boot:run
 ```

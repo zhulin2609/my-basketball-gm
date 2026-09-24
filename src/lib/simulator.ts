@@ -1,4 +1,5 @@
 import type { Lineup, Player, PlayerStat, Simulation } from '@/types';
+import { createIdentifier } from '@/lib/identifier';
 
 // 线性同余随机数：相同 seed 会产生相同随机序列，因此战报可以被复现与分享。
 const seeded = (seed: number) => {
@@ -134,7 +135,7 @@ export function simulate(
   const createdAt = new Date();
   const expiresAt = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
   return {
-    id: crypto.randomUUID(),
+    id: createIdentifier(),
     homeLineupId: home.id,
     awayLineupId: away.id,
     homeLineupName: home.name,

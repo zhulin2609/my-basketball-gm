@@ -6,7 +6,7 @@ A historical basketball star database, lineup editor, and fantasy matchup simula
 
 ## Gameplay
 
-- **Player library**: 416 players (19 curated stars plus 397 historical players covering the NBA Top 75, All-Stars, All-NBA and All-Defensive teams, and every Finals MVP from 1978–2026). Paginated browsing with search, position filters, and rating sort. Ratings use a 99-point scale; each player keeps a single peak-season evaluation.
+- **Player library**: 416 players (19 curated stars plus 397 historical players covering the NBA Top 75, All-Stars, All-NBA and All-Defensive teams, and every Finals MVP from 1978–2026). The Simplified Chinese interface shows Chinese player names and supports Chinese-name search. Paginated browsing with search, position filters, and rating sort. Ratings use a 99-point scale; each player keeps a single peak-season evaluation.
 - **Custom players**: create your own players or override a public player's ratings; custom data belongs to your account.
 - **My lineups**: each lineup holds 5–15 players with at most 13 active; the starting five must include exactly one PG / SG / SF / PF / C.
 - **Fantasy matchups**: everyone can play with the built-in local rules engine; signed-in users can additionally choose AI simulation (configure an OpenAI-compatible API key in AI settings — keys are encrypted server-side). Every box score names a Player of the Game automatically. Reports expire 30 days after creation and are physically purged daily at 03:00 Beijing time.
@@ -31,8 +31,8 @@ Prerequisites: Node.js with npm, JDK 21, Maven, and PostgreSQL 16 with a `basket
 Start the backend:
 
 ```bash
-export JAVA_HOME=/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-export PATH=/usr/local/opt/maven/bin:$JAVA_HOME/bin:$PATH
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn spring-boot:run
 ```
