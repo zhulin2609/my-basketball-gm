@@ -87,7 +87,9 @@ docker compose up --detach
 curl --fail --silent http://localhost:8088/api/v1/health
 ```
 
-浏览器打开 `http://localhost:8088`，确认页面加载、注册、登录、球员读取与阵容保存正常。API 仅由 Nginx 反向代理提供，Compose 不向宿主机公开 `api` 或 `postgres` 端口。
+浏览器打开 `http://localhost:8088`，确认页面加载、注册、登录、球员读取与阵容保存正常。API 仅由 Nginx 反向代理提供，Compose 不向宿主机公开 API 端口；PostgreSQL 仅映射到宿主机回环地址。
+
+`postgres` 为本机数据库查看保留了回环地址映射 `127.0.0.1:5433:5432`。该端口只能由当前机器访问，可在 pgAdmin 中使用主机 `127.0.0.1`、端口 `5433` 连接；服务器防火墙不应放行 5433。
 
 ## 数据库备份与恢复
 
