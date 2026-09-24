@@ -2,6 +2,7 @@ package com.basketballgm.auth;
 
 import com.basketballgm.user.AdminRegistry;
 import com.basketballgm.user.CurrentUser;
+import com.basketballgm.user.ReservedUsernames;
 import com.basketballgm.user.UserMapper;
 import com.basketballgm.user.UserRow;
 import java.time.Duration;
@@ -27,6 +28,7 @@ public class AuthService {
   private final JwtEncoder jwtEncoder;
   private final CurrentUser currentUser;
   private final AdminRegistry adminRegistry;
+  private final ReservedUsernames reservedUsernames;
   private final Duration tokenTtl;
 
   public AuthService(
@@ -35,6 +37,7 @@ public class AuthService {
       JwtEncoder jwtEncoder,
       CurrentUser currentUser,
       AdminRegistry adminRegistry,
+      ReservedUsernames reservedUsernames,
       @Value("${app.auth.token-ttl}") Duration tokenTtl
   ) {
     this.userMapper = userMapper;
@@ -42,10 +45,14 @@ public class AuthService {
     this.jwtEncoder = jwtEncoder;
     this.currentUser = currentUser;
     this.adminRegistry = adminRegistry;
+    this.reservedUsernames = reservedUsernames;
     this.tokenTtl = tokenTtl;
   }
 
   public AuthResponse register(AuthRequest request) {
+    if (reservedUsernames.isReserved(request.username())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "该用户名不可用。");
+    }
     if (userMapper.findByUsername(request.username()) != null) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被占用。");
     }

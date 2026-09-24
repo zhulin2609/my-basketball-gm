@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-`develop` 为后续功能开发分支。`main` 已合并并推送 `develop` 的已验证内容，远端 `main` 为 `788cad5 merge: 合并 develop 分支`，本地与远端的 `main`、`develop` 均同步，工作区干净。本机 Docker Compose 服务已重建，Web、API 与 PostgreSQL 健康检查通过。
+`develop` 为后续功能开发分支。`main` 已合并并推送 `develop` 的已验证内容，远端 `main` 为 `788cad5 merge: 合并 develop 分支`。`develop` 工作区当前包含未提交的注册保留用户名改动：新增 `ReservedUsernames` 与 `AuthApiTest`，修改 `AuthService.register`，全部前后端测试已通过，等待用户指示提交。
 
 ## 当前目标
 
-保持下一次功能开发具备清晰的分支、数据库迁移、测试与发布路径。产品现有能力已覆盖球员库、中文球员名称与搜索、阵容编辑、游客工作区、本地与 AI 对战、认证、社区及 Docker Compose 单机运行。
+保持下一次功能开发具备清晰的分支、数据库迁移、测试与发布路径。产品现有能力已覆盖球员库、中文球员名称与搜索、阵容编辑、游客工作区、本地与 AI 对战、认证、注册保留用户名校验、社区及 Docker Compose 单机运行。
 
 ## 已完成验收
 
@@ -20,6 +20,7 @@
 - Docker Compose 可构建并运行 Nginx、Spring Boot 与 PostgreSQL，`http://localhost:8088/api/v1/health` 返回健康响应。
 - 游客可完成浏览、阵容编辑和本地对战；注册或登录导入流程受 UUID 与事务保护。
 - 社区写操作具备内容审核、限频、链接限制、管理员删除与服务开关。
+- 注册拒绝固定保留用户名（`admin`、`root`、`system`、`dreamcourt` 等），大小写不敏感，返回 409 与中文提示。
 
 ## 未完成工作
 
@@ -59,11 +60,12 @@ curl --fail --silent http://localhost:8088/api/v1/health
 ## 测试状态
 
 - 2026-09-24：前端 13 个测试文件、59 项测试通过；生产构建与格式检查通过。
-- 2026-09-24：后端 43 项 Maven 测试通过，真实 PostgreSQL 16 已验证 Flyway V1–V13。
+- 2026-09-24：后端 46 项 Maven 测试通过（含注册保留用户名的 3 项新用例），真实 PostgreSQL 16 已验证 Flyway V1–V13。
 - 2026-09-24：Compose 重建完成，Web、API、PostgreSQL 为健康状态；Nginx 代理健康接口返回 `status: ok`。
 
 ## 下一步具体行动
 
-1. 用户提出下一项功能需求后，从 `develop` 建立对应功能分支。
-2. 完成代码、数据库迁移与测试后，将功能分支合并回 `develop`。
-3. 需要发布时，将 `develop` 合并到 `main`，重新运行完整测试，再推送远端。
+1. 用户确认后提交 `develop` 工作区的注册保留用户名改动。
+2. 用户提出下一项功能需求后，从 `develop` 建立对应功能分支。
+3. 完成代码、数据库迁移与测试后，将功能分支合并回 `develop`。
+4. 需要发布时，将 `develop` 合并到 `main`，重新运行完整测试，再推送远端。

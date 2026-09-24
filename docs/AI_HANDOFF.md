@@ -39,6 +39,7 @@ git log -5 --oneline
 - 登录用户可保存球员覆盖、自定义球员、阵容、战报与加密的大模型连接配置。战报保存 30 天，每天北京时间 03:00 清理。
 - 本地引擎和 AI 对战均遵守每队 240 分钟与单人 48 分钟上限；战报展示本场最佳球员。
 - 社区支持公开合规阵容、评论、一级回复、复制阵容、敏感词过滤、可选腾讯云 CMS 审核、限频、新账号链接限制与管理员删除。`FORUM_ENABLED=false` 会关闭社区 HTTP 接口。
+- 注册接口拒绝保留用户名：`admin`、`administrator`、`root`、`system`、`support`、`official`、`moderator`、`staff`、`dreamcourt`，大小写不敏感，命中返回 409「该用户名不可用。」。校验位于 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`，由 `AuthService.register` 在查重前调用。
 - 页面以 URL hash 管理球员库、阵容、对战、社区、AI 设置和认证视图；支持简体中文与英文。
 
 ### 前端公网兼容性
@@ -65,15 +66,15 @@ git log -5 --oneline
 
 ## 修改过的文件
 
-最近完成的公网 HTTP 兼容修改涉及：
+注册保留用户名功能涉及：
 
-- 前端依赖与样式：`package.json`、`package-lock.json`、`src/styles.css`。
-- UUID 工具与调用方：`src/lib/identifier.ts`、`src/lib/identifier.test.ts`、`src/lib/guest-workspace.ts`、`src/lib/repository.ts`、`src/lib/simulator.ts`、`src/App.tsx`。
-- 交接与部署说明：`README.md`、`docs/README.en.md`、`backend/README.md`、`DESIGN.md`、`docs/AI_HANDOFF.md`、`docs/DECISIONS.md`、`docs/deployment.md`、`docs/plans/current.md`。
+- 新增 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`：固定保留名单与精确、大小写不敏感的匹配。
+- 修改 `backend/src/main/java/com/basketballgm/auth/AuthService.java`：`register` 在用户名查重之前执行保留名单校验。
+- 新增 `backend/src/test/java/com/basketballgm/auth/AuthApiTest.java`：覆盖保留名拒绝、大小写不敏感拒绝、正常注册与重复注册冲突。
 
 ## 修改中的文件
 
-无。工作区干净，全部改动已提交并推送。
+上述三个文件已在 `develop` 工作区完成修改并通过全部测试，尚未提交。
 
 ## 当前已知问题
 
@@ -101,6 +102,10 @@ AI 服务商响应与额度存在差异，游客也没有服务端 API Key 配�
 ### 前端资源随制品交付
 
 字体通过 npm 依赖随 Vite 制品发布，避免公网访问依赖第三方字体服务。UUID 由 `uuid` 统一生成，可覆盖缺少浏览器 `crypto.randomUUID()` 的公网 HTTP 环境。
+
+### 保留用户名只拦截固定名单
+
+保留名单仅包含固定的官方观感词汇，不并入 `FORUM_ADMIN_USERNAMES` 配置。管理员需要先通过注册接口创建自己的账号，再把账号名写入配置；若配置里的名字被禁止注册，管理员账号将无法建立。管理员注册后，用户名唯一性约束阻止其他人占用同名账号。
 
 ## 本地运行
 
@@ -147,7 +152,7 @@ mvn test
 ## 测试状态
 
 - 2026-09-24：`npm test` 通过，13 个测试文件、59 项测试全部成功；`npm run build` 与 `npm run format:check` 通过。
-- 2026-09-24：`mvn test` 使用临时 PostgreSQL 16 执行，43 项测试全部成功；Flyway 已验证 V1–V13 迁移。
+- 2026-09-24：`mvn test` 使用临时 PostgreSQL 16 执行，46 项测试全部成功（含注册保留用户名的 3 项新用例）；Flyway 已验证 V1–V13 迁移。
 - 2026-09-24：`docker compose up --build --detach` 完成；`web`、`api`、`postgres` 均通过健康检查，`http://localhost:8088/api/v1/health` 返回 `status: ok`。
 - Apple 芯片版 JDK 21 位于 `/opt/homebrew/opt/openjdk@21`，本机 Maven 测试可使用该 JDK。
 

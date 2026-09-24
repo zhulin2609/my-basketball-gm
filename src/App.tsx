@@ -1672,9 +1672,9 @@ function LineupWorkbench({
           <p>{t('lineup.rulesText')}</p>
         </div>
         {syncError && (
-          <p className="editor-error" role="alert">
-            {t('lineup.syncFailed', { message: syncError })}
-          </p>
+          <div className="starter-rule-alert error" role="alert">
+            <strong>{t('lineup.syncFailed', { message: syncError })}</strong>
+          </div>
         )}
         {missingPlayerIds.length > 0 && (
           <div className="starter-rule-alert error" role="alert">
