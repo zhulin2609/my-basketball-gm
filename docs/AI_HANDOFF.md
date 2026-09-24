@@ -52,14 +52,14 @@ git log -5 --oneline
 - Flyway 迁移已到 V13：包含用户、公共球员、阵容、战报、账户认证、加密大模型凭据、游客导入、社区与球员中文名称。
 - 历史球员中文名称维护在 `backend/src/main/resources/player-catalog-chinese-names.json`，前端 Vite 读取该资源，Flyway V13 Java 迁移也读取它写入 PostgreSQL。
 - 根目录 `compose.yaml` 构建 `web`、`api`、`postgres`：Nginx 提供前端并代理 `/api`；Flyway 随 API 启动执行；PostgreSQL 数据写入命名卷。
-- `main` 已合并 `develop` 并已推送远端，当前远端 `main` 为 `6817208 merge: 合并 develop 分支`。
+- `main` 已合并 `develop` 并已推送远端，当前远端 `main` 为 `788cad5 merge: 合并 develop 分支`。
 
 ## 最近完成的提交
 
 - `a4853fd fix: 去除前端以外链形式引用的第三方库；去除 \`crypto.randomUUID()\` ; 更新文档`
 - `218b224 feat:`：球员中文名称、中文搜索与公共球员身份字段保护。
 - `c533640 feat: 添加 Docker Compose 单机部署`
-- `6817208 merge: 合并 develop 分支`：已推送到远端 `main`。
+- `788cad5 merge: 合并 develop 分支`：已推送到远端 `main`。
 
 旧功能的完整变更索引可通过 `git log --oneline` 与 `docs/ARCHITECTURE.md` 追溯；本文件仅保留继续开发所需的有效信息。
 
@@ -73,12 +73,7 @@ git log -5 --oneline
 
 ## 修改中的文件
 
-本次 Session 收尾已更新以下文档，尚未提交：
-
-- `docs/AI_HANDOFF.md`
-- `docs/plans/current.md`
-- `docs/DECISIONS.md`
-- `docs/deployment.md`
+无。工作区干净，全部改动已提交并推送。
 
 ## 当前已知问题
 
