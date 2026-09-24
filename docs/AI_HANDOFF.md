@@ -39,7 +39,7 @@ git log -5 --oneline
 - 登录用户可保存球员覆盖、自定义球员、阵容、战报与加密的大模型连接配置。战报保存 30 天，每天北京时间 03:00 清理。
 - 本地引擎和 AI 对战均遵守每队 240 分钟与单人 48 分钟上限；战报展示本场最佳球员。
 - 社区支持公开合规阵容、评论、一级回复、复制阵容、敏感词过滤、可选腾讯云 CMS 审核、限频、新账号链接限制与管理员删除。`FORUM_ENABLED=false` 会关闭社区 HTTP 接口。
-- 注册接口拒绝保留用户名：`admin`、`administrator`、`root`、`system`、`support`、`official`、`moderator`、`staff`、`dreamcourt`，大小写不敏感，命中返回 409「该用户名不可用。」。校验位于 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`，由 `AuthService.register` 在查重前调用。
+- 注册接口拒绝保留用户名：`admin`、`administrator`、`root`、`system`、`support`、`official`、`moderator`、`staff`，大小写不敏感，命中返回 409「该用户名不可用。」。校验位于 `backend/src/main/java/com/basketballgm/user/ReservedUsernames.java`，由 `AuthService.register` 在查重前调用。
 - 页面以 URL hash 管理球员库、阵容、对战、社区、AI 设置和认证视图；支持简体中文与英文。
 
 ### 前端公网兼容性

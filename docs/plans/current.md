@@ -20,7 +20,7 @@
 - Docker Compose 可构建并运行 Nginx、Spring Boot 与 PostgreSQL，`http://localhost:8088/api/v1/health` 返回健康响应。
 - 游客可完成浏览、阵容编辑和本地对战；注册或登录导入流程受 UUID 与事务保护。
 - 社区写操作具备内容审核、限频、链接限制、管理员删除与服务开关。
-- 注册拒绝固定保留用户名（`admin`、`root`、`system`、`dreamcourt` 等），大小写不敏感，返回 409 与中文提示。
+- 注册拒绝固定保留用户名（`admin`、`root`、`system` 等），大小写不敏感，返回 409 与中文提示。
 
 ## 未完成工作
 

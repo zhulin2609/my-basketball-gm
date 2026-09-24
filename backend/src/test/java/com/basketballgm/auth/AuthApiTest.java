@@ -45,7 +45,7 @@ class AuthApiTest {
   @Test
   void rejectsReservedUsernameRegardlessOfCase() throws Exception {
     register("ADMIN", 409, "该用户名不可用。");
-    register("DreamCourt", 409, "该用户名不可用。");
+    register("Administrator", 409, "该用户名不可用。");
   }
 
   @Test
