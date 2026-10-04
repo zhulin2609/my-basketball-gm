@@ -3,12 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite apps/web",
+    "build": "npm run typecheck && vite build apps/web",
     "data:generate-nba-history": "node scripts/generate-nba-history-catalog.mjs",
-    "preview": "vite preview",
+    "preview": "vite preview apps/web",
     "test": "vitest run",
+    "typecheck": "cd packages/core && tsc --noEmit -p tsconfig.json && cd ../../packages/client && tsc --noEmit -p tsconfig.json && cd ../../apps/web && tsc --noEmit -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -16,22 +21,23 @@
     "@fontsource/dm-mono": "^5.3.0",
     "@fontsource/manrope": "^5.3.0",
     "@fontsource/playfair-display": "^5.3.0",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "6.1.1",
     "i18next": "^26.4.2",
-    "react": "latest",
-    "react-dom": "latest",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-i18next": "^17.0.14",
-    "uuid": "^14.0.2",
-    "vite": "latest"
+    "uuid": "14.0.2",
+    "vite": "8.3.0"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "jsdom": "^30.0.1",
-    "prettier": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "prettier": "3.9.6",
+    "typescript": "7.0.2",
+    "vitest": "5.0.0"
   }
 }

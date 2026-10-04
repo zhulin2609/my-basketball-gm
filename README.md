@@ -18,7 +18,8 @@
 
 系统由三部分组成，详细说明见 `docs/ARCHITECTURE.md`：
 
-- 前端：React、TypeScript、Vite，入口为 `src/main.tsx` 和 `src/App.tsx`，开发时运行在 `127.0.0.1:5173`。
+- 前端：React、TypeScript、Vite，位于 `apps/web`，入口为 `apps/web/src/main.tsx` 和 `apps/web/src/App.tsx`，开发时运行在 `127.0.0.1:5173`。
+- 共享包：npm workspaces 管理 `packages/core`（纯领域类型、规则引擎、校验与目录数据）与 `packages/client`（REST 契约、会话、游客工作区与业务流程），平台能力由应用注入。
 - 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`，运行在 `127.0.0.1:8080`，按业务模块组织（auth、player、lineup、simulation、llm、guest、forum、moderation、user、config）。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
 
@@ -59,7 +60,8 @@ npm run dev
 ## 测试
 
 ```bash
-npm test                # 前端单元、组件与数据测试（Vitest）
+npm test                # 前端与共享包测试（Vitest，19 个测试文件）
+npm run typecheck       # core、client、web 三处 TypeScript 检查
 npm run build           # TypeScript 类型检查与生产构建
 npm run format:check    # Prettier 格式检查
 cd backend && mvn test  # 后端全部测试（含真实 PostgreSQL 集成测试）

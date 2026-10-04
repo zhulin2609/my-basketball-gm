@@ -18,7 +18,8 @@ A historical basketball star database, lineup editor, and fantasy matchup simula
 
 The system has three parts; see `docs/ARCHITECTURE.md` (in Chinese) for details:
 
-- Frontend: React, TypeScript, Vite. Entry points are `src/main.tsx` and `src/App.tsx`; the dev server runs on `127.0.0.1:5173`.
+- Frontend: React, TypeScript, Vite, located in `apps/web`. Entry points are `apps/web/src/main.tsx` and `apps/web/src/App.tsx`; the dev server runs on `127.0.0.1:5173`.
+- Shared packages: npm workspaces manage `packages/core` (pure domain types, the rules engine, validation, and catalog data) and `packages/client` (REST contracts, session, guest workspace, and business flows); platform capabilities are injected by each app.
 - Backend: Java 21, Spring Boot, MyBatis. Entry point is `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`; it runs on `127.0.0.1:8080` and is organized by business module (auth, player, lineup, simulation, llm, guest, forum, moderation, user, config).
 - Database: PostgreSQL 16. The schema is maintained by Flyway migrations in `backend/src/main/resources/db/migration/`.
 
@@ -59,7 +60,8 @@ Common backend environment variables (all have defaults and are optional for loc
 ## Tests
 
 ```bash
-npm test                # Frontend unit, component, and data tests (Vitest)
+npm test                # Frontend and shared-package tests (Vitest, 19 test files)
+npm run typecheck       # TypeScript checks for core, client, and web
 npm run build           # TypeScript type check and production build
 npm run format:check    # Prettier format check
 cd backend && mvn test  # All backend tests (including real PostgreSQL integration tests)

@@ -8,12 +8,18 @@
 
 ## 2026-09-24：前端字体随构建制品交付
 
-`DM Mono`、`Manrope` 与 `Playfair Display` 由 `@fontsource` npm 包提供，并通过 `src/styles.css` 导入所需字重和拉丁字符集。Vite 将字体文件写入 `dist/assets`。
+`DM Mono`、`Manrope` 与 `Playfair Display` 由 `@fontsource` npm 包提供，并通过 `apps/web/src/styles.css` 导入所需字重和拉丁字符集。Vite 将字体文件写入 `apps/web/dist/assets`。
 
 公网 HTTP 环境访问第三方字体服务可能失败。将字体随制品交付后，页面加载只依赖当前站点资源，Docker 和静态服务器无需额外配置外部字体域名。
 
 ## 2026-09-24：UUID 由依赖统一生成
 
-`src/lib/identifier.ts` 统一调用 `uuid` 的 `v4()`，所有浏览器持久化 ID 通过该模块产生。
+Web 在 `apps/web/src/lib/identifier.ts` 统一调用 `uuid` 的 `v4()`，并作为 IdGenerator 注入 `packages/client`，所有持久化 ID 通过该入口产生。
 
-部分公网 HTTP 浏览器不提供 `crypto.randomUUID()`。`uuid` 使用可用的 Web Crypto 能力生成符合 RFC 4122 的标识符，游客工作区、导入幂等键和既有本地数据协议保持兼容。
+部分公网 HTTP 浏览器不提供 `crypto.randomUUID()`。`uuid` 使用可用的 Web Crypto 能力生成符合 RFC 4122 的标识符，游客工作区、导入幂等键和既有本地数据协议保持兼容；共享包自身不访问平台随机 API。
+
+## 2026-10-04：npm workspaces 与平台能力注入
+
+仓库拆分为 `apps/web`、`packages/core`、`packages/client`：core 只含纯领域逻辑（禁止依赖 React、DOM、存储、网络、i18n），client 通过 `ports.ts` 注入存储、HTTP、ID、时钟与随机种子，Web 专属的 i18n、社区、AI 与旧存储键迁移留在应用内。两个客户端复用同一套业务规则，为小程序端复用做准备。
+
+规则引擎改为显式接收 seed、战报 ID 与创建时间；游客导入错误改为结构化错误码，界面文案映射留在各应用。中文名称 JSON 仍以后端资源目录为单一来源，经 `@catalog` 别名在构建时打包。

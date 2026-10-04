@@ -4,7 +4,8 @@
 
 Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成。
 
-- 前端：React、TypeScript、Vite，入口为 `src/main.tsx` 和 `src/App.tsx`。
+- 前端：React、TypeScript、Vite，位于 `apps/web`，入口为 `apps/web/src/main.tsx` 和 `apps/web/src/App.tsx`。
+- 共享包：npm workspaces 管理 `packages/core` 与 `packages/client`。core 提供领域类型、球员目录、阵容校验、成员显示顺序、最佳球员、规则引擎与列表选择器，禁止依赖 React、DOM、存储、网络与 i18n；client 提供 REST 契约、会话、游客工作区、阵容保存队列与对战编排，存储、HTTP、ID、时钟与随机种子通过 `ports.ts` 由应用注入。
 - 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
 
@@ -26,22 +27,22 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 
 ### 数据来源
 
-- 公共球员目录由 `src/data/players.ts` 和 `src/data/historical-players.generated.ts` 提供；397 名历史球员的中文名称位于 `backend/src/main/resources/player-catalog-chinese-names.json`，Vite 与 Flyway 共享该资源；球员可带可选中文名称，简体中文界面用“英文名（中文名）”显示，并把中文名称纳入搜索。
-- `src/lib/repository.ts` 是组件与浏览器存储之间的边界。
-- `src/lib/api.ts` 是组件与后端 REST API 之间的边界，同时负责 JWT 会话读写；非 2xx 响应抛出携带 `status` 与 `code` 的 `ApiError`。
-- `src/lib/errors.ts` 把社区写操作的错误码映射为本地文案；无 code 的错误保持拼接后端 message 的既有行为。
-- `src/lib/simulator.ts` 提供游客和登录用户都可以使用的本地规则引擎。
-- `src/lib/player-of-the-game.ts` 从战报统计中评选本场最佳球员，本地战报与云端战报复用同一公式。
+- 公共球员目录由 `packages/core` 的 catalog 入口（`@dream-court/core/catalog`，含 `data/players.ts` 与 `data/historical-players.generated.ts`）提供；397 名历史球员的中文名称位于 `backend/src/main/resources/player-catalog-chinese-names.json`，通过 `@catalog` 别名在构建时打包；球员可带可选中文名称，简体中文界面用“英文名（中文名）”显示，并把中文名称纳入搜索。
+- 游客数据的本地存取边界在 `packages/client/src/repository.ts`（阵容、战报 20 场上限与 30 天清理、球员覆盖），浏览器存储等平台能力由 `apps/web/src/lib/runtime.ts` 注入；目录与用户覆盖的合并在 core 的 `player-overrides.ts`。
+- 公共 REST 契约与会话在 `packages/client`（`api.ts`、`session.ts`）；Web 专属的社区与 AI 接口在 `apps/web/src/lib/api.ts`。非 2xx 响应抛出携带 `status` 与 `code` 的 `ApiError`。
+- `apps/web/src/lib/errors.ts` 把社区写操作的错误码映射为本地文案；无 code 的错误保持拼接后端 message 的既有行为。
+- `packages/core` 的 `simulator.ts` 提供游客和登录用户都可以使用的本地规则引擎，seed、战报 ID 与创建时间由调用方传入。
+- `packages/core` 的 `player-of-the-game.ts` 从战报统计中评选本场最佳球员，本地战报与云端战报复用同一公式。
 
 ### 游客数据
 
-`src/lib/guest-workspace.ts` 把游客球员修改、阵容和战报保存在统一 localStorage 工作区。工作区使用稳定 UUID，并通过 `hasUserProgress` 区分示例数据和用户实际修改。
+`packages/client/src/guest-workspace.ts` 把游客球员修改、阵容和战报保存在统一本地工作区。工作区使用稳定 UUID，并通过 `hasUserProgress` 区分示例数据和用户实际修改；存储通过注入的 StoragePort 访问，旧浏览器存储键的一次性迁移由 `apps/web/src/lib/guest-legacy.ts` 提供并注入。
 
-`src/lib/guest-import.ts` 把浏览器工作区转换为后端导入请求。注册会自动导入；登录已有账号时由用户决定是否导入。导入成功后才会清空浏览器工作区。
+`packages/client/src/guest-import.ts` 把工作区转换为后端导入请求。注册会自动导入；登录已有账号时由用户决定是否导入。导入成功后才会清空工作区；快照字段无法恢复时抛出结构化错误（`GuestImportDataError`），文案映射留在 Web。
 
 ### 登录数据
 
-存在有效认证会话时，球员、阵容、AI 设置和战报通过 `src/lib/api.ts` 访问后端。JWT 保存在 localStorage 的 `dream-court.auth-session.v1`。
+存在有效认证会话时，球员、阵容、AI 设置和战报通过 `packages/client` 的 API 客户端访问后端。JWT 保存在 localStorage 的 `dream-court.auth-session.v1`，会话过期判断使用注入的时钟。
 
 ## 后端
 
@@ -88,7 +89,7 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 
 ## 测试边界
 
-- Vitest 覆盖前端规则、游客存储、导入转换、入口交互、分页、社区界面与社区错误码映射。
+- Vitest 覆盖共享包的规则、保存队列、对战编排、游客存储与导入转换（含真实本地 HTTP 服务器的契约测试），以及 Web 的入口交互、分页、社区界面与社区错误码映射。
 - 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密、本地敏感词过滤。
 - `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。

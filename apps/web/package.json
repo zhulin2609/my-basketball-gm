@@ -1,0 +1,10 @@
+{
+  "name": "@dream-court/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@dream-court/client": "*",
+    "@dream-court/core": "*"
+  }
+}

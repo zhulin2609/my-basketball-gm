@@ -1,0 +1,10 @@
+{
+  "name": "@dream-court/core",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog/index.ts"
+  }
+}
