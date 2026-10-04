@@ -242,37 +242,40 @@ AppSecret、微信返回的会话密钥、密码与完整登录凭证不能进�
 
 core 不依赖 client；client 可以依赖 core，但不能依赖具体应用。存储、HTTP、ID 和时间等能力由应用注入。共享模块输出状态、数据或错误代码，界面文案留在各应用。
 
-### 7.2 现有文件的归属
+### 7.2 文件归属（阶段 2 已实施）
 
-| 当前文件                                                           | 目标与改造要求                                                                             |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `src/types.ts`                                                     | 领域类型进入 core；社区专属类型移至 Web 模块；保留已有 API 扩展字段的兼容读取              |
-| `src/lib/lineup-validation.ts`                                     | 进入 core，保留比赛资格规则；补充测试覆盖草稿与比赛校验的差异                              |
-| `src/lib/member-display-order.ts`                                  | 进入 core，保留首发显示顺序及不修改存储顺序的行为                                          |
-| `src/lib/player-of-the-game.ts`                                    | 进入 core，复用评分和确定性平票规则                                                        |
-| `src/lib/simulator.ts`                                             | 进入 core，保持公式及引擎版本；调用方传入 seed、ID、创建时间，消除隐式随机与时钟依赖       |
-| `src/lib/player-display.ts`                                        | 进入 core；使用展示选项替代 Web `AppLocale` 类型；保留中文名及搜索逻辑                     |
-| `src/data/players.ts`                                              | 进入 core 的目录模块，调整类型和中文名称资源导入                                           |
-| `src/data/historical-players.generated.ts`                         | 进入 core 的目录模块，继续通过既有生成过程维护                                             |
-| `backend/src/main/resources/player-catalog-chinese-names.json`     | 保持数据单一来源；前端构建读取并打包，Java 继续读取该资源                                  |
-| `src/lib/repository.ts`                                            | 内置阵容工厂及目录覆盖合并进入 core；读写与到期清理进入 client                             |
-| `src/lib/guest-workspace.ts`                                       | 类型与纯变更规则分离；存储通过 client 接口；旧浏览器存储键迁移留在 Web                     |
-| `src/lib/guest-import.ts`                                          | 导入转换进入 client；依赖公共契约；直接中文错误改为代码与字段                              |
-| `src/lib/api.ts`                                                   | 分离 REST 类型、端点、会话存储、HTTP 传输；Web 社区和 AI 接口保留在 Web 可用模块           |
-| `src/lib/identifier.ts`                                            | Web 平台实现；小程序提供兼容的 UUID 生成能力；不得在 core 直接访问平台随机 API             |
-| `src/App.tsx`                                                      | 提取综合评分、过滤、排序到 core；保存顺序、加载、导入和对战编排到 client；Web 页面继续保留 |
-| `src/lib/use-pagination.ts`                                        | 属于 React 界面辅助代码；可在应用层复用，不进入 core；页面交互依各端设计                   |
-| `src/main.tsx`、`src/lib/hash-route.ts`                            | Web 入口与路由，迁至 Web 应用                                                              |
-| `src/styles.css`                                                   | Web 样式；小程序根据同一产品视觉风格实现手机样式                                           |
-| `src/i18n/index.ts`、`src/i18n/locale.ts`、`src/i18n/resources.ts` | 全部留在 Web                                                                               |
-| `src/lib/errors.ts`                                                | 当前社区错误文案映射留在 Web                                                               |
-| `src/data/README.md`                                               | 随目录调整来源说明和生成说明                                                               |
+下表的迁移已在阶段 2 完成，左列为当前职责位置；小程序开发阶段以该表为准，不参考旧的 `src/` 路径。
 
-内置阵容抽取同时处理名称、描述、ID、时间四类输入。保留已有存档中的 `classic-five` 等标识的兼容性，不能通过重新生成 ID 使旧战报或旧阵容失联。既有用户存档的语言不因切换客户端被自动重命名。
+| 当前位置                                                                | 职责与要求                                                                              |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `packages/core/src/types.ts`                                            | 领域类型；`Lineup` 上的 `sharedPostId`、`shareBlockedPlayers` 作为 API 扩展字段兼容读取 |
+| `packages/core/src/lineup-validation.ts`                                | 比赛资格与草稿校验；含同一球员不重复检查                                                |
+| `packages/core/src/member-display-order.ts`                             | 首发显示顺序，不修改存储顺序                                                            |
+| `packages/core/src/player-of-the-game.ts`                               | 评分与确定性平票规则                                                                    |
+| `packages/core/src/simulator.ts`                                        | 规则引擎；调用方传入 seed、ID、创建时间，引擎版本常量 `'v1'`                            |
+| `packages/core/src/player-display.ts`                                   | 展示选项类型与中文名、搜索文本逻辑                                                      |
+| `packages/core/src/data/`（经 `@dream-court/core/catalog` 入口导出）    | 球员目录与中文名称资源导入，生成过程维护 `historical-players.generated.ts`              |
+| `backend/src/main/resources/player-catalog-chinese-names.json`          | 数据单一来源；前端构建读取并打包，Java 继续读取该资源                                   |
+| `packages/client/src/repository.ts`                                     | 游客阵容、战报（20 场上限、30 天清理）与球员覆盖存取；内置阵容初始化                    |
+| `packages/client/src/guest-workspace.ts`                                | 工作区类型与变更规则，存储通过注入的 StoragePort                                        |
+| `packages/client/src/guest-import.ts`                                   | 导入转换与结构化错误（`GuestImportDataError`）                                          |
+| `packages/client/src/api.ts`、`session.ts`、`contracts.ts`、`ports.ts`  | 公共 REST 契约、会话（注入时钟）与平台能力接口                                          |
+| `apps/web/src/lib/identifier.ts`                                        | Web 的 UUID 实现；小程序将提供兼容实现；core 不访问平台随机 API                         |
+| `apps/web/src/App.tsx`                                                  | Web 页面组件与剩余编排；评分、过滤、排序、保存队列、对战编排已分别进入 core 与 client   |
+| `apps/web/src/lib/use-pagination.ts`                                    | React 界面辅助代码；页面交互依各端设计                                                  |
+| `apps/web/src/main.tsx`、`apps/web/src/lib/hash-route.ts`               | Web 入口与 hash 路由                                                                    |
+| `apps/web/src/styles.css`                                               | Web 样式；小程序根据同一产品视觉风格实现手机样式                                        |
+| `apps/web/src/i18n/`                                                    | Web 国际化全部资源                                                                      |
+| `apps/web/src/lib/errors.ts`、`apps/web/src/lib/guest-import-errors.ts` | 社区错误文案映射与游客导入错误文案映射                                                  |
+| `apps/web/src/lib/guest-legacy.ts`                                      | 旧浏览器存储键的一次性迁移，经注入接入工作区加载                                        |
+| `apps/web/src/lib/presets.ts`、`apps/web/src/lib/runtime.ts`            | 内置阵容文案组装与 Web 平台接线（存储、HTTP、ID、时钟、随机种子）                       |
+| `packages/core/src/data/README.md`                                      | 目录来源与生成说明                                                                      |
+
+内置阵容工厂同时处理名称、描述、ID、时间四类输入。保留已有存档中的 `classic-five` 标识的兼容性，不能通过重新生成 ID 使旧战报或旧阵容失联。既有用户存档的语言不因切换客户端被自动重命名。
 
 当前两个客户端的游客引擎复用同一 TypeScript 实现；登录规则引擎继续由 Java 执行。测试应验证每个引擎自身的确定性和业务不变量，不能未经核验宣称 TypeScript 与 Java 对同一种子必然生成完全相同的逐项结果。
 
-### 7.3 建议新增共享文件
+### 7.3 共享文件（阶段 2 已创建）
 
 | 目标文件                                 | 职责                                                         |
 | ---------------------------------------- | ------------------------------------------------------------ |
@@ -324,7 +327,7 @@ core 不依赖 client；client 可以依赖 core，但不能依赖具体应用�
 
 - 根 `package.json` 和锁文件增加 workspaces 及各应用脚本；迁移后的 Web 开发、测试、构建命令有明确兼容入口。
 - 分别配置 Web、core、client 和小程序 TypeScript 检查，避免依靠 DOM 类型掩盖 core 的平台依赖。
-- 修改 `vite.config.ts`、`tsconfig.app.json` 的目录和别名；小程序构建配置提供等效共享包解析。
+- Web 构建配置位于 `apps/web/vite.config.ts`，core、client、web 各有一份 tsconfig（阶段 2 已完成）；小程序构建配置需提供等效共享包解析。
 - 修改 `Dockerfile` 的 workspace 安装、构建和产物路径，保证 Web 容器继续运行。
 - 保留 Nginx `/api` 转发；小程序调用明确配置的完整 API 地址，不依赖 Vite 代理。
 - `scripts/generate-nba-history-catalog.mjs` 读写 `packages/core/src/data`，目录刷新生成下一个版本号的幂等迁移，不覆盖 V1–V13 已发布迁移。

@@ -4,15 +4,19 @@
 
 ## 当前状态
 
-微信小程序项目在 `mini-app-20261004` 分支推进（产品文档：`docs/plans/wechat-miniprogram.md`）。阶段 2（npm workspaces 重构与共享包抽取）已完成：`packages/core` 与 `packages/client` 抽取完成，Web 迁入 `apps/web`，`apps/miniprogram` 尚未创建。全部验证通过；改动尚未提交，等待用户授权。阶段 3 需要用户另行授权。
+微信小程序项目在 `mini-app-20261004` 分支推进（产品文档：`docs/plans/wechat-miniprogram.md`）。阶段 2（npm workspaces 重构与共享包抽取）已完成、已提交（`bd5b8a5`）并推送远端，工作区干净。阶段 3（Taro 小程序游客端）需要用户明确授权后开始；`apps/miniprogram` 尚未创建。
+
+## 当前目标
+
+按产品文档的阶段顺序推进小程序开发：阶段 3 游客端 → 阶段 4 微信身份与登录对战 → 阶段 5 独立分享 → 阶段 6 全量回归与发布准备。每阶段完成后更新本文件与 `docs/AI_HANDOFF.md`，提交与推送按用户授权执行。
 
 ## 已完成验收（2026-10-04）
 
 - `npm test` 19 个测试文件、84 项测试全部通过（含真实本地 HTTP 服务器的保存队列与对战编排契约测试）；`npm run typecheck`、`npm run build`、`npm run format:check`、`git diff --check` 全部通过。
-- 独立 review 的八项代码发现与六项文档不一致已全部处理：vite `envDir`（开发模式环境变量）、会话时钟注入、旧键迁移顺序、`@catalog` 别名恢复与按包目录 typecheck、生成脚本递增迁移版本、测试去替身化、手算期望值测试，以及全部文档路径更新。
-- `docker compose build` 完成，web 容器运行 healthy，`http://localhost:8088/api/v1/health` 返回 `status: ok`，页面产物确认为最新构建。
+- 独立 review 的八项代码发现与六项文档不一致全部修复并复验（vite envDir、会话时钟注入、旧键迁移顺序、`@catalog` 别名与按包目录 typecheck、生成脚本递增迁移版本、测试去替身化、手算期望值、全部文档路径）。
+- `docker compose build` 完成，Web、API、PostgreSQL 全部 healthy；`http://localhost:8088/api/v1/health` 返回 `status: ok`，页面产物确认为当前源码构建。
 - 真实浏览器冒烟通过：游客浏览、中文姓名搜索、阵容示例初始化与候选分页、本地引擎对战出战报、游客工作区协议保持（UUID、hasUserProgress、战报上限、引擎版本 `v1`）。
-- Web 全部既有能力（含 AI 对战、社区、国际化）与 localStorage 键名保持不变；后端零改动。
+- Web 全部既有能力（含 AI 对战、社区、国际化）与 localStorage 键名保持不变；后端零改动（最近一次后端 Maven 测试于 2026-09-24 全部通过，此后源码未变）。
 - 四项产品决定已确认并写入产品文档：小程序球员编辑只读；独立分享允许自定义球员与覆盖球员（复制时新建球员记录或覆盖）；战报分享仅查看。
 
 ## 未完成工作
@@ -57,11 +61,12 @@ curl --fail --silent http://localhost:8088/api/v1/health
 
 ## 测试状态
 
-- 2026-10-04：前端与共享包 19 个测试文件、84 项测试通过；typecheck、生产构建与格式检查通过；独立 review 的全部发现已修复并复验；后端因零改动未运行 Maven 测试。
+- 2026-10-04：前端与共享包 19 个测试文件、84 项测试通过；typecheck、生产构建与格式检查通过；开发服务器环境变量与真实浏览器游客主流程冒烟通过。
 - 2026-10-04：Docker Compose 重建完成，Web、API、PostgreSQL 全部 healthy；Nginx 代理健康接口返回 `status: ok`。
+- 2026-09-24：后端 46 项 Maven 测试全部通过（真实 PostgreSQL 16 验证 Flyway V1–V13）；此后 backend 零改动。
 
 ## 下一步具体行动
 
-1. 用户审阅并授权提交阶段 2 改动（分支 `mini-app-20261004`）。
-2. 用户授权后开始阶段 3，先核验 Taro 与相关依赖的兼容版本并锁定。
-3. 完成阶段 3 后按产品文档推进阶段 4/5，每阶段更新本文件与 `docs/AI_HANDOFF.md`。
+1. 用户授权后开始阶段 3：先核验 Taro 与相关依赖的兼容版本并锁定，再创建 `apps/miniprogram`。
+2. 阶段 3 完成后运行 Web 全量回归与小程序开发者工具验收，更新本文件与 `docs/AI_HANDOFF.md`。
+3. 阶段 4/5 按产品文档推进；剩余待确认项在第 12 节，逐项确认后实施。

@@ -3,9 +3,9 @@
 ## Source of truth
 
 - Status: Active
-- Last refreshed: 2026-09-24
+- Last refreshed: 2026-10-04
 - Primary product surfaces: 球员库、我的阵容、梦幻对战、社区
-- Evidence reviewed: `README.md`、`src/App.tsx`、`src/lib/api.ts`、`src/lib/repository.ts`、`src/data/players.ts`、`src/types.ts`、`db/schema.sql`、`src/styles.css`、`backend/src/main/java/com/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
+- Evidence reviewed: `README.md`、`apps/web/src/App.tsx`、`packages/client/src/api.ts`、`packages/client/src/repository.ts`、`packages/core/src/data/players.ts`、`packages/core/src/types.ts`、`db/schema.sql`、`apps/web/src/styles.css`、`backend/src/main/java/com/basketballgm/simulation/SimulationService.java`、`AGENTS.md`
 
 ## Brand
 
@@ -55,7 +55,7 @@
 - Existing components to reuse: `primary`、`ghost`、`search`、`tag`、`portrait`、`roster-row`。
 - New/changed components: 球员库的“自定义球员”入口、右侧球员编辑器、身高（英尺/英寸）与体重（磅）的基础资料字段、阵容页内嵌球员选择器、首发位置规则提示、对战页的“本地模拟 / AI 模拟”模式选择器、全局中英语言切换控件、球员详情中的各项能力值，以及社区帖子与评论视图。
 - Variants and states: 默认、编辑中、输入校验失败、搜索无结果、已加入隐藏、15 人满编禁用、首发位置缺失、首发位置已配齐、本地模拟已选中、AI 已配置可选、AI 未配置禁用、模拟中、模拟失败。
-- Token/component ownership: 样式统一在 `src/styles.css`，页面逻辑在 `src/App.tsx`，本地球员覆盖在 `src/lib/repository.ts`。
+- Token/component ownership: 样式统一在 `apps/web/src/styles.css`，页面逻辑在 `apps/web/src/App.tsx`，游客球员覆盖与阵容存取在 `packages/client/src/repository.ts`。
 
 ## Accessibility
 
