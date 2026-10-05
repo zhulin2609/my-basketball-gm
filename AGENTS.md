@@ -1,48 +1,124 @@
-本文件中的每一条规则都是强制性的。违反任何一条规则都会遭受毁灭性打击。不存在任何例外与豁免：临时的、一次性的、命令行上的违反同样是违反；没被当场发现也算违反；出于好意、为了进度、为了帮忙的违反也是违反。
+# AGENTS.md
 
-## Project
+## Repository Working Principles
 
-这是一个 React + TypeScript + Java + Spring boot + postgresql 项目。
+本文件定义 Codex Desktop、Kimi Code、ZCode 共同遵守的仓库规则。每个新 Agent 都可能无法看到旧会话；长期信息保存到仓库，聊天只提供临时上下文。
 
-项目支持小程序，使用 Taro 框架开发。
+项目使用 React、TypeScript、Java、Spring Boot、PostgreSQL 和 Taro，支持根据球员库创建阵容并进行模拟对战。保留现有实现、用户修改和已接受决策；只修改当前任务必要内容。
 
-主要用途：
+`AGENTS.md = rules`；`SKILL.md = procedure`；`docs = state`；`Git/code = facts`。以下规则覆盖同一协议在不同工具中的使用；不要维护工具专属的内容副本。
 
-用户可以根据球员库中的球员，自建阵容，并进行模拟对战。
+## Documentation Map
 
-## Architecture
+所有仓库路径以 Git 根目录为基准。按当前任务触发条件读取文档。
 
-详细架构：
+| 文件                               | 职责                               | 何时读取                                |
+| ---------------------------------- | ---------------------------------- | --------------------------------------- |
+| `AGENTS.md`                        | 仓库规则、导航、冲突和协作流程     | 每个新任务或恢复任务开始时              |
+| `docs/ARCHITECTURE.md`             | 当前模块、数据流和系统边界         | 任务涉及对应模块或架构关系时            |
+| `docs/DECISIONS.md`                | 已接受的长期决策及理由             | 任务触及已有决策或提出长期变化时        |
+| `docs/plans/current.md`            | 当前任务目标、验收、执行状态和验证 | 非 trivial 任务及恢复任务               |
+| `docs/AI_HANDOFF.md`               | 上一个 Agent 的短期交接索引        | 接手已有工作时，随后核验                |
+| `docs/plans/wechat-miniprogram.md` | 小程序范围和产品验收要求           | 小程序功能开发或验收时                  |
+| `.agents/skills/handoff/SKILL.md`  | 准备交接的操作步骤及输出格式       | 正式交接、切换 Agent 或结束未完成会话时 |
 
-@docs/ARCHITECTURE.md
+`.agents/skills/handoff/SKILL.md` 是唯一 canonical handoff Skill。工具未自动发现该路径时，显式读取该文件，或由用户配置引用、import、symlink；不要复制为另一份独立 Skill。工具的自动发现能力须实际验证，不能由文件存在推断。
 
-## Required Context
+## Source of Truth and Conflict Resolution
 
-开始任何开发任务前，必须主动读取：
+### Intended state
 
-- docs/ARCHITECTURE.md
-- docs/AI_HANDOFF.md
-- docs/plans/current.md
-- docs/DECISIONS.md
+Intended state 表示系统应该变成什么样。当前用户明确指令定义目标行为；`docs/DECISIONS.md` 中 Active 的 accepted decisions 和 `docs/plans/current.md` 中已确认的目标、验收条件补充工程意图。候选决策不能自动成为已接受决策。
 
-不要假设这些文件内容已经在上下文中。
+### Actual state
 
-## Before Coding
+Actual state 表示系统实际是什么样。working tree、source code、configuration 和 runtime behavior 描述当前实现；Git 描述检出状态及过去提交的变化。用户对目标行为的优先权不能用来推断功能已经实现。
 
-开始修改代码前：
+| 依据                                 | 权威范围与限制                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| 当前用户明确指令                     | 目标行为和当前授权范围                                                          |
+| working tree、代码、配置、可执行行为 | 当前实际实现；发现偏离目标时记录差异                                            |
+| tests                                | expected behavior；确认相关、有效且未过期后才作为依据，执行结果只证明覆盖的范围 |
+| Git history                          | 过去提交了什么、修改了什么；不自动代表当前意图                                  |
+| `docs/DECISIONS.md`                  | 已接受的长期架构和工程意图                                                      |
+| `docs/ARCHITECTURE.md`               | 文档化的当前架构，需与实现核对                                                  |
+| `docs/plans/current.md`              | 当前任务计划、验收和执行状态，需与证据核对                                      |
+| `docs/AI_HANDOFF.md`                 | advisory context，必须验证                                                      |
+| previous chat/session memory         | 检索线索；不能覆盖仓库状态、正式文档或当前用户指令                              |
 
-1. 阅读 docs/AI_HANDOFF.md
-2. 阅读 docs/plans/current.md
-3. 检查 git status
-4. 检查 git diff
-5. 查看 git log -5 --oneline
-6. 阅读与当前任务相关的代码
-7. 总结当前项目状态
-8. 再开始修改
+发生冲突时，先在 current plan 的 Open Questions 记录 discrepancy、证据和影响，不凭空猜测。能够从相关代码、配置和有意义的验证确定的实际状态直接核实；只有歧义实质影响目标、实现或安全接手时才询问用户。
+
+## Git Ownership and Concurrency
+
+Only one writing agent may own a Git worktree at a time.
+
+Multiple agents may work in parallel only when they use separate
+Git worktrees or branches.
+
+Never modify, reset, checkout, stash, or commit another agent's
+uncommitted work.
+
+并行写入必须使用独立 branch 和独立检出目录；在同一 worktree 中切换 branch 不构成隔离。不得为了清理环境 reset、checkout、stash、删除或覆盖其他 Agent 的修改。来源不明的未提交修改保持原状，先确定归属和任务关系。
+
+current plan 的 Owner 使用 `codex | kimi | zcode | human | unassigned`，并记录 Worktree、Branch、Base Commit 和写入范围。Owner 表示当前 worktree 的写入归属，只是协作约定；同类工具的多个实例还须记录可区分的会话或任务标识。接手前确认原 Owner 已停止写入，再更新 Owner；只修改 Owner 字段不能取得其他 Agent 的写权限。
+
+并行任务分别使用各自检出目录中的 current plan；集成 Agent 汇总已验证的结果，不覆盖其他 Agent 的未提交文件。交接不会自动提交、推送、合并、创建 branch/worktree 或清理 working tree。
+
+## Starting a New Task
+
+1. 阅读 `AGENTS.md`，确认当前用户目标、授权范围与 Git 写入归属。
+2. 检查 Git status、当前 branch、相关 diff 和相关代码。
+3. 只读取 Documentation Map 中与任务有关的文档；typo 等 trivial 修改无需读取全部架构、决策和交接内容。
+4. 非 trivial 任务创建或更新 `docs/plans/current.md`，明确目标、验收、Owner、基线、计划与验证方式。替换当前任务前保留仍然相关的未完成工作和可追溯验证依据。
+5. 说明已确认的当前状态和下一步，然后执行授权范围内的工作。
+
+## Resuming Existing Work
+
+固定读取顺序：`AGENTS.md → docs/AI_HANDOFF.md → docs/plans/current.md → Git verification → referenced code/docs → targeted validation → continue`。
+
+```bash
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git log -3 --oneline
+git diff --stat
+git diff
+git diff --cached
+```
+
+接手遵循 `RECEIVE → VERIFY → ACCEPT → WORK`：读取交接索引；核对 branch、HEAD、未提交及未跟踪文件、相关实现和验证；确认任务、原 Owner 停止写入及保留内容；随后更新 Owner 并开始工作。handoff 声称 CLEAN 而实际 DIRTY，或基线、目标、验证不一致时，将其视为 stale，依实际 repository state 重建上下文并记录 discrepancy。
+
+接手未完成任务时 `HANDOFF_READY → ACTIVE`；DONE 的任务不因读取 handoff 自动重新开始。新的用户目标按新任务流程建立。
+
+## During Implementation
+
+- current plan 是 session-independent Task State：包含 Task、Status、Owner、Goal、Acceptance Criteria、Plan、Current State、Progress、Open Questions、Decision Candidates、Validation 和 Completion。Progress 只记录 milestone。
+- 状态使用 `NEW | ACTIVE | BLOCKED | HANDOFF_READY | VALIDATING | DONE`：分别表示待开始、执行中、受阻、可交接、验证中、验收完成。并非每个任务都必须经过所有状态；BLOCKED 必须写清具体条件，恢复后回到 ACTIVE。
+- 仅在 investigation complete、implementation complete、significant decision、preparing handoff、validation complete、task complete 等 checkpoint 更新任务状态；不记录聊天过程或 thought stream。
+- 架构发生实质变化时，同任务更新 `docs/ARCHITECTURE.md` 的当前说明。长期决策写入 `docs/DECISIONS.md`，包含 Context、Decision、Alternatives、Why Rejected、Consequences、Affected Areas、Status 和 Date；未确认事项留在 Decision Candidates。
+- 历史 accepted decision 保留。被替代时标记 `Status: Superseded by D-XXX`，并由新 decision 说明替代关系；不得直接删除。
+
+## Validation Rules
+
+从当前脚本和配置确定命令，运行最小且有价值的 targeted tests、typecheck、lint、build 或 focused runtime verification。修改代码后必须运行 typecheck。文档任务检查格式、引用、Git 元数据和协议一致性，无需为交接顺便修复无关失败。
+
+Validation 每条记录 command、`PASS | FAIL | NOT RUN`、验证范围与必要的失败原因。仅实际成功执行的命令可写 PASS；历史结果注明日期、版本和证据，不能视为本次执行。测试和构建通过不等于平台验收通过。现有 Main 分支推送测试门禁仍须遵守。
+
+## Handoff Protocol
+
+Handoff is an index, not the source of truth.
+
+交出工作时执行：`Inspect repo → Verify current task → Run targeted validation → Update current plan → Update durable docs if necessary → Write AI_HANDOFF.md → Final consistency check`。具体步骤和字段格式只维护在 `.agents/skills/handoff/SKILL.md`。
+
+未完成任务准备交接时将状态设为 HANDOFF_READY，并保留 blocker；已验收完成的任务保持 DONE。完成交接后停止写入，Owner 设为 unassigned，接手者仍须验证并确认写入归属。Base Commit 表示当前任务起始基线；HEAD、Worktree 状态及验证以最后核验时的结果为准。
+
+每次正式交接刷新 `docs/AI_HANDOFF.md`，保持短期索引，引用 current plan 的完整状态；不追加无限历史、不复制完整 diff。最后检查未提交内容、引用和状态一致，给下一 Agent 一个可执行的第一步。
+
+handoff、Skill 输出及日志不得记录真实 API keys、passwords、auth tokens、credentials、private keys 或无关个人信息；发现敏感信息只记录脱敏的位置和处置状态，不复制或展开原文。
 
 # TypeScript + React + Vite 开发规范
 
-## 1. 技术栈 & 版本
+## 1. 使用的技术与版本
 
 - 核心框架: React 18+ (使用 Hooks 和 Functional Components，禁止 Class 组件)
 - 语言: TypeScript 5+ (严格模式，禁止滥用 any)
@@ -80,18 +156,14 @@
   ```
 - 严格处理空值，使用可选链 `?.` 和空值合并运算符 `??`
 
-## 4. 禁止 AI 修改的文件
+## 4. 仓库规则文件修改
 
-- AGENTS.md
+- `AGENTS.md` 仅在当前用户明确授权修改仓库规则时编辑。
 
 ## 5. Main 分支推送前测试门禁
 
 - 向远端推送 `main` 分支之前，必须完整运行项目前端和后端的全部测试用例并全部通过。若测试未运行或任一测试失败，不得执行 `git push` 到远端 `main`。
 - 严禁直接在 `main` 分支上修改代码， `main` 分支只能通过合并其他分支来变更代码。
-
-## 6. 更新 AI_HANDOFF.md 和 current plan
-
-大型功能开发过程中，每完成一个阶段就更新：docs/AI_HANDOFF.md 和 docs/plans/current.md
 
 ## 语言
 
@@ -148,7 +220,7 @@
 
 如果你在执行一件事的过程中，用户问了一个别的事，如果回应用户能马上回应，那么就直接回应。暂时处理完用户请求以后马上继续你之前正在执行的事情，不要干一半不干了。
 
-你在发现任何文档或者代码有错误的时候，你的更新不要保留任何错误痕迹。我们不需要任何错误的记录。
+发现代码或当前说明错误时直接更正相关内容。未解决 discrepancy 暂记 current plan；已接受的历史 decision 按 During Implementation 的规则保留。
 
 对于任何任务，任何功能的实现，始终要实施、运行、测试、迭代，直到所需功能正确运行为止，禁止在初步实现后就停止并"要求用户测试"。实现完任何内容之后，测试也是你工作中不可缺少的部分。
 

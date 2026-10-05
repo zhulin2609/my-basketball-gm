@@ -1,11 +1,13 @@
 # Architecture
 
+描述当前模块、数据流和系统边界。长期设计理由见 `docs/DECISIONS.md`；当前任务与验收状态见 `docs/plans/current.md`。
+
 ## 系统边界
 
 Dream Court 包含浏览器前端、微信小程序、Spring Boot API 和 PostgreSQL。
 
 - 前端：React、TypeScript、Vite，位于 `apps/web`，入口为 `apps/web/src/main.tsx` 和 `apps/web/src/App.tsx`。
-- 小程序：Taro 4.3.0、React 18.3.1，位于 `apps/miniprogram`，入口为 `src/app.tsx`；当前实现游客端，微信身份与分享按后续计划推进。
+- 小程序：Taro 4.3.0、React 18.3.1，位于 `apps/miniprogram`，入口为 `src/app.tsx`；当前实现游客端，游客流程使用本地数据。
 - 共享包：npm workspaces 管理 `packages/core` 与 `packages/client`。core 提供领域类型、球员目录、阵容校验、成员显示顺序、最佳球员、规则引擎与列表选择器，禁止依赖 React、DOM、存储、网络与 i18n；client 提供 REST 契约、会话、游客工作区、阵容保存队列与对战编排，存储、HTTP、ID、时钟与随机种子通过 `ports.ts` 由应用注入。
 - 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
@@ -37,7 +39,7 @@ Dream Court 包含浏览器前端、微信小程序、Spring Boot API 和 Postgr
 
 ### 游客数据
 
-`packages/client/src/guest-workspace.ts` 把游客球员修改、阵容和战报保存在统一本地工作区。工作区使用稳定 UUID，并通过 `hasUserProgress` 区分示例数据和用户实际修改；存储通过注入的 StoragePort 访问，旧浏览器存储键的一次性迁移由 `apps/web/src/lib/guest-legacy.ts` 提供并注入。
+`packages/client/src/guest-workspace.ts` 把游客球员修改、阵容和战报保存在统一本地工作区。工作区使用稳定 UUID，并通过 `hasUserProgress` 区分示例数据和用户实际修改；内置阵容保留 `classic-five` 键。存储通过注入的 StoragePort 访问，旧浏览器存储键的一次性迁移由 `apps/web/src/lib/guest-legacy.ts` 提供并注入。
 
 `packages/client/src/guest-import.ts` 把工作区转换为后端导入请求。注册会自动导入；登录已有账号时由用户决定是否导入。导入成功后才会清空工作区；快照字段无法恢复时抛出结构化错误（`GuestImportDataError`），文案映射留在 Web。
 
@@ -55,7 +57,7 @@ Dream Court 包含浏览器前端、微信小程序、Spring Boot API 和 Postgr
 
 编辑页进入球员选择页时，只有存在未保存编辑才写入草稿。编辑页与选择页读取草稿失败后停止编辑、显示错误并提供重新读取入口；原始草稿和正式工作区数据保留。正式保存先读取草稿存储，通过读取与校验后再写入阵容。
 
-小程序单独安装 React 18，并在 TypeScript 与 Webpack 中指向该版本；`react-dom` 由 Taro 框架插件解析为 `@tarojs/react` 小程序渲染器。共享源码进入 Taro 的编译范围，Web 使用自身的 React、ReactDOM 和 Vite 配置。当前已配置 AppID，开发者工具通过本地配置使用基础库 3.17.3；项目配置的 2.15.0 兼容性尚未验证。开发者工具中的页面渲染、中文及英文搜索、分页、详情与四个底部页面切换已验证，iOS、Android 验收尚未完成。
+小程序单独安装 React 18，并在 TypeScript 与 Webpack 中指向该版本；`react-dom` 由 Taro 框架插件解析为 `@tarojs/react` 小程序渲染器。共享源码进入 Taro 的编译范围，Web 使用自身的 React、ReactDOM 和 Vite 配置。仓库维护 `apps/miniprogram/project.config.example.json`，真实 `project.config.json` 与开发者工具私有配置保存在本地，并由 Git 和 Docker 忽略；Taro 构建读取本地真实配置。
 
 ## 后端
 
@@ -109,4 +111,4 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
 - `ForumModerationTest` 使用同一测试库，用收紧的限频配置真实触发词表拦截、秒级与天级限频、新账号链接限制、管理员删除与错误码响应体。
 
-具体执行命令和当前测试状态见 `docs/AI_HANDOFF.md` 与 `docs/plans/current.md`。
+当前任务的执行命令和验证状态见 `docs/plans/current.md`。
