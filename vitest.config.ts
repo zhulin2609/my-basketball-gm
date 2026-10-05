@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     include: [
       'apps/web/src/**/*.test.{ts,tsx}',
+      'apps/miniprogram/src/**/*.test.ts',
       'packages/core/src/**/*.test.ts',
       'packages/client/src/**/*.test.ts',
     ],

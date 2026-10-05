@@ -1,0 +1,201 @@
+page {
+  background: #102b23;
+  color: #f2efdc;
+  font-family: sans-serif;
+  font-size: 28px;
+}
+
+.screen {
+  padding: 32px 28px calc(40px + env(safe-area-inset-bottom));
+}
+
+.eyebrow {
+  font-size: 22px;
+  color: #b9e2ad;
+  letter-spacing: 2px;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 600;
+  margin: 12px 0 32px;
+}
+
+.card {
+  background: #193b30;
+  border: 1px solid #43604a;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.name {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: #c0c9be;
+  font-size: 24px;
+  line-height: 1.6;
+}
+
+.row,
+.actions,
+.filters,
+.metrics,
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.portrait {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #102b23;
+}
+
+.rating {
+  font-size: 40px;
+  font-family: monospace;
+  color: #b9e2ad;
+}
+
+.metrics,
+.filters {
+  flex-wrap: wrap;
+  margin: 20px 0;
+  font-size: 24px;
+}
+
+.actions {
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+button.primary,
+button.secondary {
+  border-radius: 8px;
+  font-size: 28px;
+  margin: 16px 0 0;
+}
+
+button.primary {
+  background: #b9e2ad;
+  color: #102b23;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #244638;
+  color: #f2efdc;
+  border: 1px solid #658066;
+}
+
+button[disabled] {
+  opacity: 0.55;
+}
+
+.input,
+.select {
+  background: #0f2d22;
+  color: #f2efdc;
+  border: 1px solid #658066;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 44px;
+}
+
+.textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+}
+
+.label {
+  color: #c0c9be;
+  margin: 24px 0 12px;
+}
+
+.notice,
+.error {
+  padding: 20px 0;
+  line-height: 1.6;
+}
+
+.notice {
+  color: #b9e2ad;
+}
+
+.error {
+  color: #ffbcad;
+}
+
+.paragraph {
+  line-height: 1.7;
+  margin: 16px 0;
+}
+
+.ratings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+}
+
+.score-card {
+  text-align: center;
+}
+
+.score {
+  font-family: monospace;
+  color: #b9e2ad;
+  font-size: 72px;
+  margin: 24px 0;
+}
+
+.stats-scroll {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.stat-row {
+  display: flex;
+  width: 1080px;
+  padding: 16px 0;
+  border-bottom: 1px solid #43604a;
+  font-size: 24px;
+}
+
+.stat-row text {
+  width: 100px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.stat-row text:first-child {
+  width: 280px;
+  text-align: left;
+}
+
+.stat-heading {
+  color: #b9e2ad;
+}

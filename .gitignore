@@ -4,6 +4,8 @@ dist
 .env.local
 .omx
 .cache
+.swc/
+project.private.config.json
 .zcode
 .DS_Store
 *.tsbuildinfo

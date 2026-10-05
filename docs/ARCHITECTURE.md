@@ -2,9 +2,10 @@
 
 ## 系统边界
 
-Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成。
+Dream Court 包含浏览器前端、微信小程序、Spring Boot API 和 PostgreSQL。
 
 - 前端：React、TypeScript、Vite，位于 `apps/web`，入口为 `apps/web/src/main.tsx` 和 `apps/web/src/App.tsx`。
+- 小程序：Taro 4.3.0、React 18.3.1，位于 `apps/miniprogram`，入口为 `src/app.tsx`；当前实现游客端，微信身份与分享按后续计划推进。
 - 共享包：npm workspaces 管理 `packages/core` 与 `packages/client`。core 提供领域类型、球员目录、阵容校验、成员显示顺序、最佳球员、规则引擎与列表选择器，禁止依赖 React、DOM、存储、网络与 i18n；client 提供 REST 契约、会话、游客工作区、阵容保存队列与对战编排，存储、HTTP、ID、时钟与随机种子通过 `ports.ts` 由应用注入。
 - 后端：Java 21、Spring Boot、MyBatis，入口为 `backend/src/main/java/com/basketballgm/BasketballGmApplication.java`。
 - 数据库：PostgreSQL 16，结构由 `backend/src/main/resources/db/migration/` 中的 Flyway 迁移维护。
@@ -43,6 +44,18 @@ Dream Court 由浏览器前端、Spring Boot API 和 PostgreSQL 三部分组成�
 ### 登录数据
 
 存在有效认证会话时，球员、阵容、AI 设置和战报通过 `packages/client` 的 API 客户端访问后端。JWT 保存在 localStorage 的 `dream-court.auth-session.v1`，会话过期判断使用注入的时钟。
+
+## 微信小程序
+
+`apps/miniprogram/src/app.config.ts` 注册九个页面，底部入口为球员、阵容、对战、我的。球员浏览提供中文搜索、位置过滤和分页；独立编辑页与球员选择页处理阵容成员；战报列表与详情使用历史快照。
+
+`src/services/guest-store.ts` 通过 client 的游客 repository 读写工作区，复用 core 的目录、校验、模拟与最佳球员计算。游客数据协议保持稳定 UUID、schemaVersion、hasUserProgress、20 场上限与 30 天保留期。示例初始化不计入实际进度。编辑草稿使用独立存储键 `dream-court.lineup-drafts.v1`，逐次输入同步保存；正式保存通过校验后清理草稿，选中阵容仍有草稿时对战返回错误。
+
+`src/services/guest-runtime.ts` 管理加载、失败和已就绪状态；初始化失败后允许重新读取，初始化进行中复用同一个请求，成功后复用游客服务。`runtime.ts` 连接平台实现与 React 订阅，并在初始化时校验 `MINI_API_BASE_URL`。`src/platform/storage.ts` 使用 Taro 同步存储并传播错误；`identifier.ts` 通过平台密码学随机数据与 uuid 提前准备 UUID；`http.ts` 实现公共 HttpPort。游客流程不调用后端。
+
+编辑页进入球员选择页时，只有存在未保存编辑才写入草稿。编辑页与选择页读取草稿失败后停止编辑、显示错误并提供重新读取入口；原始草稿和正式工作区数据保留。正式保存先读取草稿存储，通过读取与校验后再写入阵容。
+
+小程序单独安装 React 18，并在 TypeScript 与 Webpack 中指向该版本；`react-dom` 由 Taro 框架插件解析为 `@tarojs/react` 小程序渲染器。共享源码进入 Taro 的编译范围，Web 使用自身的 React、ReactDOM 和 Vite 配置。当前已配置 AppID，开发者工具通过本地配置使用基础库 3.17.3；项目配置的 2.15.0 兼容性尚未验证。开发者工具中的页面渲染、中文及英文搜索、分页、详情与四个底部页面切换已验证，iOS、Android 验收尚未完成。
 
 ## 后端
 
@@ -90,6 +103,7 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 ## 测试边界
 
 - Vitest 覆盖共享包的规则、保存队列、对战编排、游客存储与导入转换（含真实本地 HTTP 服务器的契约测试），以及 Web 的入口交互、分页、社区界面与社区错误码映射。
+- 小程序游客服务测试把工作区和草稿真实写入 `.cache/miniprogram-tests`，通过新服务实例验证恢复、阵容约束、模拟、快照、容量与到期清理；该测试不代替微信平台运行验收。
 - 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密、本地敏感词过滤。
 - `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。

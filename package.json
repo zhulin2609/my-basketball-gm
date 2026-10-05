@@ -12,8 +12,10 @@
     "build": "npm run typecheck && vite build apps/web",
     "data:generate-nba-history": "node scripts/generate-nba-history-catalog.mjs",
     "preview": "vite preview apps/web",
+    "dev:weapp": "npm run dev --workspace @dream-court/miniprogram",
+    "build:weapp": "npm run typecheck && npm run build --workspace @dream-court/miniprogram",
     "test": "vitest run",
-    "typecheck": "cd packages/core && tsc --noEmit -p tsconfig.json && cd ../../packages/client && tsc --noEmit -p tsconfig.json && cd ../../apps/web && tsc --noEmit -p tsconfig.json",
+    "typecheck": "cd packages/core && tsc --noEmit -p tsconfig.json && cd ../../packages/client && tsc --noEmit -p tsconfig.json && cd ../../apps/web && tsc --noEmit -p tsconfig.json && cd ../miniprogram && tsc --noEmit -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

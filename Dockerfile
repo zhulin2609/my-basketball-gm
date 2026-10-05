@@ -6,6 +6,7 @@ WORKDIR /workspace
 # npm workspaces 需要完整的包布局才能安装依赖。
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
+COPY apps/miniprogram/package.json apps/miniprogram/
 COPY packages/core/package.json packages/core/
 COPY packages/client/package.json packages/client/
 # npm ci 在 workspaces 布局下会跳过跨平台的原生可选依赖（rolldown 绑定），

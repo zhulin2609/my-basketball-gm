@@ -1,40 +1,42 @@
 # Current Plan
 
-更新时间：2026-10-04
+更新时间：2026-10-05
 
 ## 当前状态
 
-微信小程序项目在 `mini-app-20261004` 分支推进（产品文档：`docs/plans/wechat-miniprogram.md`）。阶段 2（npm workspaces 重构与共享包抽取）已完成、已提交（`bd5b8a5`）并推送远端，工作区干净。阶段 3（Taro 小程序游客端）需要用户明确授权后开始；`apps/miniprogram` 尚未创建。
+微信小程序在 `mini-app-20261004` 分支推进，产品文档为 `docs/plans/wechat-miniprogram.md`。阶段 2 已提交（`bd5b8a5`），阶段 3 开发基线为 `0c06e0f`。阶段 3 游客端代码已实现并通过业务测试、类型检查和构建。完整微信运行验收仍未完成，阶段 3 保持待验收状态。
+
+用户已授权接手后继续开发。当前已配置 AppID，微信开发者工具已导入项目并开启服务端口。Git 提交、推送与发布按用户授权执行。
 
 ## 当前目标
 
-按产品文档的阶段顺序推进小程序开发：阶段 3 游客端 → 阶段 4 微信身份与登录对战 → 阶段 5 独立分享 → 阶段 6 全量回归与发布准备。每阶段完成后更新本文件与 `docs/AI_HANDOFF.md`，提交与推送按用户授权执行。
+完成游客端的代码验证与微信真实运行验收，再按产品文档顺序推进微信身份、登录规则对战和独立分享。每阶段更新本文件与 `docs/AI_HANDOFF.md`。
 
-## 已完成验收（2026-10-04）
+## 已实现内容
 
-- `npm test` 19 个测试文件、84 项测试全部通过（含真实本地 HTTP 服务器的保存队列与对战编排契约测试）；`npm run typecheck`、`npm run build`、`npm run format:check`、`git diff --check` 全部通过。
-- 独立 review 的八项代码发现与六项文档不一致全部修复并复验（vite envDir、会话时钟注入、旧键迁移顺序、`@catalog` 别名与按包目录 typecheck、生成脚本递增迁移版本、测试去替身化、手算期望值、全部文档路径）。
-- `docker compose build` 完成，Web、API、PostgreSQL 全部 healthy；`http://localhost:8088/api/v1/health` 返回 `status: ok`，页面产物确认为当前源码构建。
-- 真实浏览器冒烟通过：游客浏览、中文姓名搜索、阵容示例初始化与候选分页、本地引擎对战出战报、游客工作区协议保持（UUID、hasUserProgress、战报上限、引擎版本 `v1`）。
-- Web 全部既有能力（含 AI 对战、社区、国际化）与 localStorage 键名保持不变；后端零改动（最近一次后端 Maven 测试于 2026-09-24 全部通过，此后源码未变）。
-- 四项产品决定已确认并写入产品文档：小程序球员编辑只读；独立分享允许自定义球员与覆盖球员（复制时新建球员记录或覆盖）；战报分享仅查看。
+- Taro 4.3.0 + React 18.3.1 小程序，独立 React 依赖与类型解析，`react-dom` 使用 Taro 的 `@tarojs/react` 渲染器，共享源码通过 Taro 编译。Web 使用自身的 React、ReactDOM 和 Vite 配置。
+- 球员列表和详情：416 名球员、中文搜索、位置过滤、排序、分页、能力只读。
+- 阵容列表、编辑和球员选择：创建、名称/描述、成员增减、位置/首发/激活；人数与重复校验；逐次保存草稿与恢复；明确正式保存状态和错误。
+- 初始化与草稿读取失败时提供重新读取入口；保留草稿原始内容；没有编辑时进入选择页不写入草稿；初始化执行 API 地址校验。
+- 游客规则对战、战报列表与详情、最佳球员、历史快照、20 场上限与 30 天清理。
+- 同步存储、平台随机 UUID、HTTP 实现；游客流程复用 core/client。Web、共享包和后端业务源码保持原状。
+- `dev:weapp`、`build:weapp`、四包 typecheck、业务测试与 Docker workspace 安装配置；Git 和 Docker 忽略 `.swc` 和 `project.private.config.json`。
 
 ## 未完成工作
 
-- 阶段 3：Taro 小程序骨架、平台实现与游客端（浏览、阵容编辑、设备端规则对战、战报）。
-- 阶段 4：微信身份绑定、新账号 Web 凭据、游客导入同名客户端键处理、登录规则对战。
-- 阶段 5：独立分享的迁移、接口、审核、创建、接收、复制、撤销与到期行为。
-- 剩余待确认产品细节见产品文档第 12 节（微信用户 Web 凭据方式、绑定数量、分享可见性与有效期、历史 AI 战报展示范围、导入同名客户端键处理、上线资格）。
-- 腾讯云 CMS 真实凭据验证与服务器生产发布（既有安排）。
+- 阶段 3 剩余开发者工具及 iOS、Android 验收，包括键盘、安全区域、连续输入、返回与后台恢复、存储失败、随机 API 兼容性、重启、对战与到期。本地开发者工具使用基础库 3.17.3，项目配置的 2.15.0 兼容性尚未验证。
+- 阶段 4 微信身份、新账号 Web 凭据、游客导入冲突处理、登录规则对战与会话切换。
+- 阶段 5 独立分享的数据库、接口、审核、创建、接收、复制、管理、撤销与期限。
+- 产品文档第 12 节的剩余选择及上线资格；腾讯云 CMS 真实凭据验证与服务器发布。
+- npm audit 报告的 53 个依赖安全问题，包括 4 个 critical，涉及 Taro 依赖链；需要兼容性核验与修复验证。
 
 ## 实施约束
 
-- 所有数据库结构变更通过新的 Flyway 迁移提交（V14 起递增）；已发布迁移 V1–V13 不修改。
-- 公共球员中文名称的唯一资源是 `backend/src/main/resources/player-catalog-chinese-names.json`。
-- core 禁止依赖 React、DOM、小程序 API、存储、网络、i18n；client 通过 ports 注入平台能力。
-- `main` 只接收已验证分支的合并；每次推送 `main` 前重新运行完整前后端测试。
-- 生产发布前先完成数据库备份，再执行 `docker compose up --build --detach`，最后验证健康接口。
-- 开发、提交、推送与发布均需用户按阶段授权。
+- 数据库变更使用新增 Flyway 迁移，V1–V13 不修改。
+- 公共中文名称只有 `backend/src/main/resources/player-catalog-chinese-names.json` 这一份来源。
+- core 禁止依赖 React、DOM、小程序 API、存储、网络与 i18n；client 通过 ports 注入平台能力。
+- `main` 只通过合并其他分支变更；推送 `main` 前完整运行前后端测试并全部通过。
+- 生产发布前完成数据库备份，再执行构建与启动，最后验证健康接口。
 
 ## 测试方法
 
@@ -42,31 +44,30 @@
 npm test
 npm run typecheck
 npm run build
+npm run build:weapp
 npm run format:check
 git diff --check
+docker compose build web
 export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
 export PATH="$(brew --prefix maven)/bin:$JAVA_HOME/bin:$PATH"
 cd backend
 mvn test
 ```
 
-Compose 验证：
-
-```bash
-docker compose config --quiet
-docker compose up --build --detach
-docker compose ps
-curl --fail --silent http://localhost:8088/api/v1/health
-```
+开发者工具导入 `apps/miniprogram`，产物目录为 `dist`，需要有权限的真实 AppID。平台验收使用真实存储、随机 API 和设备，禁止以替身或业务测试代替。
 
 ## 测试状态
 
-- 2026-10-04：前端与共享包 19 个测试文件、84 项测试通过；typecheck、生产构建与格式检查通过；开发服务器环境变量与真实浏览器游客主流程冒烟通过。
-- 2026-10-04：Docker Compose 重建完成，Web、API、PostgreSQL 全部 healthy；Nginx 代理健康接口返回 `status: ok`。
-- 2026-09-24：后端 46 项 Maven 测试全部通过（真实 PostgreSQL 16 验证 Flyway V1–V13）；此后 backend 零改动。
+- 2026-10-05：重新完整运行 `npm test`，21 个测试文件、91 项测试通过，无失败或跳过：Web 32 项、小程序业务 7 项、core 37 项、client 15 项。新增测试使用真实磁盘数据与共享引擎，覆盖初始化失败后重试、并发请求复用、草稿损坏与原始数据保留、草稿恢复、人数与重复限制、快照、每队 240 分钟、20 场和 30 天规则，以及 API 地址校验。四包 typecheck 与开发者工具搜索、分页、详情、四个底部页面检查再次通过，本次日志位于 `.cache/test-results`。
+- 2026-10-05：四包 typecheck、Web 与微信小程序生产构建通过。小程序目录约 728 KiB（磁盘占用），`common.js` 有 268 KiB 提示；Web 保留既有 500 kB 提示。
+- 2026-10-05：格式检查、差异检查、Web Docker 镜像构建通过；运行中的服务没有重新启动。
+- 2026-10-04：此前版本的 Web 浏览器游客主流程和 Compose 健康检查通过。
+- 2026-10-05：使用 Java 21 与独立真实 PostgreSQL 16.10 测试数据库完整运行 `mvn test`，46 项测试通过，无失败、错误或跳过；13 项 Flyway 迁移校验与新库初始化通过。临时测试数据库容器已清理，现有业务服务保持运行，backend 业务代码保持原状。
+- 2026-10-05：通过微信官方 `miniprogram-automator` 在开发者工具基础库 3.17.3 验证球员页标题、12 张卡片、中文及英文搜索、分页、详情和四个底部页面切换，未收到运行错误。游客初始化使用真实存储与随机接口，未修改用户阵容或战报。
+- 2026-10-05：Web 新构建 JavaScript 与本机 8088 服务提供的文件 SHA-256 相同；独立 Chrome 配置读取实际页面，确认球员库标题和 12 张球员卡片已渲染。
+- 剩余开发者工具流程、基础库兼容性与真机验收尚未完成，阶段 3 保持待验收状态。
 
 ## 下一步具体行动
 
-1. 用户授权后开始阶段 3：先核验 Taro 与相关依赖的兼容版本并锁定，再创建 `apps/miniprogram`。
-2. 阶段 3 完成后运行 Web 全量回归与小程序开发者工具验收，更新本文件与 `docs/AI_HANDOFF.md`。
-3. 阶段 4/5 按产品文档推进；剩余待确认项在第 12 节，逐项确认后实施。
+1. 完成阶段 3 的剩余开发者工具流程、基础库兼容性及 iOS、Android 真机验收。
+2. 确认第 12 节中影响微信身份与导入的选择后推进阶段 4，随后实施独立分享。

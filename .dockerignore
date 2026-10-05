@@ -7,4 +7,6 @@ dist
 backend/target
 .DS_Store
 .cache
+.swc
+project.private.config.json
 .omx
