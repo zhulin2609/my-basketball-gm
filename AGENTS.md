@@ -4,6 +4,8 @@
 
 这是一个 React + TypeScript + Java + Spring boot + postgresql 项目。
 
+项目支持小程序，使用 Taro 框架开发。
+
 主要用途：
 
 用户可以根据球员库中的球员，自建阵容，并进行模拟对战。
@@ -61,6 +63,9 @@
 - 不允许为了让测试通过删除测试
 - 不允许前端代码以外链的形式引用第三方库，可以通过 npm 的形式引入第三方库，并在打包构建的时候集成到前端制品中。base case: `https://fonts.googleapis.com/css2`
 - 不要在代码中去写只能跑在 localhost 下的代码。bad case: `crypto.randomUUID()`
+- 真实账号配置和凭据不得进入提交；提交前检查完整暂存内容；
+- 推送前扫描全部待推送提交；
+- 禁止绕过扫描、扩大允许名单或关闭保护。
 
 ## 3. TypeScript 最佳实践
 
