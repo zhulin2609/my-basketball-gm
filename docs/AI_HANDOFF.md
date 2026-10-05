@@ -73,7 +73,7 @@ git diff --check
 docker compose build web
 ```
 
-开发者工具导入 `apps/miniprogram`，产物目录为 `dist`，需要有权限的真实 AppID。游客模式不需要 API 地址；后续联网功能构建时配置 `MINI_API_BASE_URL`。
+首次检出后，将 `apps/miniprogram/project.config.example.json` 复制为同目录的 `project.config.json`，填写有权限的真实 AppID。真实配置与 `project.private.config.json` 由 Git 和 Docker 忽略，配置模板使用 `YOUR_WECHAT_APP_ID` 占位值。开发者工具导入 `apps/miniprogram`，产物目录为 `dist`。游客模式不需要 API 地址；后续联网功能构建时配置 `MINI_API_BASE_URL`。
 
 后端测试使用 `127.0.0.1:5432` 上的真实 PostgreSQL 数据库 `basketball_gm_test`，执行前确认数据库已启动。2026-10-05 的完整测试使用独立 PostgreSQL 16.10 Docker 容器，测试结束后清理该容器；现有业务数据库位于 Compose 的 5433 端口。
 

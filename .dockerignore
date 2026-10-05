@@ -9,4 +9,5 @@ backend/target
 .cache
 .swc
 project.private.config.json
+/apps/miniprogram/project.config.json
 .omx

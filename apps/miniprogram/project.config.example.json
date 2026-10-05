@@ -4,7 +4,7 @@
   "miniprogramRoot": "dist/",
   "compileType": "miniprogram",
   "libVersion": "2.15.0",
-  "appid": "wx9513c697596bb3b6",
+  "appid": "YOUR_WECHAT_APP_ID",
   "setting": {
     "es6": false,
     "postcss": false,

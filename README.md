@@ -60,6 +60,8 @@ npm run dev
 
 ## 微信小程序开发
 
+首次使用时，将 `apps/miniprogram/project.config.example.json` 复制为同目录的 `project.config.json`，把 `appid` 的 `YOUR_WECHAT_APP_ID` 替换为有项目权限的真实 AppID，再构建并导入开发者工具。真实 `project.config.json` 和 `project.private.config.json` 只保留在本地，由 Git 和 Docker 忽略；仓库维护配置模板。
+
 ```bash
 npm run dev:weapp       # 持续编译微信小程序
 npm run build:weapp     # 全部包类型检查与微信小程序构建

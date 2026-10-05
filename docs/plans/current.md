@@ -54,7 +54,7 @@ cd backend
 mvn test
 ```
 
-开发者工具导入 `apps/miniprogram`，产物目录为 `dist`，需要有权限的真实 AppID。平台验收使用真实存储、随机 API 和设备，禁止以替身或业务测试代替。
+首次检出后，将 `apps/miniprogram/project.config.example.json` 复制为同目录的 `project.config.json`，填写有权限的真实 AppID。真实配置与 `project.private.config.json` 由 Git 和 Docker 忽略，仓库维护使用占位值的配置模板。开发者工具导入 `apps/miniprogram`，产物目录为 `dist`。平台验收使用真实存储、随机 API 和设备，禁止以替身或业务测试代替。
 
 ## 测试状态
 

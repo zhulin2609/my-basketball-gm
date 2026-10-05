@@ -6,6 +6,7 @@ dist
 .cache
 .swc/
 project.private.config.json
+/apps/miniprogram/project.config.json
 .zcode
 .DS_Store
 *.tsbuildinfo
