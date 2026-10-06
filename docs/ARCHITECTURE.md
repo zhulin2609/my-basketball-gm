@@ -4,7 +4,7 @@
 
 ## 系统边界
 
-Dream Court 包含浏览器前端、微信小程序、Spring Boot API 和 PostgreSQL。
+My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 PostgreSQL。
 
 - 前端：React、TypeScript、Vite，位于 `apps/web`，入口为 `apps/web/src/main.tsx` 和 `apps/web/src/App.tsx`。
 - 小程序：Taro 4.3.0、React 18.3.1，位于 `apps/miniprogram`，入口为 `src/app.tsx`；当前实现游客端，游客流程使用本地数据。

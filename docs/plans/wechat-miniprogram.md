@@ -1,4 +1,4 @@
-# Dream Court 微信小程序产品开发文档
+# My Basketball GM 微信小程序产品开发文档
 
 文档日期：2026-10-05。
 

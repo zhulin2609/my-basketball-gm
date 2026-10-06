@@ -83,3 +83,32 @@ Date: 2026-10-06
 ### Affected Areas
 
 `apps/miniprogram/project.config.json`（本地，gitignored）、`apps/miniprogram/project.config.example.json`、`apps/miniprogram/config/index.ts`、`apps/miniprogram/src/app.config.ts`（`lazyCodeLoading` 与本决定同批实施）、小程序发布与审核的运行环境声明。
+
+## D-003 — 产品品牌名定为 My Basketball GM
+
+Status: Active
+Date: 2026-10-06
+
+### Context
+
+产品需要一个稳定的对外品牌名，用于应用界面、小程序备案与审核、文档及对外文案。Web 界面当前展示名为「Dream Court」，Git 仓库名为 `my-basketball-gm`。
+
+### Decision
+
+品牌名定为 **My Basketball GM**。
+
+### Alternatives
+
+沿用界面展示名「Dream Court」作为品牌名；使用仓库名作为品牌名。
+
+### Why Rejected
+
+品牌名由产品负责人直接指定为 My Basketball GM；「Dream Court」仅是界面当前展示名，未承担品牌职能。
+
+### Consequences
+
+新增对外材料（小程序名称、备案信息、应用介绍、文档）使用 My Basketball GM。界面展示名是否随品牌名统一调整，由后续任务决定，本决策不自动触发界面改名。
+
+### Affected Areas
+
+品牌相关文档、小程序注册与备案信息、应用展示名称的后续任务。

@@ -1,6 +1,6 @@
-# Dream Court API
+# My Basketball GM API
 
-本模块是 Dream Court 的 Java 后端。本机 Docker Compose 环境会以 Java 21 容器运行本服务，并连接同一 Compose 网络中的 PostgreSQL 16；完整启动、验证、备份与单机服务器准备步骤见 [`../docs/deployment.md`](../docs/deployment.md)。
+本模块是 My Basketball GM 的 Java 后端。本机 Docker Compose 环境会以 Java 21 容器运行本服务，并连接同一 Compose 网络中的 PostgreSQL 16；完整启动、验证、备份与单机服务器准备步骤见 [`../docs/deployment.md`](../docs/deployment.md)。
 
 ## Stack
 

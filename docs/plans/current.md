@@ -148,6 +148,7 @@ mvn test
 - bugfix complete（zcode，2026-10-06，用户报告真机预览被提示需开启 ES6 转 ES5 后）：全量扫描构建产物确认 ES6+ 语法仅存在于 `vendors.js` 的 uuid 模块（`const/let`、模板字符串、`??`/`?.`），其余文件均为 ES5——真机调试的 ES6 检测因此触发。修复为在 `apps/miniprogram/config/index.ts` 的 `mini.compile.include` 中加入 uuid 的实际安装路径（npm 将其提升到仓库根目录 `node_modules`，首次修复因路径指向不存在的工作区目录未生效）。重建后产物复核：`??`/`?.` 已消除，无箭头函数、无 const/let 声明、无 async，仅剩 babel 辅助函数错误提示字符串中的英文单词（非语法）。`npm test`（92 项）、四包 typecheck、格式检查通过。开发者工具的 ES6 检测应不再触发，保持“ES6 转 ES5”关闭由用户复验真机预览。
 - decision accepted（zcode，2026-10-06，用户确认）：最低基础库版本定为 3.17.3，已按 AGENTS.md 的字段要求归档为 `docs/DECISIONS.md` 的 D-002；current plan 的 Decision Candidates 对应清空。
 - validation complete（用户，2026-10-06）：iOS 真机复验通过——小程序启动无白屏、切 tab 无白闪，预览可用；本轮四项缺陷修复（页面级背景、双重转译、基础库声明、uuid 转译）全部生效。Android 真机验收因设备缺失保留 NOT RUN；阶段 3 其余平台验收（P01–P05 全场景、P09 游客部分、P10 本地保留规则、§11.4 交互项）仍待执行。
+- implementation complete（zcode，2026-10-06，用户指令）：品牌名统一为 My Basketball GM——用户手动替换了 README、CHANGELOG、架构与部署文档、后端 pom 与 README、Web 品牌文案；zcode 检查后补齐遗漏：`apps/web/index.html` 的 `<title>` 与 meta 描述（原为“Link's 篮球经理”），删除 `CHANGELOG.md`、`apps/web/index.html` 顶部的编辑器模板注释（含“请输入brook链接”占位文字），品牌缩写 `DC` → `GM`（顶部导航、登录页、游客导入页三处），`pom.xml` 的 `<description>` 经 Maven 校验生效。存储键 `dream-court.*`（7 个）按数据兼容要求保持原样；`@dream-court/*` 包名为内部标识符暂不重命名。四包 typecheck、`npm test`（92 项）、Web 构建、格式检查通过。
 
 ## Open Questions
 

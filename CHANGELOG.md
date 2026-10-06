@@ -1,6 +1,6 @@
 # 更新日志
 
-本文件记录 Dream Court 面向用户的重要功能、行为变化、数据库迁移和部署配置变更。
+本文件记录 My Basketball GM 面向用户的重要功能、行为变化、数据库迁移和部署配置变更。
 
 ## [未发布]
 
@@ -16,6 +16,7 @@
 
 ### 变更
 
+- 界面与文档品牌名统一为 My Basketball GM（浏览器标题、登录页、文档），品牌缩写标识调整为 GM。
 - Web 球员详情面板移除“加入当前阵容”按钮；向阵容添加球员统一通过阵容编辑页的球员选择完成。
 - Web 顶部导航在窄屏（≤900px）切换为精简文案：中文“球员 / 阵容 / 对战 / 社区”，英文“Players / Roster / battle / Community”；桌面端保持原文案。
 - 仓库迁移为 npm workspaces（`apps/web`、`apps/miniprogram`、`packages/core`、`packages/client`），Web 与小程序共享领域逻辑与业务流程；开发命令相应调整（`npm run dev`、`npm run typecheck`、`npm run build`、`npm run build:weapp`）。

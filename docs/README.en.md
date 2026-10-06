@@ -1,4 +1,4 @@
-# Dream Court
+# My Basketball GM
 
 [中文版 README](../README.md)
 

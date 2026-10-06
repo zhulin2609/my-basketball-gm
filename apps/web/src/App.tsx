@@ -487,9 +487,9 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => navigate({ view: 'players' })}>
-          <span className="brand-mark">DC</span>
+          <span className="brand-mark">GM</span>
           <span>
-            Dream Court<small>HISTORY LAB</small>
+            My Basketball GM<small>HISTORY LAB</small>
           </span>
         </button>
         <nav>
@@ -888,7 +888,7 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
           >
             {t('guest.continue')}
           </button>
-          <div className="brand-mark">DC</div>
+          <div className="brand-mark">GM</div>
           <p className="eyebrow">GUEST WORKSPACE</p>
           <h1 id="guest-import-title">{t('guest.importTitle')}</h1>
           <p className="auth-copy">{t('guest.importBody')}</p>
@@ -934,8 +934,8 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
         <button className="auth-cancel" onClick={onCancel} type="button">
           {t('guest.continue')}
         </button>
-        <div className="brand-mark">DC</div>
-        <p className="eyebrow">DREAM COURT · HISTORY LAB</p>
+        <div className="brand-mark">GM</div>
+        <p className="eyebrow">My Basketball GM · HISTORY LAB</p>
         <h1 id="auth-title">{mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h1>
         <p className="auth-copy">{t('auth.copy')}</p>
         <form onSubmit={submit} className="auth-form">

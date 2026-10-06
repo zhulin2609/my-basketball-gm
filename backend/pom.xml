@@ -15,7 +15,7 @@
   <artifactId>basketball-gm-api</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>basketball-gm-api</name>
-  <description>Dream Court local and cloud API</description>
+  <description>My Basketball GM local and cloud API</description>
 
   <properties>
     <java.version>21</java.version>

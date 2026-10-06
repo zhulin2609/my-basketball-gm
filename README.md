@@ -1,4 +1,4 @@
-# Dream Court / 梦之队
+# My Basketball GM
 
 [English README](docs/README.en.md)
 

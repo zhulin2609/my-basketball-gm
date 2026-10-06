@@ -1,6 +1,6 @@
 # Docker Compose 部署
 
-Dream Court 的单机部署由 Docker Compose 管理三个服务：
+My Basketball GM 的单机部署由 Docker Compose 管理三个服务：
 
 - `web`：构建 React 静态资源，Nginx 提供页面并反向代理 `/api`。
 - `api`：Java 21 运行 Spring Boot 服务，启动时由 Flyway 执行数据库迁移。
