@@ -54,3 +54,32 @@ Codex Desktop、Kimi Code、ZCode 的会话可能互不可见。项目已有规�
 ### Affected Areas
 
 `AGENTS.md`、`docs/ARCHITECTURE.md`、`docs/DECISIONS.md`、`docs/plans/current.md`、`docs/AI_HANDOFF.md`、`.agents/skills/handoff/SKILL.md`。
+
+## D-002 — 小程序最低基础库版本定为 3.17.3
+
+Status: Active
+Date: 2026-10-06
+
+### Context
+
+小程序构建产物中，`platform/identifier.ts` 引用的 `uuid@14` 依赖含 ES2020 语法（`??`、`?.`、`const/let`）。开发者工具的预览编译按 `project.config.json` 声明的 `libVersion` 解析代码，真机调试的 ES6 语法检测同样依据该声明。阶段 3 实现时写入的 `2.15.0` 是没有决策依据的占位值（Taro CLI 4.3.0 模板不含该字段，Codex 未留下选择理由，且其自身交接记录标注“兼容性尚未验证”），导致预览报 `SyntaxError: Unexpected token ?`、真机预览被提示需开启 ES6 转 ES5。真机（iOS，基础库 3.17.3）与开发者工具实际运行环境均为 3.17.3。
+
+### Decision
+
+最低基础库版本定为 3.17.3。`apps/miniprogram/project.config.json`（本地）与 `project.config.example.json`（模板）声明 `libVersion: "3.17.3"`；同时 `uuid` 经 `apps/miniprogram/config/index.ts` 的 `mini.compile.include` 转译为 ES5，使构建产物全量 ES5，真机调试的 ES6 检测无触发面。开发者工具的“ES6 转 ES5”与“增强编译”保持关闭——Taro 产物已是纯 ES5，工具的二次转译会破坏 Taro 运行时（`Maximum call stack size exceeded`、`app.mount` 失败）。
+
+### Alternatives
+
+保持 2.15.0 并把全部含新语法的依赖转译为 ES5；用自研 UUID 生成实现替代 `uuid` 依赖。
+
+### Why Rejected
+
+2.15.0 从未是产品要求，为不存在的需求增加转译配置与兼容负担没有价值，且微信 3.x 基础库覆盖率已极高，实际损失可忽略；自研 UUID 生成属于绕过既有依赖，`uuid` 的随机路径已通过平台随机字节注入（`Taro.getRandomValues` 预取）规避了小程序缺少 Web Crypto 的问题，替代实现只会重复这套设计。
+
+### Consequences
+
+低于 3.17.3 的基础库环境不在支持范围；未来若产品要求支持更旧基础库，须将 `uuid` 等含新语法的依赖确认转译覆盖并重新验收（`mini.compile.include` 的配置方式已验证有效）。开发者工具再次提示开启 ES6 转 ES5 时应拒绝。
+
+### Affected Areas
+
+`apps/miniprogram/project.config.json`（本地，gitignored）、`apps/miniprogram/project.config.example.json`、`apps/miniprogram/config/index.ts`、`apps/miniprogram/src/app.config.ts`（`lazyCodeLoading` 与本决定同批实施）、小程序发布与审核的运行环境声明。

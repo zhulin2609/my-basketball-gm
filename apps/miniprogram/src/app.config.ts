@@ -17,6 +17,8 @@ export default defineAppConfig({
     backgroundColor: '#102b23',
     backgroundTextStyle: 'light',
   },
+  // 自定义组件代码按需注入：减少启动时注入的组件代码量（微信代码质量项）。
+  lazyCodeLoading: 'requiredComponents',
   tabBar: {
     color: '#b3bcb5',
     selectedColor: '#b9e2ad',

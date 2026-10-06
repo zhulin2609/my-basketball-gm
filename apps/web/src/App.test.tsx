@@ -442,3 +442,43 @@ describe('hash routing', () => {
     expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
   });
 });
+
+describe('mobile navigation labels', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    window.location.hash = '';
+    vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it('renders full and compact nav labels for the viewport breakpoint to switch', async () => {
+    const user = userEvent.setup();
+    const { App } = await import('@/App');
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '中文' }));
+
+    // 顶栏（banner）内只有主导航；分页条是另一个 navigation 角色，需要排除。
+    const banner = screen.getByRole('banner');
+    const nav = within(banner).getByRole('navigation');
+    // 完整文案与精简文案同时存在，由样式在窄屏切换可见性。
+    expect(nav.textContent).toContain('球员库');
+    expect(nav.textContent).toContain('球员');
+    expect(nav.textContent).toContain('我的阵容');
+    expect(nav.textContent).toContain('阵容');
+    expect(nav.textContent).toContain('梦幻对战');
+    expect(nav.textContent).toContain('对战');
+
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+    const englishNav = within(banner).getByRole('navigation');
+    expect(englishNav.textContent).toContain('Players');
+    expect(englishNav.textContent).toContain('Roster');
+    expect(englishNav.textContent).toContain('battle');
+    expect(englishNav.textContent).toContain('Community');
+  });
+});

@@ -312,6 +312,11 @@ nav {
   flex: 1;
 }
 
+/* 窄屏使用精简导航文案：两份文案同时在 DOM 中，由断点切换可见性。 */
+.nav-label-compact {
+  display: none;
+}
+
 .topbar-actions {
   align-items: center;
   display: flex;
@@ -1683,6 +1688,12 @@ footer {
   }
   .topbar nav {
     gap: 12px;
+  }
+  .nav-label-full {
+    display: none;
+  }
+  .nav-label-compact {
+    display: inline;
   }
   .compact {
     display: none;

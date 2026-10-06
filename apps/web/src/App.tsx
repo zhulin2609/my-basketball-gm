@@ -137,14 +137,12 @@ function LanguageSwitch() {
 
 interface PlayerLibraryProps {
   players: Player[];
-  onAdd: (player: Player) => void;
   onSavePlayer: (player: Player) => Promise<Player>;
   onOpenLineup: () => void;
 }
 
 interface PlayerDetailProps {
   player: Player;
-  onAdd: () => void;
   onEdit: () => void;
 }
 
@@ -497,19 +495,28 @@ export function App() {
         <nav>
           {(
             [
-              ['players', t('nav.players')],
-              ['lineups', t('nav.lineups')],
-              ['battle', t('nav.battle')],
+              ['players', t('nav.players'), t('navCompact.players')],
+              ['lineups', t('nav.lineups'), t('navCompact.lineups')],
+              ['battle', t('nav.battle'), t('navCompact.battle')],
               // 社区数据完全来自服务端，离线演示模式没有可访问的社区后端。
-              ...(isApiEnabled ? [['community', t('nav.community')] as [View, string]] : []),
-            ] as [View, string][]
-          ).map(([id, label]) => (
+              ...(isApiEnabled
+                ? [
+                    ['community', t('nav.community'), t('navCompact.community')] as [
+                      View,
+                      string,
+                      string,
+                    ],
+                  ]
+                : []),
+            ] as [View, string, string][]
+          ).map(([id, label, compactLabel]) => (
             <button
               className={view === id ? 'active' : ''}
               onClick={() => navigate({ view: id })}
               key={id}
             >
-              {label}
+              <span className="nav-label-full">{label}</span>
+              <span className="nav-label-compact">{compactLabel}</span>
             </button>
           ))}
         </nav>
@@ -576,20 +583,6 @@ export function App() {
       {view === 'players' && (
         <PlayerLibrary
           players={players}
-          onAdd={(player) => {
-            const member: LineupMember = {
-              playerId: player.id,
-              position: player.defaultPosition,
-              starter: selected.members.length < 5,
-              inactive: false,
-            };
-            if (
-              selected.members.some((m) => m.playerId === player.id) ||
-              selected.members.length >= 15
-            )
-              return;
-            persist({ ...selected, members: [...selected.members, member] });
-          }}
           onSavePlayer={persistPlayer}
           onOpenLineup={() => navigate({ view: 'lineups' })}
           loadError={playerLoadError}
@@ -1002,7 +995,6 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
 
 function PlayerLibrary({
   players,
-  onAdd,
   onSavePlayer,
   onOpenLineup,
   loadError,
@@ -1137,18 +1129,14 @@ function PlayerLibrary({
         {editing ? (
           <PlayerEditor player={editing} onCancel={() => setEditing(null)} onSave={savePlayer} />
         ) : (
-          <PlayerDetail
-            player={focus}
-            onAdd={() => onAdd(focus)}
-            onEdit={() => setEditing(focus)}
-          />
+          <PlayerDetail player={focus} onEdit={() => setEditing(focus)} />
         )}
       </div>
     </section>
   );
 }
 
-function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
+function PlayerDetail({ player, onEdit }: PlayerDetailProps) {
   const { i18n, t } = useTranslation();
   const locale: AppLocale = i18n.resolvedLanguage === 'en' ? 'en' : 'zh-CN';
   const ratingFields: RatingField[] = ratingKeys.map((key) => ({
@@ -1200,9 +1188,6 @@ function PlayerDetail({ player, onAdd, onEdit }: PlayerDetailProps) {
         <span>{t('players.peakSalary')}</span>
         <b>{player.salaryUsd > 0 ? formatCurrency(player.salaryUsd, locale) : '—'}</b>
       </div>
-      <button className="primary wide" onClick={onAdd}>
-        {t('players.add')}
-      </button>
       <button className="ghost wide player-edit-button" onClick={onEdit}>
         {t('players.edit')}
       </button>

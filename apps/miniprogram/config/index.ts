@@ -20,7 +20,15 @@ export default defineConfig<'webpack5'>({
     MINI_API_BASE_URL: JSON.stringify(process.env.MINI_API_BASE_URL ?? ''),
   },
   mini: {
-    compile: { include: [path.resolve(__dirname, '../../../packages')] },
+    // uuid 的 npm 产物含 ES2020 语法（??、?.），必须经 babel 转译为 ES5：
+    // 微信真机调试检测到 ES6+ 语法会强制要求开启 ES6 转 ES5，而二次转译会破坏 Taro 运行时。
+    // uuid 由 npm 提升安装在仓库根目录的 node_modules。
+    compile: {
+      include: [
+        path.resolve(__dirname, '../../../packages'),
+        path.resolve(__dirname, '../../../node_modules/uuid'),
+      ],
+    },
     postcss: { pxtransform: { enable: true }, cssModules: { enable: false } },
   },
 });

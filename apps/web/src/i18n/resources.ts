@@ -11,6 +11,12 @@ export const resources = {
         logout: '退出登录',
         newLineup: '+ 新建阵容',
       },
+      navCompact: {
+        players: '球员',
+        lineups: '阵容',
+        battle: '对战',
+        community: '社区',
+      },
       common: {
         cancel: '取消',
         retry: '重试',
@@ -120,7 +126,6 @@ export const resources = {
         height: '身高',
         weight: '体重',
         peakSalary: '巅峰赛季薪资',
-        add: '加入当前阵容',
         edit: '编辑球员属性',
       },
       editor: {
@@ -281,6 +286,12 @@ export const resources = {
         logout: 'Log out',
         newLineup: '+ New roster',
       },
+      navCompact: {
+        players: 'Players',
+        lineups: 'Roster',
+        battle: 'battle',
+        community: 'Community',
+      },
       common: {
         cancel: 'Cancel',
         retry: 'Retry',
@@ -395,7 +406,6 @@ export const resources = {
         height: 'Height',
         weight: 'Weight',
         peakSalary: 'Peak-season salary',
-        add: 'Add to current roster',
         edit: 'Edit player attributes',
       },
       editor: {
