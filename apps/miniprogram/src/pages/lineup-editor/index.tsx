@@ -29,14 +29,14 @@ function LineupEditor({ store, initial, players }: EditorProps) {
   const [editor, setEditor] = useState(() => loadLineupEditor(store, initial));
   const dirty = editor.status === 'ready' && editor.dirty;
   const [error, setError] = useState('');
-  const [status, setStatus] = useState(dirty ? '已恢复草稿，请完成保存' : '已保存到本机');
+  const [status, setStatus] = useState(dirty ? '有草稿未保存' : '已保存到本机');
   const draftWriteFailed = useRef(false);
 
   const reload = () => {
     const loaded = loadLineupEditor(store, initial);
     setEditor(loaded);
     if (loaded.status === 'ready') {
-      setStatus(loaded.dirty ? '已恢复草稿，请完成保存' : '已保存到本机');
+      setStatus(loaded.dirty ? '有草稿未保存' : '已保存到本机');
       setError('');
     }
   };
@@ -79,7 +79,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     try {
       store.saveDraft(updated);
       draftWriteFailed.current = false;
-      setStatus('草稿已保存到本机，尚未用于对战');
+      setStatus('有草稿未保存');
     } catch (failure: unknown) {
       draftWriteFailed.current = true;
       setStatus('草稿写入失败，请保留当前页面');
@@ -124,7 +124,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
           autoHeight
           onInput={(event) => edit({ ...lineup, description: event.detail.value })}
         />
-        <View className="notice">{status}</View>
+        <View className={dirty ? 'notice draft-warning' : 'notice'}>{status}</View>
         {error && <View className="error">{error}</View>}
         <Button className="primary" onClick={save} disabled={!dirty}>
           保存阵容

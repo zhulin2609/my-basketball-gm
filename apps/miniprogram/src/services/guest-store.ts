@@ -169,6 +169,8 @@ export function createGuestStore(deps: GuestStoreDeps): GuestStore {
     },
     saveDraft(lineup) {
       deps.storage.setItem(DRAFTS_KEY, JSON.stringify({ ...readDrafts(), [lineup.id]: lineup }));
+      snapshot = { ...snapshot };
+      listeners.forEach((listener) => listener());
     },
     runBattle(homeId, awayId) {
       refresh();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Text, View } from '@tarojs/components';
 import { validateLineup } from '@dream-court/core';
 import { Screen } from '@/components/Screen';
-import type { GuestSnapshot, GuestStore } from '@/services/guest-store';
+import { loadLineupEditor, type GuestSnapshot, type GuestStore } from '@/services/guest-store';
 import { prepareIdentifiers } from '@/platform/identifier';
 import { navigate } from '@/platform/navigation';
 import { errorMessage } from '@/constants/text';
@@ -38,17 +38,29 @@ function LineupsContent({ store, data }: LineupsContentProps) {
       {error && <View className="error">{error}</View>}
       {data.lineups.map((lineup) => {
         const validation = validateLineup(lineup);
+        const draft = loadLineupEditor(store, lineup);
+        const hasDraft = draft.status === 'ready' && draft.dirty;
         return (
           <View className="card" key={lineup.id}>
             <View className="name">{lineup.name}</View>
             <View className="paragraph muted">{lineup.description || '尚未填写描述'}</View>
+            {hasDraft && <View className="notice draft-warning">有草稿未保存</View>}
             <View className="metrics">
+              {hasDraft && <Text>已保存阵容：</Text>}
               <Text>{lineup.members.length} / 15 人</Text>
               <Text>{validation.activeCount} 名激活</Text>
               <Text>{validation.starterCount} 名首发</Text>
             </View>
             <View className="muted">
-              {validation.isEligibleForSimulation ? '可以发起对战' : '需要完成首发配置'}
+              {draft.status === 'failed' ? (
+                <Text className="error">无法读取阵容草稿：{errorMessage(draft.error)}</Text>
+              ) : hasDraft ? (
+                '请先保存阵容，再发起对战'
+              ) : validation.isEligibleForSimulation ? (
+                '可以发起对战'
+              ) : (
+                '需要完成首发配置'
+              )}
             </View>
             <Button
               className="secondary"

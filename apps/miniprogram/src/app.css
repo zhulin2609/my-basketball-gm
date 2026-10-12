@@ -141,6 +141,11 @@ button[disabled] {
   color: #b9e2ad;
 }
 
+.draft-warning {
+  color: #ff6b6b;
+  font-weight: 700;
+}
+
 .error {
   color: #ffbcad;
 }
