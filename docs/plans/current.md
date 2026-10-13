@@ -19,11 +19,11 @@ ACTIVE
 - Worktree: 当前仓库根目录，使用 `git rev-parse --show-toplevel` 核实。
 - Branch: mini-app-20261004
 - Base Commit: 4810976cf006b4bbe82506f3ab13362da3a001bc
-- Write Scope: 撰写 `docs/troubleshooting/miniprogram-tab-white-flash.md`，在 README 文档目录添加入口，并在本文件保留任务结果与引用。代码修复已提交并推送为 `33bf733`；用户已确认上述三份文档并授权提交、推送当前分支。
+- Write Scope: 移除小程序球员详情页的“选择阵容”按钮及该文件未使用导入，在 `docs/DECISIONS.md` 记录 D-004，并更新本文件。当前变更基线为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，开始时工作区干净。用户已确认功能并授权提交、推送当前分支。
 
 ## Goal
 
-按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。用例 09 的 iPhone 白闪已修复，定位记录已保存实验依据、配置职责及验证范围。
+按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前按用户要求调整球员详情页入口，并保存长期决策；用例 09 的 iPhone 白闪修复及定位记录已完成。
 
 ## Acceptance Criteria
 
@@ -39,6 +39,7 @@ ACTIVE
 - [x] 覆盖拒绝操作、释放名额后重试、自动激活、取消激活清除首发与草稿恢复；相关测试、四包 typecheck、两端构建、Web 产物一致性及开发者工具页面交互验证通过。
 - [x] 九个页面的 `backgroundColorContent` 声明为深绿色，保留 page CSS、PageMeta 根背景及窗口背景；iPhone 四个原生 tab 首次与重复切换、滚动后切换、详情与编辑页返回完成验证。80 张真机过渡采样截图未捕获白色画面，用户确认修复版本普通预览没有白色闪烁。
 - [x] 独立排查记录覆盖复现环境、原生静态复现、颜色实验、三层背景、修复、真机结果与采样局限；README 和本文件提供有效引用，文档格式与事实核验通过。
+- [x] 小程序球员详情页保留资料和能力值展示，移除“选择阵容”按钮；详情返回及阵容编辑页“添加球员”流程通过实际页面验证，四包 typecheck、小程序构建与格式检查通过，长期决策记录为 D-004。
 - [ ] 全部阶段 3 必需验收有有效证据后设为 DONE；身份、联网和分享需求按后续阶段处理。
 
 ## Plan
@@ -61,6 +62,8 @@ ACTIVE
 - [x] ZCode 已准备上一轮交接索引并释放 Owner；Codex 已核验接手，当前 Owner 见 Owner 章节。
 
 ## Current State
+
+2026-10-13，球员详情页入口调整：用户要求移除“选择阵容”按钮，并将决策写入 `docs/DECISIONS.md`。Git 基线为 `4ad9657`，开始时工作区干净，白闪记录已提交并推送。已移除小程序详情页按钮与未使用导入，决策记录为 D-004。四包 typecheck、小程序构建及格式检查通过；独立游客项目在开发者工具基础库 3.17.3 验证资料与能力值展示、按钮移除、详情返回、无效参数提示及阵容编辑与球员选择页往返，业务存储不变且无运行异常。用户已确认功能并授权提交、推送；本轮未进行手机端复验。
 
 2026-10-13，排查记录整理：代码修复已提交并推送为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42`，文档任务开始时工作区干净。已撰写[微信小程序原生 tab 白屏闪烁排查记录](../troubleshooting/miniprogram-tab-white-flash.md)，记录复现环境、原生静态与颜色实验、背景层职责、修复和验证范围；README 已添加入口。文档格式、引用与证据核验通过。本文件继续保存任务结果和阶段 3 剩余验收。
 
@@ -163,6 +166,7 @@ mvn test
 
 ## Progress
 
+- implementation and validation complete（codex，2026-10-13，球员详情页）：移除“选择阵容”按钮及未使用导入；用户确认的入口决定记录为 D-004。四包 typecheck、小程序构建、格式及独立开发者工具页面验证通过，现有资料、返回与阵容添加入口保持正常。
 - documentation and validation complete（codex，2026-10-13）：新增独立白屏闪烁排查记录，README 和 current plan 提供引用；核验本地实验数据、官方背景配置职责、修复提交和源码，文档格式与引用检查通过。设备与代码测试保留原执行记录，本轮未重新执行。
 - investigation and validation complete（codex，2026-10-13，白闪修复）：录屏与原生静态项目复现白色过渡，页面容器颜色实验确认暴露层受 backgroundColorContent 控制。九页配置增加深绿色页面容器背景；iPhone 64 次 tab 切换及 16 次滚动/详情/编辑/选择/战报返回采样均无白色截图、无 exception，滚动位置和存储保留。用户确认同一 iPhone 普通预览首次及重复切换没有白色闪烁；相关 101 项测试、四包 typecheck、两端构建通过。
 - configuration and simulator validation complete（codex，2026-10-13，用例 09，此前记录）：Screen 声明页面内容背景，九个页面开启 PageMeta，保留原有导航栏外观。开发者工具页面节点及编辑与详情页返回通过；两端构建与四包 typecheck 通过，Web JavaScript 和 CSS 与修改前一致；该轮未验证真机过渡帧。
@@ -204,11 +208,18 @@ mvn test
 
 ## Decision Candidates
 
-none。最低基础库版本决定已获用户确认并归档为 `docs/DECISIONS.md` 的 D-002；此前用户明确接受的协议设计记录为 D-001。
+none。已接受决策见 `docs/DECISIONS.md`；本轮球员详情页入口决定已记录为 D-004。
 
 ## Validation
 
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Codex 球员详情页入口调整（2026-10-13）
+
+- `npm run build:weapp`：PASS；包含 core、client、Web、小程序四包 typecheck，小程序编译成功，保留已有 `common.js` 269 KiB 体积提示。
+- `node .cache/player-detail-acceptance/verify.cjs`：PASS（最终执行）；独立游客项目、自动化端口 9432、开发者工具基础库 3.17.3、模拟器 iPhone 12/13 (Pro)。真实页面节点验证球员姓名、身高体重和能力值展示，详情按钮数量为 0；详情返回、缺少球员参数提示、阵容编辑“添加球员”进入候选列表及返回全部通过。浏览前后工作区与草稿存储一致，未收到运行异常，验证结束关闭独立项目。首次脚本在点击后立即断言路径，读取到尚未完成切换的旧页面；改为有超时限制地等待目标路径后完整通过。脚本及结果位于 Git 忽略目录，未使用 mock。
+- `npx prettier --check apps/miniprogram/src/pages/player-detail/index.tsx docs/DECISIONS.md docs/plans/current.md`、`git diff --check`：PASS；源码与决策文档格式正确，差异无空白错误。
+- `npm test`、Web 构建、`mvn test`、iOS 与 Android 真机复验：NOT RUN；本轮为小程序页面入口删除，采用四包类型检查、小程序构建及真实开发者工具页面验证，业务规则与其他客户端实现没有修改。
 
 ### Codex 排查记录整理（2026-10-13）
 
@@ -384,4 +395,6 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 
 ## Completion
 
-本次用例 09 的 iPhone 白闪修复已完成：九页容器背景配置、真机 80 张过渡采样截图、滚动与返回流程、普通预览用户确认及代码检查均有验证记录。代码修复已提交为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42` 并推送至 `origin/mini-app-20261004`。[独立排查记录](../troubleshooting/miniprogram-tab-white-flash.md)、README 入口和本文件的结果引用已完成并通过文档检查；用户已确认文档内容并授权提交、推送当前分支，提交状态以 Git 核验为准。阶段 3 总体仍为 ACTIVE，Owner 为 codex，剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。正式交出工作时执行 `.agents/skills/handoff/SKILL.md` 并刷新交接索引。
+本轮球员详情页入口调整已完成：按钮及未使用导入已移除，长期决策记录为 D-004，四包 typecheck、小程序构建与独立开发者工具页面验证通过。用户已确认功能并授权提交、推送当前分支，提交状态以 Git 核验为准。
+
+此前用例 09 的 iPhone 白闪修复提交为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42`，[独立排查记录](../troubleshooting/miniprogram-tab-white-flash.md)及文档入口提交为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，均已推送至 `origin/mini-app-20261004`。阶段 3 总体仍为 ACTIVE，Owner 为 codex，剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。正式交出工作时执行 `.agents/skills/handoff/SKILL.md` 并刷新交接索引。

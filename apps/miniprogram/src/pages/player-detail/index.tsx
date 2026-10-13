@@ -1,9 +1,8 @@
 import { useRouter } from '@tarojs/taro';
-import { Button, Text, View } from '@tarojs/components';
+import { Text, View } from '@tarojs/components';
 import { displayPlayerName } from '@dream-court/core';
 import { Screen } from '@/components/Screen';
 import { ratingLabels } from '@/constants/text';
-import { navigate } from '@/platform/navigation';
 
 export default function PlayerDetailPage() {
   const { params } = useRouter();
@@ -33,14 +32,6 @@ export default function PlayerDetailPage() {
                 </View>
               ))}
             </View>
-            <Button
-              className="primary"
-              onClick={() =>
-                navigate(`/pages/player-picker/index?playerId=${encodeURIComponent(player.id)}`)
-              }
-            >
-              选择阵容
-            </Button>
           </View>
         );
       }}
