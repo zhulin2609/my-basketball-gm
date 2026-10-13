@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Taro from '@tarojs/taro';
 import { Button, Input, Picker, Text, View } from '@tarojs/components';
 import {
   filterSortPlayers,
@@ -8,6 +9,7 @@ import {
   type Position,
 } from '@dream-court/core';
 import { PlayerCard } from '@/components/PlayerCard';
+import { errorMessage } from '@/constants/text';
 import { navigate } from '@/platform/navigation';
 
 interface PlayerBrowserProps {
@@ -27,6 +29,8 @@ export function PlayerBrowser({ players, selectedIds, onSelect, disabled }: Play
   const [positionIndex, setPositionIndex] = useState(0);
   const [sortIndex, setSortIndex] = useState(0);
   const [page, setPage] = useState(1);
+  const [scrollError, setScrollError] = useState('');
+  const paginationScrollPending = useRef(false);
   const filtered = useMemo(
     () =>
       filterSortPlayers(players, {
@@ -40,8 +44,32 @@ export function PlayerBrowser({ players, selectedIds, onSelect, disabled }: Play
   const currentPage = Math.min(page, pageCount);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
+  useEffect(() => {
+    if (!paginationScrollPending.current) return;
+    paginationScrollPending.current = false;
+    let active = true;
+    Taro.nextTick(() => {
+      if (!active) return;
+      void Taro.pageScrollTo({ selector: '#player-browser-start', duration: 0 }).catch(
+        (failure: unknown) => {
+          if (active) setScrollError(errorMessage(failure));
+        },
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [currentPage]);
+
+  function changePage(nextPage: number) {
+    if (nextPage < 1 || nextPage > pageCount || nextPage === currentPage) return;
+    paginationScrollPending.current = true;
+    setScrollError('');
+    setPage(nextPage);
+  }
+
   return (
-    <View>
+    <View id="player-browser-start">
       <Input
         className="input"
         placeholder="搜索英文名、中文名或球员定位"
@@ -76,7 +104,10 @@ export function PlayerBrowser({ players, selectedIds, onSelect, disabled }: Play
           <View className="select">排序：{sortLabels[sortIndex]}</View>
         </Picker>
       </View>
-      <View className="muted">{filtered.length} 名球员</View>
+      <View className="muted browser-summary">
+        {filtered.length} 名球员 · 第 {currentPage} / {pageCount} 页
+      </View>
+      {scrollError && <View className="error">无法返回列表起点：{scrollError}</View>}
       {visible.map((player) => (
         <PlayerCard
           key={player.id}
@@ -95,7 +126,7 @@ export function PlayerBrowser({ players, selectedIds, onSelect, disabled }: Play
           size="mini"
           className="secondary"
           disabled={currentPage === 1}
-          onClick={() => setPage(currentPage - 1)}
+          onClick={() => changePage(currentPage - 1)}
         >
           上一页
         </Button>
@@ -106,7 +137,7 @@ export function PlayerBrowser({ players, selectedIds, onSelect, disabled }: Play
           size="mini"
           className="secondary"
           disabled={currentPage === pageCount}
-          onClick={() => setPage(currentPage + 1)}
+          onClick={() => changePage(currentPage + 1)}
         >
           下一页
         </Button>

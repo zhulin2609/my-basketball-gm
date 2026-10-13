@@ -15,18 +15,21 @@ ACTIVE
 ## Owner
 
 - Owner: codex
-- Instance: codex-tab-flash-01a133fe-73dc-7541-b5b9-1d049f90f298
+- Instance: codex-player-pagination-01a10792-bb63-7713-bc13-6e74fd9164ab
 - Worktree: 当前仓库根目录，使用 `git rev-parse --show-toplevel` 核实。
 - Branch: mini-app-20261004
 - Base Commit: 4810976cf006b4bbe82506f3ab13362da3a001bc
-- Write Scope: 移除小程序球员详情页的“选择阵容”按钮及该文件未使用导入，在 `docs/DECISIONS.md` 记录 D-004，并更新本文件。当前变更基线为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，开始时工作区干净。用户已确认功能并授权提交、推送当前分支。
+- Write Scope: 优化小程序共用 `PlayerBrowser` 的分页滚动与页码提示，并更新本文件。当前变更基线为 `b62fb252c0c37bcb75dfbfa2123291837c0b215a`，开始时工作区干净；已核验上一 Owner 会话 idle、最后任务完成。用户已确认真机测试没有问题，并授权提交及推送当前分支。
 
 ## Goal
 
-按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前按用户要求调整球员详情页入口，并保存长期决策；用例 09 的 iPhone 白闪修复及定位记录已完成。
+按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前优化“球员库”和“选择球员”分页：翻页后立即返回搜索、筛选及列表起点，上方显示当前页码，加入阵容及查看详情后返回保留页码与滚动位置。
 
 ## Acceptance Criteria
 
+- [x] 两个球员浏览页面实际翻页后，新列表渲染完成再立即滚动到浏览区域起点；上方显示“第 X / Y 页”，保留底部分页。
+- [x] 分页滚动只由上一页、下一页触发；添加球员及详情返回保留页码和位置。搜索重置、第一页、末页和空结果边界通过开发者工具验证；筛选重置逻辑保留。
+- [x] 本轮相关测试、四包 typecheck、两端构建与开发者工具分页交互通过，Web 源码与构建资源保持一致。
 - [x] 保留已完成实现、历史验证和后续待办；交接可脱离聊天记录读取。
 - [ ] 核验有权限的本地小程序配置、开发者工具服务端口、基础库及 iOS、Android 设备条件；不输出真实凭据。
 - [ ] 完成 P01–P05、P09 的游客相关部分、P10 的本地保留规则及第 11.4 节的平台操作验收，记录具体环境、步骤和结果。
@@ -62,6 +65,8 @@ ACTIVE
 - [x] ZCode 已准备上一轮交接索引并释放 Owner；Codex 已核验接手，当前 Owner 见 Owner 章节。
 
 ## Current State
+
+2026-10-13，分页优化完成：Git 基线 `b62fb25`，开始时工作区干净；上一 Owner 已停止写入。两个页面共用 `apps/miniprogram/src/components/PlayerBrowser.tsx`，原来的分页只替换列表，开发者工具复现翻页后搜索框位于视口上方约 1600px。现仅实际翻页在 Taro 原生渲染完成后立即滚动到搜索框所在的浏览区域起点，上方显示页码；搜索和筛选仍重置第一页，加入阵容及详情返回保留页码与位置。101 项测试、四包 typecheck、两端构建及独立游客项目真实页面验收通过；Web 主 JavaScript 和 CSS 与修改前完全一致。没有操作原项目存储或手机调试连接。用户随后确认真机测试没有问题，并授权提交及推送；未提供设备型号、系统和基础库，不据此推断 iOS、Android 分别通过。
 
 2026-10-13，球员详情页入口调整：用户要求移除“选择阵容”按钮，并将决策写入 `docs/DECISIONS.md`。Git 基线为 `4ad9657`，开始时工作区干净，白闪记录已提交并推送。已移除小程序详情页按钮与未使用导入，决策记录为 D-004。四包 typecheck、小程序构建及格式检查通过；独立游客项目在开发者工具基础库 3.17.3 验证资料与能力值展示、按钮移除、详情返回、无效参数提示及阵容编辑与球员选择页往返，业务存储不变且无运行异常。用户已确认功能并授权提交、推送；本轮未进行手机端复验。
 
@@ -166,6 +171,8 @@ mvn test
 
 ## Progress
 
+- user acceptance（2026-10-13，分页优化）：用户确认真机测试没有问题，授权提交和推送当前分支；未提供设备与平台，不替代阶段 3 其余验收项目。
+- implementation and validation complete（codex，2026-10-13，分页优化）：共用 PlayerBrowser 增加列表顶部页码，分页后等待原生渲染并立即定位到浏览区域起点。独立开发者工具验证两个页面翻页、详情返回、加入阵容位置保留及搜索边界通过；101 项测试、四包 typecheck、两端构建通过，Web 主资源 SHA-256 保持一致。
 - implementation and validation complete（codex，2026-10-13，球员详情页）：移除“选择阵容”按钮及未使用导入；用户确认的入口决定记录为 D-004。四包 typecheck、小程序构建、格式及独立开发者工具页面验证通过，现有资料、返回与阵容添加入口保持正常。
 - documentation and validation complete（codex，2026-10-13）：新增独立白屏闪烁排查记录，README 和 current plan 提供引用；核验本地实验数据、官方背景配置职责、修复提交和源码，文档格式与引用检查通过。设备与代码测试保留原执行记录，本轮未重新执行。
 - investigation and validation complete（codex，2026-10-13，白闪修复）：录屏与原生静态项目复现白色过渡，页面容器颜色实验确认暴露层受 backgroundColorContent 控制。九页配置增加深绿色页面容器背景；iPhone 64 次 tab 切换及 16 次滚动/详情/编辑/选择/战报返回采样均无白色截图、无 exception，滚动位置和存储保留。用户确认同一 iPhone 普通预览首次及重复切换没有白色闪烁；相关 101 项测试、四包 typecheck、两端构建通过。
@@ -208,11 +215,22 @@ mvn test
 
 ## Decision Candidates
 
-none。已接受决策见 `docs/DECISIONS.md`；本轮球员详情页入口决定已记录为 D-004。
+none。已接受决策见 `docs/DECISIONS.md`；此前球员详情页入口决定已记录为 D-004。
 
 ## Validation
 
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Codex 球员分页优化（2026-10-13）
+
+- `node .cache/player-pagination-acceptance/verify.cjs`（修改前产物）：FAIL；复现预期缺陷，点击下一页后原生 scrollTop 为 1692px，搜索框 top 为 -1600.5px，未收到运行异常。原始记录保存在 `baseline.json`。
+- `npm test -- --maxWorkers=1`：PASS；21 个文件、101 项测试，覆盖 Web、core、client 和小程序现有业务。
+- `npm run build:weapp`、`npm run build`：PASS；均包含四包 typecheck，保留既有小程序 `common.js` 269 KiB 和 Web 主文件 595.56 kB 体积提示。
+- `node .cache/player-pagination-acceptance/verify.cjs`（修改后最终执行）：PASS；独立游客项目，端口 9436，开发者工具基础库 3.17.3，模拟器 iPhone 12/13 (Pro)。球员库与选择页翻页后搜索框 top 分别为 0px、-0.102px，上方显示第 2 页；详情返回均保留第 2 页和 600px 滚动位置，加入阵容前后位置均为 600px，已加入按钮禁用。上一页回到第一页、首页按钮禁用、搜索重置、末页按钮禁用及空结果提示通过；无 exception。脚本等待真实导航和渲染完成后断言，原生 disabled 属性按工具返回的布尔字符串核验；未使用 mock，没有截图，未操作用户原项目存储。脚本及 `result.json` 被 Git 忽略，其他机器需要重新执行。
+- `git diff --name-only -- apps/web packages backend`、`shasum -a 256 apps/web/dist/assets/index-*.js apps/web/dist/assets/index-*.css`：PASS；这些目录无源码修改，Web 主 JavaScript SHA-256 为 `57328b19dae1c089c4e6e92718650ef9eb8f47b2bfa568440182b9e82945cfff`，CSS 为 `a083c2220c1d07d0740e5ff10913b62b235b0980aa4292bb0c5060ab3cc3e822`，与修改前完全一致。
+- `npm run format:check`、`git diff --check`：PASS；最终源码与任务状态文档检查。
+- 真机分页验收：PASS（用户报告）；用户确认“真机测试没有问题”。设备、系统与基础库未提供；Codex 未独立执行手机端验证，不据此判定 iOS、Android 分别通过。
+- `mvn test`：NOT RUN；后端没有修改，游客分页不调用后端。
 
 ### Codex 球员详情页入口调整（2026-10-13）
 
@@ -395,6 +413,8 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 
 ## Completion
 
-本轮球员详情页入口调整已完成：按钮及未使用导入已移除，长期决策记录为 D-004，四包 typecheck、小程序构建与独立开发者工具页面验证通过。用户已确认功能并授权提交、推送当前分支，提交状态以 Git 核验为准。
+本轮两个小程序页面分页优化已完成：列表顶部页码、翻页后返回浏览区域起点、加入球员与详情返回保留位置均通过独立开发者工具验收，101 项测试、四包 typecheck、两端构建及格式检查通过，Web 主资源保持一致。用户确认真机测试没有问题，并授权提交及推送当前分支；提交和推送状态以 Git 核验为准。
+
+此前球员详情页入口调整已提交为 `b62fb252c0c37bcb75dfbfa2123291837c0b215a`：按钮及未使用导入已移除，长期决策记录为 D-004，四包 typecheck、小程序构建与独立开发者工具页面验证通过。
 
 此前用例 09 的 iPhone 白闪修复提交为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42`，[独立排查记录](../troubleshooting/miniprogram-tab-white-flash.md)及文档入口提交为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，均已推送至 `origin/mini-app-20261004`。阶段 3 总体仍为 ACTIVE，Owner 为 codex，剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。正式交出工作时执行 `.agents/skills/handoff/SKILL.md` 并刷新交接索引。
