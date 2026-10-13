@@ -41,7 +41,13 @@ function LineupsContent({ store, data }: LineupsContentProps) {
         const draft = loadLineupEditor(store, lineup);
         const hasDraft = draft.status === 'ready' && draft.dirty;
         return (
-          <View className="card" key={lineup.id}>
+          <View
+            className="card"
+            key={lineup.id}
+            onClick={() =>
+              navigate(`/pages/lineup-editor/index?id=${encodeURIComponent(lineup.id)}`)
+            }
+          >
             <View className="name">{lineup.name}</View>
             <View className="paragraph muted">{lineup.description || '尚未填写描述'}</View>
             {hasDraft && <View className="notice draft-warning">有草稿未保存</View>}
@@ -62,14 +68,7 @@ function LineupsContent({ store, data }: LineupsContentProps) {
                 '需要完成首发配置'
               )}
             </View>
-            <Button
-              className="secondary"
-              onClick={() =>
-                navigate(`/pages/lineup-editor/index?id=${encodeURIComponent(lineup.id)}`)
-              }
-            >
-              编辑阵容
-            </Button>
+            <Button className="secondary">编辑阵容</Button>
           </View>
         );
       })}
