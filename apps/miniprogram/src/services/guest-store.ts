@@ -99,6 +99,52 @@ export function changeLineupMember(
   };
 }
 
+export type LineupMemberToggle = 'active' | 'starter';
+
+export type LineupMemberToggleResult =
+  | { status: 'changed'; lineup: Lineup; toast?: string }
+  | { status: 'unchanged' }
+  | { status: 'blocked'; toast: string; message: string };
+
+export function setLineupMemberToggle(
+  lineup: Lineup,
+  playerId: string,
+  toggle: LineupMemberToggle,
+  enabled: boolean,
+): LineupMemberToggleResult {
+  const member = lineup.members.find((item) => item.playerId === playerId);
+  if (!member) throw new Error(`无法读取阵容球员：${playerId}`);
+  const checked = toggle === 'starter' ? member.starter : !member.inactive;
+  if (checked === enabled) return { status: 'unchanged' };
+
+  if (enabled) {
+    if (toggle === 'starter' && lineup.members.filter((item) => item.starter).length >= 5) {
+      return {
+        status: 'blocked',
+        toast: '首发人数已达上限',
+        message: '最多设置 5 名首发，请先取消其他球员的首发状态',
+      };
+    }
+    if (member.inactive && lineup.members.filter((item) => !item.inactive).length >= 13) {
+      return {
+        status: 'blocked',
+        toast: '激活人数已达上限',
+        message: '最多激活 13 名球员，请先取消其他球员的激活状态',
+      };
+    }
+  }
+
+  const changes =
+    toggle === 'starter'
+      ? { starter: enabled, inactive: enabled ? false : member.inactive }
+      : { inactive: !enabled, starter: enabled ? member.starter : false };
+  return {
+    status: 'changed',
+    lineup: changeLineupMember(lineup, playerId, changes),
+    toast: toggle === 'starter' && enabled && member.inactive ? '已激活并设为首发' : undefined,
+  };
+}
+
 export function removeLineupMember(lineup: Lineup, playerId: string): Lineup {
   return { ...lineup, members: lineup.members.filter((member) => member.playerId !== playerId) };
 }

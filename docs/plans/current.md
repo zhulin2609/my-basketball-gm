@@ -1,6 +1,6 @@
 # Current Plan
 
-更新时间：2026-10-12
+更新时间：2026-10-13
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
@@ -19,11 +19,11 @@ ACTIVE
 - Worktree: 当前仓库根目录，使用 `git rev-parse --show-toplevel` 核实。
 - Branch: mini-app-20261004
 - Base Commit: 4810976cf006b4bbe82506f3ab13362da3a001bc
-- Write Scope: 用户授权修复 `apps/miniprogram` 的草稿提示与列表通知、补充相关测试并更新本文件；保留 ZCode 的未提交交接文档。平台测试数据修改、提交及推送按当前用户授权执行。
+- Write Scope: 用户授权优化 `apps/miniprogram` 的激活与首发开关反馈、自动激活首发、补充相关测试并更新本文件；Web、共享包和后端保持原状。用户确认测试没有问题，并授权提交、推送当前分支。
 
 ## Goal
 
-按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前由 Codex 配合用户逐项验收，并修复已获授权的草稿提示问题。
+按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前由 Codex 配合用户逐项验收，并实施已确认的阵容开关体验优化。
 
 ## Acceptance Criteria
 
@@ -34,6 +34,9 @@ ACTIVE
 - [ ] 验证所声明的基础库兼容范围；不能执行的项目保留 NOT RUN 和具体原因。
 - [ ] 如验收引起代码修改，执行对应测试、四包 typecheck、Web 与小程序构建及必要的 Web 回归。
 - [x] 修复小程序草稿提示：列表明确标示未保存草稿及对战限制；编辑页使用红色加粗的“有草稿未保存”；通过真实磁盘存储和运行状态通知测试，Web 构建产物保持一致；真实页面复验仍属于剩余平台验收。
+- [x] 超过 13 名激活或 5 名首发时，调用 toast 并显示对应球员卡片内的红色原因；开发者工具验证开关和草稿状态保留。toast 的手机端显示仍属真机复验范围。
+- [x] 首发未满且激活未满时，非激活球员设置首发同时激活，只写入一次完整草稿；首发已满优先提示首发限制，激活已满时提示激活限制。
+- [x] 覆盖拒绝操作、释放名额后重试、自动激活、取消激活清除首发与草稿恢复；相关测试、四包 typecheck、两端构建、Web 产物一致性及开发者工具页面交互验证通过。
 - [ ] 全部阶段 3 必需验收有有效证据后设为 DONE；身份、联网和分享需求按后续阶段处理。
 
 ## Plan
@@ -56,6 +59,10 @@ ACTIVE
 - [x] ZCode 已准备上一轮交接索引并释放 Owner；Codex 已核验接手，当前 Owner 见 Owner 章节。
 
 ## Current State
+
+2026-10-13：用户报告优化前真机测试用例 07“阵容规则限制”全部通过，设备型号与系统未提供。本轮已完成用户确认的三项体验优化：开关点击进入前置校验，超限显示 toast 和卡片内红色加粗原因，并重新挂载原生开关恢复原值；符合人数条件时，非激活球员设置首发同时激活，保存一次完整草稿。正式保存语义保持一致。8 项新增回归测试、全部 101 项前端测试、四包 typecheck、两端构建、格式与差异检查通过。独立游客项目在开发者工具基础库 3.17.3 上验证实际点击、开关恢复、限制优先级、红色样式、草稿保留、自动激活与保存清理通过；未清理原项目存储。Web JavaScript 和 CSS 的 SHA-256 与修改前一致。用户随后确认本轮测试没有问题并授权提交推送；未提供本轮测试设备和平台，不据此推断 iOS、Android 分别通过。
+
+本轮变更基线为 `b8791ce71c21e50891cd8ee68a46dd5cb053afb0`，分支 `mini-app-20261004`，开始时工作区干净。此前草稿提示修复已提交并推送为 `b8791ce`；本轮提交范围为四个小程序实现与测试文件及本文件，提交状态与 HEAD 以 Git 核验为准。ZCode 的旧 handoff 仅作为历史索引，当前状态以本文件、Git 与实现为准。
 
 2026-10-12 真机验收发现：移除球员后直接返回时，编辑页读取草稿，列表读取正式保存阵容，人数可能不同。用户授权列表增加未保存提示并修正对战文案、编辑页统一红色加粗提示。当前修复仅涉及 `apps/miniprogram`；草稿写入成功后发布新的快照通知列表，正式数据仍由“保存阵容”更新。全部 93 项测试、四包 typecheck、两端构建与格式检查通过，Web 主 JavaScript 和 CSS 与运行中资源的 SHA-256 一致。真实设备复验尚未完成。
 
@@ -140,6 +147,9 @@ mvn test
 
 ## Progress
 
+- investigation complete（codex，2026-10-13）：确认人数限制缺少反馈由开关 disabled 导致，非激活球员首发同样被 disabled 阻止。用户已确认方案；范围限定小程序，人数限制在修改与草稿写入前校验，非激活球员首发同时激活。
+- implementation and validation complete（codex，2026-10-13）：完成激活与首发开关体验优化，增加 8 项真实存储回归测试，全部 101 项测试与两端构建通过。独立游客项目的开发者工具页面验证通过；Web 构建产物一致。本轮手机端复验未执行，阶段 3 总体仍为 ACTIVE。
+- user acceptance（2026-10-13）：用户确认本轮测试没有问题并授权提交、推送当前分支；未提供设备与平台，本条不替代阶段 3 尚未完成的其他验收项。
 - implementation complete（此前产品任务）：阶段 3 游客端代码、审查问题修复及本地配置隔离已提交。
 - task complete（协议任务）：`agent-handoff-protocol` 已完成并提交为 `4810976`，已推送；历史协议检查通过，业务状态完整保留。
 - investigation complete（codex 交接，2026-10-05）：核验干净基线 `4810976`；原 handoff 仍引用提交前的 HEAD 和六个未提交文件，已按实际 Git 状态刷新。
@@ -179,6 +189,17 @@ none。最低基础库版本决定已获用户确认并归档为 `docs/DECISIONS
 ## Validation
 
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Codex 阵容开关体验优化（2026-10-13）
+
+- `npx vitest run apps/miniprogram/src/services/guest-store.test.ts apps/miniprogram/src/services/guest-runtime.test.ts`：PASS；2 个文件、16 项测试。新增 8 项覆盖激活与首发上限、首发限制优先、自动激活首发、已有激活人数保持、取消激活清除首发、释放名额后重试、重复设置不产生修改与缺失球员报错。草稿恢复与保存使用真实磁盘存储，未使用 mock。
+- `npm test`：PASS；21 个文件、101 项测试，含 Web、core、client、小程序。
+- `npm run build:weapp`、`npm run build`：PASS；均包含四包 typecheck，小程序 `common.js` 269 KiB、Web 主文件 595.56 kB，保留已有体积提示。
+- `npm run format:check`、`git diff --check`：PASS。
+- `git diff --name-only -- apps/web packages backend`、`shasum -a 256 apps/web/dist/assets/index-*.js apps/web/dist/assets/index-*.css`：PASS；Web、共享包与后端无源码差异。JavaScript SHA-256 为 `57328b19dae1c089c4e6e92718650ef9eb8f47b2bfa568440182b9e82945cfff`，CSS 为 `a083c2220c1d07d0740e5ff10913b62b235b0980aa4292bb0c5060ab3cc3e822`，与修改前完全一致。
+- `node .cache/lineup-toggle-acceptance/verify.cjs`：PASS；使用微信官方 `miniprogram-automator` 连接独立游客测试项目（端口 9432，基础库 3.17.3，模拟器 iPhone 12/13 (Pro)）。通过实际页面创建 15 人阵容，点击原生 Switch 验证第 14 名激活拒绝、重复拒绝后的开关恢复、第 6 名首发拒绝、首发限制优先、激活限制、自动激活首发、取消激活清除首发、重试与正式保存。断言卡片提示实际颜色 `rgb(255, 107, 107)`、字重 700；超限前后真实草稿值相同，未收到运行异常。原项目配置与存储保持原状，未使用 mock、未触发清理存储。脚本与 `result.json` 被 Git 忽略，仅作本地证据，其他机器须重新执行。
+- 本轮 iOS、Android 真机交互与 toast 显示：NOT RUN；本轮通过开发者工具验证页面与开关状态，没有手机端运行接口。用户报告的用例 07 PASS 属于优化前版本，不覆盖本轮新行为。
+- `mvn test`：NOT RUN；本轮后端无改动，游客流程不调用后端。
 
 ### Codex 草稿提示修复（2026-10-12）
 

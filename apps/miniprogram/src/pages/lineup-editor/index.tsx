@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { Button, Input, Picker, Switch, Text, Textarea, View } from '@tarojs/components';
+import { Button, Input, Picker, Text, Textarea, View } from '@tarojs/components';
 import {
   displayPlayerName,
   STARTER_POSITIONS,
@@ -10,11 +10,14 @@ import {
   type Player,
 } from '@dream-court/core';
 import { Screen } from '@/components/Screen';
+import { LineupMemberSwitch } from '@/components/LineupMemberSwitch';
 import {
   changeLineupMember,
   loadLineupEditor,
   removeLineupMember,
+  setLineupMemberToggle,
   type GuestStore,
+  type LineupMemberToggle,
 } from '@/services/guest-store';
 import { errorMessage } from '@/constants/text';
 import { navigate } from '@/platform/navigation';
@@ -29,6 +32,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
   const [editor, setEditor] = useState(() => loadLineupEditor(store, initial));
   const dirty = editor.status === 'ready' && editor.dirty;
   const [error, setError] = useState('');
+  const [memberFeedback, setMemberFeedback] = useState<{ playerId: string; message: string }>();
   const [status, setStatus] = useState(dirty ? '有草稿未保存' : '已保存到本机');
   const draftWriteFailed = useRef(false);
 
@@ -38,6 +42,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     if (loaded.status === 'ready') {
       setStatus(loaded.dirty ? '有草稿未保存' : '已保存到本机');
       setError('');
+      setMemberFeedback(undefined);
     }
   };
 
@@ -76,6 +81,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
   const edit = (updated: Lineup) => {
     setEditor({ status: 'ready', lineup: updated, dirty: true });
     setError('');
+    setMemberFeedback(undefined);
     try {
       store.saveDraft(updated);
       draftWriteFailed.current = false;
@@ -91,6 +97,26 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     edit(changeLineupMember(lineup, playerId, changes));
   };
 
+  const toggleMember = (
+    playerId: string,
+    toggle: LineupMemberToggle,
+    enabled: boolean,
+  ): boolean => {
+    const result = setLineupMemberToggle(lineup, playerId, toggle, enabled);
+    if (result.status === 'unchanged') return true;
+    if (result.status === 'blocked') {
+      setMemberFeedback({ playerId, message: result.message });
+    } else {
+      edit(result.lineup);
+    }
+    if (result.toast) {
+      void Taro.showToast({ title: result.toast, icon: 'none' }).catch((failure: unknown) =>
+        setError(errorMessage(failure)),
+      );
+    }
+    return result.status === 'changed';
+  };
+
   const save = () => {
     setError('');
     try {
@@ -98,6 +124,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
       draftWriteFailed.current = false;
       setEditor({ status: 'ready', lineup, dirty: false });
       setStatus('已保存到本机');
+      setMemberFeedback(undefined);
     } catch (failure: unknown) {
       setStatus('尚未保存成功');
       setError(errorMessage(failure));
@@ -179,30 +206,22 @@ function LineupEditor({ store, initial, players }: EditorProps) {
               </Picker>
               <View className="toggle">
                 <Text>首发</Text>
-                <Switch
-                  color="#8bbf80"
+                <LineupMemberSwitch
                   checked={member.starter}
-                  disabled={member.inactive || (!member.starter && validation.starterCount >= 5)}
-                  onChange={(event) =>
-                    updateMember(member.playerId, { starter: event.detail.value })
-                  }
+                  onChange={(enabled) => toggleMember(member.playerId, 'starter', enabled)}
                 />
               </View>
               <View className="toggle">
                 <Text>激活</Text>
-                <Switch
-                  color="#8bbf80"
+                <LineupMemberSwitch
                   checked={!member.inactive}
-                  disabled={member.inactive && validation.activeCount >= 13}
-                  onChange={(event) =>
-                    updateMember(member.playerId, {
-                      inactive: !event.detail.value,
-                      starter: event.detail.value ? member.starter : false,
-                    })
-                  }
+                  onChange={(enabled) => toggleMember(member.playerId, 'active', enabled)}
                 />
               </View>
             </View>
+            {memberFeedback?.playerId === member.playerId && (
+              <View className="notice draft-warning">{memberFeedback.message}</View>
+            )}
             <Button
               size="mini"
               className="secondary"
