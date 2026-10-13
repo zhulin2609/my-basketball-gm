@@ -92,6 +92,7 @@ cd backend && mvn test  # 后端全部测试（含真实 PostgreSQL 集成测试
 - `docs/plans/current.md`：当前任务的方案、决策与验收标准。
 - `docs/DECISIONS.md`：历史设计决策。
 - `docs/deployment.md`：Docker Compose 本机与单机服务器部署说明。
+- [微信小程序原生 tab 白屏闪烁排查记录](docs/troubleshooting/miniprogram-tab-white-flash.md)：复现条件、背景层定位实验、修复配置与真机验证范围。
 
 ## Disclaimer
 
