@@ -15,15 +15,15 @@ ACTIVE
 ## Owner
 
 - Owner: codex
-- Instance: codex-stage3-acceptance-resume-20261007
+- Instance: codex-tab-flash-01a133fe-73dc-7541-b5b9-1d049f90f298
 - Worktree: 当前仓库根目录，使用 `git rev-parse --show-toplevel` 核实。
 - Branch: mini-app-20261004
 - Base Commit: 4810976cf006b4bbe82506f3ab13362da3a001bc
-- Write Scope: 用户授权优化 `apps/miniprogram` 的激活与首发开关反馈、自动激活首发、补充相关测试并更新本文件；Web、共享包和后端保持原状。用户确认测试没有问题，并授权提交、推送当前分支。
+- Write Scope: 定位并修复 `apps/miniprogram` 真机首次与重复切换 tab 的白屏，分析用户录屏、建立过渡帧验证并更新本文件。提交范围包含 Screen、九个页面配置和本文件。用户已确认普通预览没有白色闪烁，并授权提交、推送当前分支。
 
 ## Goal
 
-按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前由 Codex 配合用户逐项验收，并实施已确认的阵容开关体验优化。
+按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。当前由 Codex 配合用户逐项验收，并修复用例 09 发现的 tab 切换白色闪烁。
 
 ## Acceptance Criteria
 
@@ -37,6 +37,7 @@ ACTIVE
 - [x] 超过 13 名激活或 5 名首发时，调用 toast 并显示对应球员卡片内的红色原因；开发者工具验证开关和草稿状态保留。toast 的手机端显示仍属真机复验范围。
 - [x] 首发未满且激活未满时，非激活球员设置首发同时激活，只写入一次完整草稿；首发已满优先提示首发限制，激活已满时提示激活限制。
 - [x] 覆盖拒绝操作、释放名额后重试、自动激活、取消激活清除首发与草稿恢复；相关测试、四包 typecheck、两端构建、Web 产物一致性及开发者工具页面交互验证通过。
+- [x] 九个页面的 `backgroundColorContent` 声明为深绿色，保留 page CSS、PageMeta 根背景及窗口背景；iPhone 四个原生 tab 首次与重复切换、滚动后切换、详情与编辑页返回完成验证。80 张真机过渡采样截图未捕获白色画面，用户确认修复版本普通预览没有白色闪烁。
 - [ ] 全部阶段 3 必需验收有有效证据后设为 DONE；身份、联网和分享需求按后续阶段处理。
 
 ## Plan
@@ -48,7 +49,7 @@ ACTIVE
 
 ### 2. Implementation
 
-- [x] 游客小程序及已发现问题的修复已提交，详情见 Implemented Product State。
+- [x] 游客小程序及此前修复已提交，详情见 Implemented Product State；本轮页面背景修复已验证，提交范围见 Owner。
 - [ ] 执行剩余平台验收；仅在有真实失败证据及对应授权时修复相关问题。
 
 ### 3. Validation
@@ -60,9 +61,21 @@ ACTIVE
 
 ## Current State
 
+2026-10-13，白闪继续定位：用户明确反馈根背景修改后，真机调试的四个 tab 和已打开的 tab 仍然出现白屏，并提供 `ScreenRecording_10-13-2026 14-40-18_1.MP4`。本轮定位基线为 `52a8030`，接手时有 11 个未提交文件，原 Codex 会话已 idle。此前自动化的 `switchTab` 在 SDK 内等待 3000ms，检查的是切换后的页面数据与节点，未捕获过渡帧。本轮已建立录屏检测及真机切换截图检测。用户明确要求保留原生 tab，继续定位平台问题。
+
+本轮录屏检测与真机连接：9.24 秒、553 帧，检测出 19 个内容区域白色占比超过 80% 的帧，分为 13 段，每段连续 1–4 帧。视觉检查确认导航栏与 tabBar 保持深绿色，中间内容整块变白。用户重新连接后，官方 `cli agent start` 返回 `openedProjectWindow: false`，9420 接口实际返回 `platform: ios`、iPhone 14 Pro Max、SDK 3.17.4；工具窗口显示 iOS 26.6.2、微信 8.0.79。真机两轮四 tab 切换中页面 ID 2/3/4/5、PageMeta sid 与根子节点数量保持稳定，p6 均为 `#102b23`，未收到 exception。官方 CDP 接口返回四个页面宿主节点背景均为 `rgb(16, 43, 35)`；该接口暴露合成组件树，本项未读取真实 HTML/body 的计算样式。截图接口返回较慢，但与 `wx.switchTab` 并发发起时能捕获过渡白帧；稀疏截图未捕获白帧不能证明没有闪烁。未发现业务切 tab 清空页面的路径。证据位于 `.cache/tab-flash-followup`。
+
+平台边界验证：增加 PageMeta 的窗口背景属性后用户仍观察到白闪；为四页 `.screen` 临时增加不透明背景与 `min-height: 100vh` 后，32 次切换仍捕获 9 张白色截图。两组内存实验均已恢复。用户授权上传开发预览后，官方 CLI 生成普通预览；用户确认普通预览仍闪白。独立原生诊断项目只包含四个原生 tab、静态文字、深色 page CSS 和 page-meta，不包含 Taro、业务逻辑或存储操作；同一 iPhone 上 32 次切换捕获 2 张内容区域完全白色截图（第 17、18 次，均为重复切换）。独立项目在 9433 端口运行；此前 9420 端口冲突导致的空窗口已关闭。
+
+定位颜色实验与修复：微信[官方 WebView 背景说明](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/custom-route#webview-下的页面背景色)明确区分 page CSS、页面容器 `backgroundColorContent`、窗口 `backgroundColor` 三层，页面容器默认白色。在原生诊断项目中只给四页 JSON 增加 `backgroundColorContent: "#ff00ff"` 后，32 次切换捕获 2 张整块洋红色画面、0 张白色画面，确认切换期间暴露的页面容器层。业务项目九页现已将该字段设为 `#102b23`，四个原生 tab 和九个路径保持一致。PageMeta.rootBackgroundColor 声明 HTML 根背景，页面 JSON 的 backgroundColorContent 声明原生页面容器背景。四包 typecheck、101 项测试、两端构建与格式检查通过；9/9 个构建页面 JSON 已核验。
+
+修复后 iPhone 验证：实际业务构建在独立 9434 接口完成 64 次 tab 切换采样，以及 16 次滚动、球员详情、阵容编辑、球员选择、历史战报和战报详情的进入与返回采样，共 80 张截图未捕获白色画面，无 exception。球员列表滚动到 600px 后切换再返回仍为 600px；页面标题、路径、实际容器背景正确；测试前后游客工作区及草稿存储的 SHA-256 一致。验证完成后恢复屏幕常亮设置，原开发窗口保持原状。记录为 `.cache/tab-flash-followup/capture-fixed.json` 和 `verify-fixed-pages.json`；稀疏截图的证据范围见 Validation。用户随后扫描官方 CLI 生成的修复版本普通预览二维码，在没有调试浮层的同一 iPhone 上首次及重复切换四个 tab，明确反馈“没有白色闪烁”。用例 09 本次 iOS 白闪修复完成，Android 与阶段 3 其他未完成场景仍按 Remaining Product Work 保留。
+
+2026-10-13，此前 PageMeta 配置验证记录：基线为 `52a8030a27a7a4eb11b29cfee80caecd8e7b7ff0`，该轮开始时工作区干净。Screen 使用 PageMeta.rootBackgroundColor 声明 HTML 根背景 `#102b23`，全部九个页面开启 enablePageMeta，并在 PageMeta 内保留白色导航文字、深绿色背景和品牌标题。两端构建与四包 typecheck 通过，Web JavaScript 和 CSS 的 SHA-256 与修改前一致。独立游客项目在基础库 3.17.3 上验证四个 tab 连续切换四轮、九个页面根背景、导航栏配置及编辑与详情页返回通过，未收到运行异常。本地录屏证据位于 `.cache/tab-flash-analysis`，运行验证位于 `.cache/tab-background-acceptance`，两者均被 Git 忽略。该轮未捕获真机过渡帧；当前白闪定位与真机证据见上方记录。该轮没有提交或推送。
+
 2026-10-13：用户报告优化前真机测试用例 07“阵容规则限制”全部通过，设备型号与系统未提供。本轮已完成用户确认的三项体验优化：开关点击进入前置校验，超限显示 toast 和卡片内红色加粗原因，并重新挂载原生开关恢复原值；符合人数条件时，非激活球员设置首发同时激活，保存一次完整草稿。正式保存语义保持一致。8 项新增回归测试、全部 101 项前端测试、四包 typecheck、两端构建、格式与差异检查通过。独立游客项目在开发者工具基础库 3.17.3 上验证实际点击、开关恢复、限制优先级、红色样式、草稿保留、自动激活与保存清理通过；未清理原项目存储。Web JavaScript 和 CSS 的 SHA-256 与修改前一致。用户随后确认本轮测试没有问题并授权提交推送；未提供本轮测试设备和平台，不据此推断 iOS、Android 分别通过。
 
-本轮变更基线为 `b8791ce71c21e50891cd8ee68a46dd5cb053afb0`，分支 `mini-app-20261004`，开始时工作区干净。此前草稿提示修复已提交并推送为 `b8791ce`；本轮提交范围为四个小程序实现与测试文件及本文件，提交状态与 HEAD 以 Git 核验为准。ZCode 的旧 handoff 仅作为历史索引，当前状态以本文件、Git 与实现为准。
+阵容开关体验优化的变更基线为 `b8791ce71c21e50891cd8ee68a46dd5cb053afb0`，分支 `mini-app-20261004`，开始时工作区干净。此前草稿提示修复已提交并推送为 `b8791ce`；开关优化涉及四个小程序实现与测试文件及本文件，已提交为 `52a8030`。ZCode 的旧 handoff 仅作为历史索引，当前状态以本文件、Git 与实现为准。
 
 2026-10-12 真机验收发现：移除球员后直接返回时，编辑页读取草稿，列表读取正式保存阵容，人数可能不同。用户授权列表增加未保存提示并修正对战文案、编辑页统一红色加粗提示。当前修复仅涉及 `apps/miniprogram`；草稿写入成功后发布新的快照通知列表，正式数据仍由“保存阵容”更新。全部 93 项测试、四包 typecheck、两端构建与格式检查通过，Web 主 JavaScript 和 CSS 与运行中资源的 SHA-256 一致。真实设备复验尚未完成。
 
@@ -74,7 +87,7 @@ Codex 于 2026-10-07 接手：ZCode 的 `docs/AI_HANDOFF.md` 明确声明已停�
 
 微信小程序在 `mini-app-20261004` 分支推进，产品文档为 `docs/plans/wechat-miniprogram.md`。阶段 2 已提交（`bd5b8a5`），阶段 3 开发基线为 `0c06e0f`。阶段 3 游客端代码已实现并通过业务测试、类型检查和构建。完整微信运行验收仍未完成，阶段 3 保持待验收状态。
 
-此前小程序记录显示已配置 AppID、导入开发者工具并开启服务端口；恢复产品任务时重新核验这些环境条件。本次用户授权范围为准备交接。游客端提交为 `337fb3a`，本地配置提交为 `33361f2`，敏感信息规则提交为 `2d286c3`；历史中的 AppID 暴露记录仍须与后续凭据检查区分。
+此前交接记录显示已配置 AppID、导入开发者工具并开启服务端口；当时用户授权范围为准备交接。当前环境与授权范围见 Owner 和本轮 Validation。游客端提交为 `337fb3a`，本地配置提交为 `33361f2`，敏感信息规则提交为 `2d286c3`；历史中的 AppID 暴露记录仍须与后续凭据检查区分。
 
 ### Deferred Product Goal
 
@@ -92,7 +105,7 @@ Codex 于 2026-10-07 接手：ZCode 的 `docs/AI_HANDOFF.md` 明确声明已停�
 
 ### Remaining Product Work
 
-- 阶段 3 剩余 P01 关闭后重进恢复、P04 连续编辑与页面切换的完整场景、P10 到期的真实平台表现，以及键盘、安全区域、返回、后台恢复和真实存储失败。ZCode 已记录搜索、阵容约束、游客对战、20 场上限、连续中文输入、草稿恢复与随机 API 的自动化结果，具体范围见 Validation；Codex 本次未重新执行平台验收。Android 因设备缺失待验。
+- 阶段 3 剩余 P01 关闭后重进恢复、P04 连续编辑与页面切换的完整场景、P10 到期的真实平台表现，以及键盘、安全区域、返回、后台恢复和真实存储失败。ZCode 已记录搜索、阵容约束、游客对战、20 场上限、连续中文输入、草稿恢复与随机 API 的自动化结果，具体范围见 Validation；Codex 本轮真机验证限于页面背景与导航，上述剩余场景尚未重新完整验收。Android 因设备缺失待验。
 - 最低基础库已按 D-002 定为 3.17.3；模板及 uuid 转译配置与该决策一致，2.15.0 不在支持范围。剩余兼容性验收按 3.17.3 及受支持环境执行。
 - 阶段 4 微信身份、新账号 Web 凭据、游客导入同名客户端键冲突处理、登录规则对战与会话切换。
 - 阶段 5 独立分享的数据库、接口、审核、创建、接收、复制、管理、撤销与期限。
@@ -147,6 +160,8 @@ mvn test
 
 ## Progress
 
+- investigation and validation complete（codex，2026-10-13，白闪修复）：录屏与原生静态项目复现白色过渡，页面容器颜色实验确认暴露层受 backgroundColorContent 控制。九页配置增加深绿色页面容器背景；iPhone 64 次 tab 切换及 16 次滚动/详情/编辑/选择/战报返回采样均无白色截图、无 exception，滚动位置和存储保留。用户确认同一 iPhone 普通预览首次及重复切换没有白色闪烁；相关 101 项测试、四包 typecheck、两端构建通过。
+- configuration and simulator validation complete（codex，2026-10-13，用例 09，此前记录）：Screen 声明 HTML 根背景，九个页面开启 PageMeta，保留原有导航栏外观。开发者工具页面节点及编辑与详情页返回通过；两端构建与四包 typecheck 通过，Web JavaScript 和 CSS 与修改前一致；该轮未验证真机过渡帧。
 - investigation complete（codex，2026-10-13）：确认人数限制缺少反馈由开关 disabled 导致，非激活球员首发同样被 disabled 阻止。用户已确认方案；范围限定小程序，人数限制在修改与草稿写入前校验，非激活球员首发同时激活。
 - implementation and validation complete（codex，2026-10-13）：完成激活与首发开关体验优化，增加 8 项真实存储回归测试，全部 101 项测试与两端构建通过。独立游客项目的开发者工具页面验证通过；Web 构建产物一致。本轮手机端复验未执行，阶段 3 总体仍为 ACTIVE。
 - user acceptance（2026-10-13）：用户确认本轮测试没有问题并授权提交、推送当前分支；未提供设备与平台，本条不替代阶段 3 尚未完成的其他验收项。
@@ -158,7 +173,7 @@ mvn test
 - takeover complete（zcode，2026-10-05）：按 `RECEIVE → VERIFY → ACCEPT` 核验 HEAD `4810976`、两份交接文档修改范围与阶段 3 实现（九个页面目录与 platform 层）；复跑四包 typecheck、`npm test`（21 个测试文件、91 项）、格式与差异检查全部通过，与交接声明一致，未发现 discrepancy。Owner 设为 zcode，状态 HANDOFF_READY → ACTIVE。
 - implementation complete（zcode，2026-10-05，用户指令）：按用户要求移除 Web 球员详情面板的“加入当前阵容”按钮及整条死代码链（`PlayerLibraryProps.onAdd`、App 接线、`players.add` 双语文案）；加入阵容的唯一入口回到阵容编辑页的球员选择。四包 typecheck、`npm test`（91 项）、格式检查通过。改动未提交。
 - implementation complete（zcode，2026-10-05，用户指令）：Web 导航在窄屏（≤900px 断点）切换为精简文案——中文“球员、阵容、对战、社区”，英文“Players、Roster、battle、Community”（battle 为用户指定的小写原文）；桌面端保持原文案。实现为按钮内同时渲染完整与精简两份文案，经 `nav-label-full`/`nav-label-compact` 类与既有断点切换可见性。新增双文案渲染测试；四包 typecheck、`npm test`（92 项）、格式检查通过。改动未提交。
-- bugfix complete（zcode，2026-10-06，用户报告切 tab 闪白屏后）：定位为九个页面均缺少页面级窗口配置（编译产物 `dist/pages/*/index.json` 只有 `usingComponents`），微信在 iOS 上切换 tab 的过渡底色读取页面级 `backgroundColor`（`backgroundColorTop/Bottom` 仅支持页面级），缺失时显示默认白色。修复为全部九个页面新增 `index.config.ts`，设置 `backgroundColor`、`backgroundColorTop`、`backgroundColorBottom` 为 `#102b23` 与 `backgroundTextStyle: light`；导航栏标题继续继承全局配置。四包 typecheck、`npm test`（92 项）、`build:weapp`、格式检查通过；已核验构建产物页面 JSON 包含深色背景。真机复验由用户执行。改动未提交。
+- configuration complete（zcode，2026-10-06，历史窗口背景配置）：九个页面原先缺少页面级窗口配置（编译产物 `dist/pages/*/index.json` 只有 `usingComponents`），该轮全部新增 `index.config.ts`，设置 `backgroundColor`、`backgroundColorTop`、`backgroundColorBottom` 为 `#102b23` 与 `backgroundTextStyle: light`；导航栏标题继承全局配置。四包 typecheck、`npm test`（92 项）、`build:weapp`、格式检查通过；构建产物包含深色窗口背景。当时未取得过渡背景层的定位证据；页面容器层的定位见 2026-10-13 颜色实验。该轮改动随后随 `e1a883b` 提交。
 - bugfix complete（zcode，2026-10-06，用户真机调试白屏后）：用户按开发者工具提示在本地 `project.config.json` 开启 `es6` 与 `enhance`，真机调试出现 `Maximum call stack size exceeded`（转译后的类辅助链在同一行无限递归）与 `h.E.app.mount` 为 null，应用未挂载导致白屏。定位依据：Taro 构建产物已是纯 ES5（dist 抽样无 `async`、无箭头函数），开发者工具的二次转译破坏 Taro 运行时类继承辅助结构。修复为本地配置改回 `es6: false`、`enhance: false`，与仓库模板 `project.config.example.json` 一致；重建 `build:weapp` 并复核产物仍为 ES5。后续真机调试若工具再次提示开启 ES6 转 ES5，应拒绝。
 - bugfix complete（zcode，2026-10-06，用户提交开发者工具代码质量优化项后）：实施三项微信代码质量配置——`app.config.ts` 增加 `lazyCodeLoading: 'requiredComponents'`（组件代码按需注入，类型已核验）；本地与模板 `project.config.json` 的 `setting.minified`、`setting.minifyWXSS` 改为 `true`（发布包 JS/WXSS 压缩）。过程中发现本地配置的 `es6`/`enhance` 被运行中的开发者工具重写回 `true`（覆盖了上一次修复），已再次改回 `false`；该两项以后必须在工具的“详情 → 本地设置”界面关闭，直接改文件会被运行中的工具覆盖。四包 typecheck、`npm test`（92 项）、`build:weapp`（产物 `app.json` 含 `lazyCodeLoading`、页面 JSON 含深色背景）、格式检查通过。三项优化的实际评分变化由用户在工具的代码质量面板复验。
 - bugfix complete（zcode，2026-10-06，用户预览报错后）：预览编译报 `SyntaxError: Unexpected token ?`，位置在 `vendors.js` 的 uuid 模块（`platform/identifier.ts` 引用的 `uuid@14` 产物含 `??`、`?.` 等 ES2020 语法）；预览按 `project.config.json` 的 `libVersion: 2.15.0` 解析失败，而 `project.private.config.json` 为 3.17.3，与模拟器此前正常运行一致。修复为本地与模板的基础库声明统一提升到 `3.17.3`；预览编译按 3.17.3 原生支持该语法。改动验证：四包 typecheck、`npm test`（92 项）、格式检查通过（libVersion 为工具侧配置，无需重建产物）；预览能否通过由用户复验。
@@ -177,7 +192,8 @@ mvn test
 
 ## Open Questions
 
-- 开发者工具权限、服务端口与基础库 3.17.3 已在 iOS 真机验证可用（用户复验通过）；Android 设备缺失，对应验收保留 NOT RUN，待设备就绪后执行并记录。
+- 用例 09 的本次 iPhone 白闪修复已完成验证。Android 白闪复验仍因设备缺失未执行；2026-10-06 的 iOS 记录仅为历史结果。
+- 本次 iPhone 实际 SDK 为 3.17.4，最低基础库声明为 3.17.3；两者验证结果分别记录。Android 设备缺失，对应验收保留 NOT RUN，待设备就绪后执行并记录。
 - Codex 已确认从可用 Skill 列表读取 canonical handoff；ZCode 于 2026-10-05 接手时未在自动发现的 Skill 列表中看到该 Skill，已显式读取 `.agents/skills/handoff/SKILL.md` 完成接手，显式引用路径可用；Kimi Code 的自动发现仍未验证。
 - 产品文档第 12 节中微信身份、导入和上线资格的选择留待后续产品任务确认；不阻止游客端验收。
 - ZCode 记录的自动化重编译清空模拟器存储属于历史环境观察，Codex 尚未重新验证其原因及适用范围；不据此判定其余平台验收无法执行。
@@ -189,6 +205,37 @@ none。最低基础库版本决定已获用户确认并归档为 `docs/DECISIONS
 ## Validation
 
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Codex 真机白闪继续定位（2026-10-13）
+
+- `swift -suppress-warnings -module-cache-path .cache/tab-flash-analysis/module-cache .cache/tab-flash-followup/analyze.swift <用户录屏路径> .cache/tab-flash-followup/video`：FAIL（白屏判定）；真实解码 553 帧，19 个白色帧，13 段连续闪烁。沙箱内视频解码无法启动，经过授权的 macOS 视频服务执行成功；命令退出码 1 表示检测到了白屏。
+- `/Applications/wechatwebdevtools.app/Contents/MacOS/cli agent start --project <仓库>/apps/miniprogram`：PASS；官方持久自动化接口端口 9420，`openedProjectWindow: false`，工具 2.02.2608080；未重启项目或清除用户存储。
+- `node .cache/tab-flash-followup/probe.cjs`：PASS（运行状态核验）；iOS 真机两轮四 tab 页面标识、根节点数量、PageMeta 数据稳定且无 exception。完整截图耗时 1263ms，本项不判定白闪消失。
+- `node .cache/tab-flash-followup/background.cjs inspect`：PASS（只读属性核验）；四页 `.screen` 背景透明，PageMeta p6 深绿色；原生 `page` 选择器返回 null，未据此推断根背景实际计算值。
+- `node .cache/tab-flash-followup/root-style.cjs`：PASS（页面宿主样式读取）；CDP 合成组件树中的四页宿主背景均为 `rgb(16, 43, 35)`，`opacity: 1`、`display: block`、`visibility: visible`；不代表 HTML/body 的计算样式。
+- `node .cache/tab-flash-followup/capture.cjs screen`：FAIL（白屏判定）；32 次切换捕获 9 张白色截图，否定 `.screen` 不透明背景和最小高度足以消除白闪的假设；临时样式已恢复。
+- 官方 CLI 普通预览：PASS（生成）；用户明确授权上传，用户设备复验结果为 FAIL（仍闪白）。普通预览生成不代表修复通过。
+- `node .cache/tab-flash-followup/capture.cjs native 9433`：FAIL（白屏判定）；原生静态项目 32 次切换捕获 2 张白色截图，视觉核对与业务项目相同的内容区域白屏。原生项目和脚本均位于 Git 忽略目录，不读取或写入用户存储。
+- `node .cache/tab-flash-followup/root-style.cjs native 9433`：NOT RUN（连接中断）；接口返回 `Remote debug connection lost`，未取得原生项目根样式值。
+- `node .cache/tab-flash-followup/capture.cjs native-magenta 9433`：PASS（定位颜色实验）；32 次切换捕获 2 张洋红色截图、0 张白色截图，视觉确认内容区域完全变为指定定位颜色。与原生基线相比只增加四页 JSON 的 `backgroundColorContent`。
+- `npm test -- --maxWorkers=1`、`npm run build:weapp`：PASS；21 个文件、101 项测试，小程序构建包含四包 typecheck；保留 `common.js` 269 KiB 的已有体积提示。
+- `npm run build`：PASS；再次执行四包 typecheck 与 Web 构建，保留已有 500 kB 体积提示。Web 输出仍为 `index-1BdW4FVN.js`、`index-DHkKajIP.css`。
+- `npm run format:check`、`git diff --check`：PASS；九页源码及九页构建产物的 `backgroundColorContent` 均为 `#102b23`，原生 tab 配置与页面路径未改变。
+- `node .cache/tab-flash-followup/capture.cjs fixed 9434 64 '#102b23'`：PASS（真实 iPhone 切换采样）；64 次切换、64 张截图，0 张白色、0 张洋红色，异常事件为空。实际四个 tab 的容器背景为 `#102b23`，九个路径注册正确，每次切换后实际路径均符合预期。切换与截图并发发起，采样延迟轮换 0/8/16/33ms；官方截图接口返回较慢，未捕获白色帧不能单独证明所有过渡时刻均无白闪。测试结束恢复 `setKeepScreenOn: false`。
+- `node .cache/tab-flash-followup/verify-fixed-pages.cjs`：PASS（真实 iPhone 页面流程）；16 次过渡采样无白色画面，球员列表滚动位置切换前后均为 600px，球员详情、现有无草稿阵容编辑、球员选择、历史战报及现有有效战报详情进入与返回均成功。页面标题、路径与容器背景核验通过，异常事件为空，测试前后业务工作区和草稿存储摘要相同。最终执行退出码 0，`completed: true`，恢复 `setKeepScreenOn: false`。调试时官方 `page.scrollTop()` 返回 0，原生 `selectViewport().scrollOffset()` 与截图确认真实滚动为 600px，因此使用原生接口完成验证。
+- `/Applications/wechatwebdevtools.app/Contents/MacOS/cli preview --project <仓库>/apps/miniprogram --qr-format image --qr-output <仓库>/.cache/tab-flash-followup/preview-fixed.png`：PASS（生成修复版本普通预览）；上传包 612257 字节。用户在同一 iPhone、没有“已连接”浮层的普通预览中首次及重复切换四个 tab，反馈“没有白色闪烁”，用例 09 普通预览验收 PASS。
+- Android 真机验证：NOT RUN；当前没有可用 Android 设备，本次 iPhone 结果不代替 Android 验收。
+
+### Codex tab 切换根背景修复（2026-10-13）
+
+- `npm test`：FAIL；两次默认并行运行出现 5000ms 超时，第一次为球员数据校验，第二次还有 Web 游客入口测试超时及后续重复元素错误。未修改测试、断言或超时限制。
+- `npm test -- --maxWorkers=1`：PASS；21 个文件、101 项测试，覆盖 Web、core、client、小程序。限制 worker 并发后完整执行全部测试。
+- `npm run build:weapp`、`npm run build`：PASS；均包含四包 typecheck。最终小程序构建包含 NavigationBar 配置，common.js 269 KiB；Web 主 JavaScript 595.56 kB，保留已有体积提示。
+- `npm run format:check`、`git diff --check`：PASS。
+- `git diff --name-only -- apps/web packages backend`、`shasum -a 256 apps/web/dist/assets/index-*.js apps/web/dist/assets/index-*.css`：PASS；对应源码没有修改。Web JavaScript SHA-256 为 `57328b19dae1c089c4e6e92718650ef9eb8f47b2bfa568440182b9e82945cfff`，CSS 为 `a083c2220c1d07d0740e5ff10913b62b235b0980aa4292bb0c5060ab3cc3e822`，与本轮修改前一致。
+- `node .cache/tab-background-acceptance/verify.cjs`：PASS；微信官方 miniprogram-automator 启动独立游客项目，端口 9432、基础库 3.17.3、模拟器 iPhone 12/13 (Pro)。核验九个 WXML 的原生根背景绑定及页面 JSON；实际进入九个页面，四个 tab 连续切换四轮，创建阵容后进入编辑与选择页再返回，进入球员详情再返回，检查历史战报与战报缺失页面。页面数据中的根背景、导航颜色与品牌标题，以及实际渲染的页面标题均正确，未收到运行异常。原项目配置和用户存储保持原状。脚本与 result.json 被 Git 忽略，其他机器需重新执行。本条只证明页面数据、节点绑定与交互，不证明真机过渡帧无白闪。首次启动受沙箱限制，随后有一次自动化响应超时；最终完整执行成功。
+- iOS、Android 真机切换瞬间白闪复验：NOT RUN；本轮没有手机端运行接口，用户将通过最新预览验证。
+- `mvn test`：NOT RUN；后端没有修改，本轮涉及小程序原生页面配置。
 
 ### Codex 阵容开关体验优化（2026-10-13）
 
@@ -324,4 +371,4 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 
 ## Completion
 
-阶段 3 的必需平台验收全部完成并记录真实证据后，任务才可设为 DONE。当前状态为 ACTIVE，Owner 为 codex；下一步优先验证 P01 关闭后重进的数据恢复，随后补齐 Remaining Product Work。两份未提交文档继续保留。Codex 交出工作时执行 `.agents/skills/handoff/SKILL.md`，刷新交接索引，将未完成任务设为 HANDOFF_READY，释放 Owner 并停止写入。
+本次用例 09 的 iPhone 白闪修复已完成：九页容器背景配置、真机 80 张过渡采样截图、滚动与返回流程、普通预览用户确认及代码检查均有验证记录。交付范围包含九页容器背景配置、PageMeta 配置及本文件；用户已授权提交并推送 `mini-app-20261004`，提交状态与 HEAD 以 Git 核验为准。阶段 3 总体仍为 ACTIVE，Owner 为 codex，剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。正式交出工作时执行 `.agents/skills/handoff/SKILL.md` 并刷新交接索引。
