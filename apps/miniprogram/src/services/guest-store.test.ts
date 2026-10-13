@@ -5,6 +5,8 @@ import {
   addLineupMember,
   changeLineupMember,
   createGuestStore,
+  getLineupMembersForDisplay,
+  getLineupStarterIds,
   loadLineupEditor,
   setLineupMemberToggle,
   validateDraft,
@@ -41,6 +43,110 @@ describe('小程序游客工作区', () => {
     scenario.store.saveLineup(lineup);
     return { ...scenario, lineup };
   }
+
+  it('首发置顶展示保留组内顺序、原始成员和正式存储', () => {
+    const { store, deps, lineup } = createFullLineup();
+    const mixed = {
+      ...lineup,
+      members: lineup.members.map((member, index) => ({
+        ...member,
+        starter: [1, 3, 6, 8, 11].includes(index),
+      })),
+    };
+    store.saveLineup(mixed);
+    const original = structuredClone(mixed);
+    const workspace = deps.storage.getItem('dream-court.guest-workspace.v1');
+    const drafts = deps.storage.getItem('dream-court.lineup-drafts.v1');
+    const restored = createGuestStore(deps);
+    const saved = restored.getSnapshot().lineups.find((item) => item.id === mixed.id);
+    if (!saved) throw new Error('正式阵容丢失');
+    const editor = loadLineupEditor(restored, saved);
+    if (editor.status !== 'ready') throw new Error('编辑状态读取失败');
+    const displayed = getLineupMembersForDisplay(editor.lineup, getLineupStarterIds(editor.lineup));
+    expect(displayed).toEqual(
+      [1, 3, 6, 8, 11, 0, 2, 4, 5, 7, 9, 10, 12, 13, 14].map((index) => mixed.members[index]),
+    );
+    expect(displayed.slice(0, 5).every((member) => member.starter)).toBe(true);
+    expect(editor.dirty).toBe(false);
+    expect(mixed).toEqual(original);
+    expect(editor.lineup.members).toEqual(original.members);
+    expect(deps.storage.getItem('dream-court.guest-workspace.v1')).toBe(workspace);
+    expect(deps.storage.getItem('dream-court.lineup-drafts.v1')).toBe(drafts);
+  });
+
+  it('恢复未保存草稿时将草稿首发置顶，保留正式阵容与草稿顺序', () => {
+    const { deps, lineup, store } = createFullLineup();
+    const draft = {
+      ...lineup,
+      members: lineup.members.map((member, index) => ({
+        ...member,
+        starter: index >= 8 && index < 13,
+      })),
+    };
+    store.saveDraft(draft);
+    const workspace = deps.storage.getItem('dream-court.guest-workspace.v1');
+    const drafts = deps.storage.getItem('dream-court.lineup-drafts.v1');
+    const restored = createGuestStore(deps);
+    const editor = loadLineupEditor(restored, lineup);
+    if (editor.status !== 'ready') throw new Error('草稿恢复失败');
+    expect(editor.dirty).toBe(true);
+    expect(
+      getLineupMembersForDisplay(editor.lineup, getLineupStarterIds(editor.lineup)).map(
+        (member) => member.playerId,
+      ),
+    ).toEqual(
+      [8, 9, 10, 11, 12, 0, 1, 2, 3, 4, 5, 6, 7, 13, 14].map(
+        (index) => draft.members[index].playerId,
+      ),
+    );
+    expect(restored.readDraft(lineup.id)).toEqual(draft);
+    expect(deps.storage.getItem('dream-court.guest-workspace.v1')).toBe(workspace);
+    expect(deps.storage.getItem('dream-court.lineup-drafts.v1')).toBe(drafts);
+  });
+
+  it('页面内切换首发保留展示位置，重新进入时使用最新首发', () => {
+    const { lineup } = createFullLineup();
+    const starterIds = getLineupStarterIds(lineup);
+    const released = setLineupMemberToggle(lineup, lineup.members[0].playerId, 'starter', false);
+    if (released.status !== 'changed') throw new Error('取消首发失败');
+    const selected = setLineupMemberToggle(
+      released.lineup,
+      lineup.members[9].playerId,
+      'starter',
+      true,
+    );
+    if (selected.status !== 'changed') throw new Error('设置首发失败');
+    expect(
+      getLineupMembersForDisplay(selected.lineup, starterIds).map((member) => member.playerId),
+    ).toEqual(lineup.members.map((member) => member.playerId));
+    expect(
+      getLineupMembersForDisplay(selected.lineup, getLineupStarterIds(selected.lineup)).map(
+        (member) => member.playerId,
+      ),
+    ).toEqual(
+      [1, 2, 3, 4, 9, 0, 5, 6, 7, 8, 10, 11, 12, 13, 14].map(
+        (index) => lineup.members[index].playerId,
+      ),
+    );
+  });
+
+  it('没有首发及空阵容保留原顺序，移除球员不留下展示项', () => {
+    const { lineup } = createFullLineup();
+    const noStarters = {
+      ...lineup,
+      members: lineup.members.map((member) => ({ ...member, starter: false })),
+    };
+    expect(getLineupMembersForDisplay(noStarters, getLineupStarterIds(noStarters))).toEqual(
+      noStarters.members,
+    );
+    expect(
+      getLineupMembersForDisplay({ ...lineup, members: [] }, getLineupStarterIds(lineup)),
+    ).toEqual([]);
+    const removed = { ...lineup, members: lineup.members.slice(1) };
+    expect(getLineupMembersForDisplay(removed, getLineupStarterIds(lineup))).toEqual(
+      removed.members,
+    );
+  });
 
   it('拒绝激活第 14 名球员，返回明确原因且不修改阵容或存储', () => {
     const { store, deps, lineup } = createFullLineup();

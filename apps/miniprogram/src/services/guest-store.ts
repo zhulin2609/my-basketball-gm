@@ -53,6 +53,22 @@ export function loadLineupEditor(store: GuestStore, initial: Lineup): LineupEdit
   }
 }
 
+export function getLineupStarterIds(lineup: Lineup): Set<string> {
+  return new Set(
+    lineup.members.filter((member) => member.starter).map((member) => member.playerId),
+  );
+}
+
+export function getLineupMembersForDisplay(
+  lineup: Lineup,
+  starterIds: ReadonlySet<string>,
+): LineupMember[] {
+  return [
+    ...lineup.members.filter((member) => starterIds.has(member.playerId)),
+    ...lineup.members.filter((member) => !starterIds.has(member.playerId)),
+  ];
+}
+
 export function validateDraft(lineup: Lineup, players: Player[]): void {
   if (!lineup.name.trim() || lineup.name.length > 120) {
     throw new Error('阵容名称不能为空，最多 120 个字符');

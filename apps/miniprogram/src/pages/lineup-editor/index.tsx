@@ -13,6 +13,8 @@ import { Screen } from '@/components/Screen';
 import { LineupMemberSwitch } from '@/components/LineupMemberSwitch';
 import {
   changeLineupMember,
+  getLineupMembersForDisplay,
+  getLineupStarterIds,
   loadLineupEditor,
   removeLineupMember,
   setLineupMemberToggle,
@@ -30,6 +32,9 @@ interface EditorProps {
 
 function LineupEditor({ store, initial, players }: EditorProps) {
   const [editor, setEditor] = useState(() => loadLineupEditor(store, initial));
+  const [starterIds, setStarterIds] = useState(() =>
+    editor.status === 'ready' ? getLineupStarterIds(editor.lineup) : new Set<string>(),
+  );
   const dirty = editor.status === 'ready' && editor.dirty;
   const [error, setError] = useState('');
   const [memberFeedback, setMemberFeedback] = useState<{ playerId: string; message: string }>();
@@ -40,6 +45,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     const loaded = loadLineupEditor(store, initial);
     setEditor(loaded);
     if (loaded.status === 'ready') {
+      setStarterIds(getLineupStarterIds(loaded.lineup));
       setStatus(loaded.dirty ? '有草稿未保存' : '已保存到本机');
       setError('');
       setMemberFeedback(undefined);
@@ -186,7 +192,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
           添加球员
         </Button>
       </View>
-      {lineup.members.map((member) => {
+      {getLineupMembersForDisplay(lineup, starterIds).map((member) => {
         const player = players.find((item) => item.id === member.playerId);
         if (!player) throw new Error(`无法读取阵容球员：${member.playerId}`);
         return (
