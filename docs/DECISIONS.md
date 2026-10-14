@@ -175,3 +175,32 @@ Date: 2026-10-13
 ### Affected Areas
 
 `docs/plans/wechat-miniprogram.md`，后续两端认证与用户名表单、后端认证及用户约束、微信身份与扫码登录、游客导入及历史战报读取。本轮仅更新文档。
+
+## D-006 — 集成测试允许以本地契约服务器扮演外部上游
+
+Status: Active
+Date: 2026-10-14
+
+### Context
+
+阶段 4 的微信认证与扫码票据测试需要调用微信接口。第一轮与第三轮审查曾将「本地测试服务器返回预设的微信响应」列为与仓库禁止 mock 规则冲突的问题（I016）。仓库规则禁止以 mock 伪造本系统的实现与结果；外部平台上游在测试环境中无法真实调用（凭据、配额与网络条件限制）。
+
+### Decision
+
+用户于 2026-10-14 明确接受：集成测试以真实 HTTP 传输与真实 PostgreSQL 验证本系统行为，外部平台上游（当前为微信 `jscode2session`、`getwxacodeunlimit` 等）允许由本地契约服务器扮演，前提是不伪造本系统的处理结果，且真实平台验收单独执行并如实记录。被测系统的传输、数据库、业务逻辑与断言都必须真实。
+
+### Alternatives
+
+删除或跳过涉及外部上游的测试；仅凭真实平台验收覆盖。
+
+### Why Rejected
+
+删除会丢失认证、票据与并发事务的回归保护；真实平台验收依赖凭据与设备条件，不能作为每次提交的回归门禁。
+
+### Consequences
+
+涉及外部上游的测试保留并继续运行；测试文件如实注明替代边界。真实微信平台验收保持独立记录，不得以集成测试通过冒充平台验收。
+
+### Affected Areas
+
+`backend/src/test/java`（微信与票据相关测试）、`apps/miniprogram/src/services/account-store.test.ts`、`packages/client/src/api-wechat.test.ts`、`apps/web/src/scan-login.test.tsx`、验收记录。

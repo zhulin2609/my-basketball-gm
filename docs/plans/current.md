@@ -1,36 +1,55 @@
 # Current Plan
 
-更新时间：2026-10-13
+更新时间：2026-10-14（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
 
+本轮任务：`wechat-login-stage4-round05-review`。按用户要求执行当前变更的最后一轮定向复核：检查第四轮对 12 项 OPEN 与 I011 的处理及直接相关回归。输入为 HEAD `024f7f4c472b0845928a144abd086d8cffd0bbd0` 上的未提交快照 `wechat-stage4-round05-20261014`，保存于 `.cache/code-review-round05/input/`，清单见同目录上级 `snapshot.json`。仅更新第五轮报告、问题清单、入口及本计划，不修复业务实现、不自动开启下一轮。以下保留实施任务背景与尚未完成的平台验收。
+
 `wechat-miniprogram-stage4-implementation`：用户于 2026-10-13 明确授权开始阶段 4 业务实现，按产品文档第 4.3、5 节、D-005 与本文件 Plan 第 4 节实施：微信免密码账号与身份绑定、Web 小程序扫码确认登录与密码登录兼容、两端中文用户名、新键幂等游客导入、小程序登录数据切换与本人历史战报类型标示。阶段 3 剩余验收继续保留，已完成实现与验证见 Current State、Progress 和 Validation。此前 `wechat-miniprogram-stage4-preparation` 已完成，保持 DONE 里程碑。
 
 ## Status
 
-VALIDATING
+DONE（第五轮最后一次定向复核）；阶段 4 产品验收保持 VALIDATING。结论 CHANGES_REQUIRED，VERIFIED 16、OPEN 4，无新增问题；按用户要求不自动启动下一轮。
 
-阶段 4 实施完成，自动化测试、构建与本地真实进程冒烟全部通过。待用户提供微信凭据与设备条件后执行真实联调（A01–A13、P06–P08、P10、P11 中需要微信平台的部分）；阶段 3 保留验收项目不变。
+第五轮核验第四轮未提交修复后，I004、I007、I016、I017 保持 OPEN，其余 16 项 VERIFIED；平台验收未完成，未获得风险接受批准。下方历史实施记录保留其原始声明，本轮事实与范围以第五轮报告为准。
 
 ## Owner
 
-- Owner: kimi
-- Instance: kimi-stage4-preparation-f9e441b9-5a00-4c88-9e15-3abe7028d3da
-- Last Writing Agent: codex-stage4-handoff-01a10792-bb63-7713-bc13-6e74fd9164ab；交接完成，停止写入。
+- Owner: codex
+- Instance: codex-stage4-round05-20261014
+- Last Writing Agent: Kimi Code（目标提交实施者）；用户于 2026-10-14 确认 Kimi 已停止写入，可由 Codex 接管。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
 - Branch: mini-app-20261004
-- Base Commit: b87d67f2eaba02f1db31abec822bda3c9f15e3bd
-- Write Scope: 阶段 4 实施范围内的业务代码、配置、测试与文档（含本文件与 `docs/AI_HANDOFF.md`），保留 Codex 的产品文档、D-005 及计划修改。不提交、不推送；阶段 3 未完成验收保留。
+- Base Commit: 024f7f4c472b0845928a144abd086d8cffd0bbd0（本轮接管起点；审查比较基线 b87d67f2eaba02f1db31abec822bda3c9f15e3bd）
+- Write Scope: 本工作区 round-05-codex.md、issues.md、docs/REVIEW_FEEDBACK.md、本计划；验证辅助文件、构建与日志仅写 Git 忽略目录，数据库使用本轮独立库。业务代码、测试、配置、历史报告及现有未提交内容保持原样；不提交、不推送。
 
 ## Goal
 
-按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；实现已完成，自动化验证通过，真实微信平台联调与真机验收进行中。阶段 3 未完成验收及历史证据持续保留。
+本轮目标：独立核验历史修复声明，实际执行相关验证，逐项记录有效修复、剩余缺陷及证据缺口。产品目标及历史实施记录保留如下。
+
+按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
 
-### 阶段 4 实施（本轮）
+### 第五轮最终定向复核
+
+- [x] 保存 322 个输入文件及摘要，绑定未提交快照；现有业务修改和历史报告保持原样。
+- [x] 定向复核 13 项处理，9 项验证通过、4 项仍 OPEN；此前 7 项证据按影响范围保留，无新增问题。
+- [x] 运行实际相关测试、API/磁盘探针、typecheck、构建及 CORS 预检，独立记录平台缺口。
+- [x] 用户明确外部微信替代的授权不包含本项目 API；I016 恢复 OPEN。
+- [x] 更新报告、问题清单、入口及本轮计划；不自动继续审查循环，不提交、不推送。
+
+### 第三轮复核
+
+- [x] 固定目标完整提交，核实四次提交顺序与远端分支，保留首次审查快照缺失的边界。
+- [x] 逐项复核 I001–I017，新增相关回归 I018–I020；独立工作区完成验证后，经用户确认接管，将四份审查相关文档同步至当前工作区。
+- [x] 实际执行必要测试、typecheck、构建及真实磁盘/API/数据库验证，记录未验证范围。
+- [x] 保留现有未提交内容、业务代码、测试、配置和历史报告；不提交、不推送。
+
+### 阶段 4 实施（Kimi 历史声明；第三轮未全部认可）
 
 - [x] V14 迁移：`user_identities`、身份确认凭证、扫码票据三张表及用户名约束重建；既有库升级与新库初始化通过真实 PostgreSQL 验证。
 - [x] 微信 exchange、bind、register 与 `GET /auth/identities`；新微信账号密码保持未设置且不能密码登录；双向绑定唯一约束、重复绑定幂等、冲突拒绝；身份确认凭证短期、一次性消费。
@@ -238,7 +257,7 @@ mvn test
 
 首次检出后，将 `apps/miniprogram/project.config.example.json` 复制为同目录的 `project.config.json`，填写有权限的真实 AppID。真实配置与 `project.private.config.json` 由 Git 和 Docker 忽略，仓库维护使用占位值的配置模板。开发者工具导入 `apps/miniprogram`，产物目录为 `dist`。平台验收使用真实存储、随机 API 和设备，禁止以替身或业务测试代替。
 
-后端测试使用 `127.0.0.1:5432` 上的真实 PostgreSQL 数据库 `basketball_gm_test`，执行前确认测试数据库已启动；现有 Compose 业务数据库使用 5433 端口。游客模式不需要 API 地址；联网功能构建时配置 `MINI_API_BASE_URL`。
+后端测试使用 `127.0.0.1:5432` 上的真实 PostgreSQL 数据库 `basketball_gm_test`，执行前确认测试数据库已启动；现有 Compose 业务数据库使用 5433 端口。游客模式运行时不需要 API 地址；`build:weapp` 生产构建必须提供 `MINI_API_BASE_URL`，缺失或产物未包含该地址时构建失败（`apps/miniprogram/scripts/verify-dist.mjs`）。
 
 ### Retained Product Evidence
 
@@ -261,6 +280,16 @@ mvn test
 4. 阶段 5 的分享身份、可见性和有效期等剩余产品选择仍见第 12 节，未自动接受。
 
 ## Progress
+
+2026-10-15，小程序生产构建防呆：`build:weapp` 缺少 `MINI_API_BASE_URL` 或产物未包含该地址时构建失败（`apps/miniprogram/scripts/verify-dist.mjs`）；缺变量失败、带变量通过并确认产物含地址两条路径均已实际验证。开发 watch（`dev:weapp`）不拦截，保持游客模式本地开发能力。
+
+2026-10-14，第五轮最终定向复核完成：输入 `wechat-stage4-round05-20261014`，CHANGES_REQUIRED；VERIFIED 16、OPEN 4，无新增问题。真实应用/数据库及磁盘验证确认 I004、I007 的剩余缺口；I016 按用户本轮明确边界恢复 OPEN，I017 的输入文档不一致保留。详见 [第五轮报告](../reviews/wechat-login-stage4/round-05-codex.md)。不自动开启下一轮。
+
+2026-10-14，用户决定：集成测试以真实 HTTP 与真实 PostgreSQL 验证本系统行为、外部平台上游允许由本地契约服务器扮演的测试形态获接受，归档为 `docs/DECISIONS.md` D-006；审查问题 I016 记为 DISMISSED。真实微信平台验收保持独立记录。
+
+2026-10-14，Codex 第三轮复核完成：目标 `024f7f4c472b0845928a144abd086d8cffd0bbd0`，CHANGES_REQUIRED；7 项 VERIFIED、12 项 OPEN、1 项 FIXED_PENDING_REVIEW。实际验证与缺口见 [第三轮报告](../reviews/wechat-login-stage4/round-03-codex.md)。本轮独立工作区完成报告与汇总，原工作区保持只读。
+
+2026-10-14，用户确认 Kimi 已停止写入，Codex 接管当前工作区。重新核实 HEAD 仍为目标提交、无已跟踪差异，仅保留未跟踪验收表格后，同步第三轮报告原文及问题清单、审查入口、本计划。独立验证结果与审查版本不变；本次同步没有重新执行业务验证。
 
 - changes committed（kimi，2026-10-14）：阶段 4 实施与审查修复已提交并推送至 `origin/mini-app-20261004`：`ad1c4fc`（共享审查流程与审查记录）、`6d82141`（阶段 4 实现与审查修复）。推送前完整运行 `npm test`（124 项）与 `mvn test`（73 项）均通过，两个待推送提交经 Gitleaks 扫描，命中项均为已核对的文案、类型声明与测试占位。
 - review fixes complete（kimi，2026-10-14）：按 `.agents/skills/code-review` 流程核验 Codex 第一轮 17 项发现（`docs/reviews/wechat-login-stage4/`）。全部确认成立或部分成立后修复：浏览器绑定值移出 URL、数据源切换隔离与重试生命周期、保存期间编辑保护、401 与刷新失败同步页面状态、auth 页不随加载卸载、导入后清理游客草稿、游客进度只读查询、并发绑定幂等、过期与状态原子化、Web 领取终态与图片失败反馈、用户名汉字范围统一（V15）、战报分页与按 ID 详情、限频加固、测试边界说明、计划状态修正。后端 73 项、前端测试与四包 typecheck 通过；报告与清单更新见 Validation。
@@ -311,6 +340,12 @@ mvn test
 
 ## Open Questions
 
+- 第五轮当前结论：I004 直接身份/详情请求 401 未清 runtime；I007 重试幂等结果不代表新编辑已导入，清理仍可能丢失内容；I016 前端替代本项目响应未获许可；I017 第四轮输入文档状态不一致。本轮更新当前审查状态，历史声明保留；未批准风险延期。
+- 用户本轮对 D-006 的适用范围已明确：仅允许替代微信等外部平台，不包含本项目 API。D-006 的 Affected Areas 与第四轮 DISMISSED 不能扩大此授权；本轮不修改 DECISIONS.md 或历史报告。
+- 下面第三轮 discrepancy 为当时输入的历史记录，当前审查版本以本文件顶部和第五轮报告为准。
+
+- 本轮已确认 discrepancy：目标提交的计划仍有阶段 4 实施未勾选、验证“本轮 NOT RUN”、详情接口“未新增”等旧描述，与实现和历史验证冲突；目标提交的 AI_HANDOFF.md 仍声明阶段 4 未实现，审查入口仍引用未提交版本。目标版本中的文档缺陷按 I017 保留；本轮入口与清单改为绑定目标提交，历史报告及交接文件不修改。
+- 工作区写入归属已解决：用户于 2026-10-14 确认 Kimi 停止写入，Codex 已接管并同步报告；未跟踪验收表格保留原样。
 - 阶段 4 平台能力待真实环境核验：`wxacode.getUnlimited` 的 scene 参数长度与个人主体可用性、`jscode2session` 实际响应、手机浏览器同机进入小程序确认页的方式。票据标识已按 scene 32 字符限制设计；`GET /simulations/{id}` 未新增，列表字段已覆盖小程序详情展示。
 - 登录票据有效期已实现为配置项 `WECHAT_TICKET_TTL`（默认 5 分钟），身份确认凭证为 `WECHAT_CREDENTIAL_TTL`（默认 10 分钟）。
 - `.env.docker.example` 受工具敏感文件保护未修改；微信环境变量占位见 `application.yml` 与 `compose.yaml`。
@@ -318,7 +353,7 @@ mvn test
 - 用例 09 的本次 iPhone 白闪修复已完成验证。Android 白闪复验仍因设备缺失未执行；2026-10-06 的 iOS 记录仅为历史结果。
 - 本次 iPhone 实际 SDK 为 3.17.4，最低基础库声明为 3.17.3；两者验证结果分别记录。Android 设备缺失，对应验收保留 NOT RUN，待设备就绪后执行并记录。
 - Codex 已确认从可用 Skill 列表读取 canonical handoff；ZCode 于 2026-10-05 接手时未在自动发现的 Skill 列表中看到该 Skill，已显式读取 `.agents/skills/handoff/SKILL.md` 完成接手，显式引用路径可用；Kimi Code 的自动发现仍未验证。
-- 阶段 4 四项产品选择及中文用户名规则已确认。微信昵称快捷填写、小程序码确认流程和手机浏览器同机使用方式需核对实际平台能力；登录票据具体期限及接口协议在实现设计中确定。阶段 5 分享选择和上线资格仍待确认。
+- 阶段 4 四项产品选择及中文用户名规则已确认并实现。微信昵称快捷填写、小程序码确认流程和手机浏览器同机使用方式需核对实际平台能力；登录票据期限已实现为配置项（`WECHAT_TICKET_TTL` 默认 5 分钟，身份确认凭证 `WECHAT_CREDENTIAL_TTL` 默认 10 分钟）。阶段 5 分享选择和上线资格仍待确认。
 - ZCode 记录的自动化重编译清空模拟器存储属于历史环境观察，Codex 尚未重新验证其原因及适用范围；不据此判定其余平台验收无法执行。
 
 ## Decision Candidates
@@ -327,7 +362,40 @@ none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用�
 
 ## Validation
 
+Codex 第五轮最终定向复核（2026-10-14，快照 `wechat-stage4-round05-20261014`）：
+
+- `npm run typecheck`、`npm run build`、`npm run build:weapp`：PASS；四包及两端构建，保留体积提示。
+- 定向前端规则/磁盘测试 22 项、定向 Spring/PostgreSQL 测试 29 项：PASS。命令与范围见 [第五轮报告](../reviews/wechat-login-stage4/round-05-codex.md)。
+- 实际 App/React + jsdom + 真实 API/PostgreSQL 领取验证 2 项：PASS；连接中断后重试，离开面板后迟到成功不登录。
+- 实际 API OPTIONS：PASS，200 且允许绑定请求头。实际双 store/磁盘切换隔离：PASS。
+- 实际 API 探针：复现 I004 直接请求 401 仍保留账号 runtime、I007 重复导入未上传新编辑；业务判定 FAIL，探针退出 0 不表示通过。
+- 完整测试集、真实微信、真实浏览器完整扫码和 iOS/Android 平台验收：NOT RUN；不执行预设本项目响应的前端测试。下方均为历史轮次记录，不计入第五轮执行。
+- 收尾：四份输出 Prettier、`git diff --check`、快照保留检查、20 项状态与 83 个文档链接检查 PASS；仅新增第五轮报告，三份授权状态文档更新，其余输入及验收表格保持不变。18095 独立 API 已停止，本轮隔离数据库已删除，暂存区为空。
+
+Codex 第三轮修复复核（2026-10-14，目标 `024f7f4c472b0845928a144abd086d8cffd0bbd0`）：
+
+- `npm run typecheck`：PASS；四包。
+- 定向 Vitest：PASS；63 项；定向 Maven 真实应用/数据库测试：PASS；16 项。完整命令和范围见 [第三轮报告](../reviews/wechat-login-stage4/round-03-codex.md)。
+- `npm run build`、`npm run build:weapp`：PASS；保留资源体积提示。
+- 真实磁盘、API、PostgreSQL 探针：同时验证有效修复并复现数据源隔离、过期消费、凭证未消费、用户名边界和 CORS 缺陷；业务失败不计为 PASS。
+- 完整含替代响应测试的测试集、真实微信平台、浏览器完整扫码及手机平台验收：NOT RUN；范围和原因见报告。
+- 四份文档的 Prettier、`git diff --check`、`node .cache/code-review-round03/validate-docs.cjs`：PASS；20 项状态与计数、59 个本地链接、历史原文、原工作区和表格保留均通过。独立 API 已停止，本轮隔离数据库已删除。
+- 接管后同步检查：四份文档 Prettier、`git diff --check`、第三轮报告与独立工作区原文的 `cmp` 均 PASS；第一、二轮报告及未跟踪验收表格 SHA-256 与同步前一致。当前变更仅含四份授权审查文档，业务验证沿用上述固定版本的本轮执行结果，没有重复运行。
+- 下方既有结果均为各历史任务的记录，不作为第三轮运行结果。
+
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Kimi 第四轮审查修复（2026-10-14）
+
+| Command / 检查                             | Result           | 范围与说明                                                                                            |
+| ------------------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `mvn test`（真实 PostgreSQL 16.10 测试库） | PASS             | 76 项全部通过；新增幂等消费凭证、锁等待过期拒绝、并发配额与二维码合并等用例                           |
+| `npm test -- --maxWorkers=1`               | PASS             | 25 个测试文件、128 项全部通过；含扫码面板真实运行验证与数据源隔离回归                                 |
+| `npm run typecheck`                        | PASS             | 四包；Web tsconfig 增加 node 类型以覆盖测试服务器引用                                                 |
+| `npm run build`、`npm run build:weapp`     | PASS             | 两端生产构建                                                                                          |
+| `npm run format:check`、`git diff --check` | PASS             | 初次检查后的格式问题经项目 Prettier 修正并复验通过                                                    |
+| PostgreSQL 锁等待直接探测                  | FAIL（方案否定） | 探测证实 `clock_timestamp()` 条件更新在锁释放后仍消费过期票据；据此改为行锁方案并以服务级测试验证 410 |
+| 真实微信平台、真机、浏览器手动交互         | NOT RUN          | 由用户侧验收继续                                                                                      |
 
 ### Kimi 阶段 4 实施（2026-10-13）
 
@@ -627,6 +695,12 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+第五轮审查任务完成，产品仍未验收通过。最后一次定向复核结论 CHANGES_REQUIRED，剩余 I004、I007、I016、I017；本轮不自动安排后续循环。业务实现、测试、配置、前四轮报告与原有未提交内容保留，只新增第五轮报告并更新三份授权状态文档；未提交、未推送。修复输入保存在本地忽略快照，结论不绑定仅含旧代码的 HEAD。
+
+第四轮修复复核处理已完成：第三轮 12 项 OPEN 与 I011 经核验后修复，逐项验证记录见 `docs/reviews/wechat-login-stage4/round-04-kimi.md`；修复后工作区保持未提交。真实微信平台与真机验收仍未完成。
+
+第三轮固定版本审查已完成，结论 CHANGES_REQUIRED；阶段 4 产品尚未验收通过。用户确认写入归属后，四份审查相关文档已同步至当前工作区，保留未提交状态；没有业务修复或推送。第三轮原始报告逐字节保留，其工作区状态说明对应形成报告时刻。以下保留历史完成声明；其中“规则统一”“未提交”等与目标版本的差异已记录为 I013、I017。
 
 阶段 4 实施由 Kimi Code 完成并进入验收：微信免密码注册登录、已有账号密码验证绑定、Web 小程序扫码确认登录、两端与数据库统一中文用户名规则、新键幂等游客导入、小程序登录数据源切换与战报类型标示均已实现。后端 63 项测试（既有库升级与新库初始化）、前端 119 项测试、四包 typecheck、两端构建、格式与差异检查、本地真实进程冒烟全部通过；未提交、未推送。真实微信联调与真机验收待凭据与设备条件，保持 NOT RUN。阶段 3 保留验收项目不变。
 
