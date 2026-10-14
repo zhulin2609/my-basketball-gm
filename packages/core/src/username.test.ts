@@ -23,6 +23,14 @@ describe('isValidUsername', () => {
     expect(isValidUsername('')).toBe(false);
   });
 
+  it('覆盖汉字范围上下边界，与后端和数据库约束一致', () => {
+    // 统一范围为 U+4E00–U+9FFF：下边界、上边界接受，紧邻范围外拒绝。
+    expect(isValidUsername('球员一')).toBe(true);
+    expect(isValidUsername('球员鿿')).toBe(true);
+    expect(isValidUsername('球员龦')).toBe(true);
+    expect(isValidUsername('球员ꀀ')).toBe(false);
+  });
+
   it('HTML pattern 字符串与判定函数行为一致', () => {
     const htmlPattern = new RegExp(`^(?:${USERNAME_PATTERN_SOURCE})$`, 'v');
     for (const value of ['张三丰', 'player_one-2', '张三😀', '张 三', 'ab']) {
