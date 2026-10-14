@@ -352,6 +352,12 @@ class WechatAuthApiTest {
     String secondCredential = exchange("code-liam").get("credentialToken").asText();
     bind(firstCredential, username, 200);
     bind(secondCredential, username, 200);
+
+    // 幂等成功路径也必须消费对应凭证，不能留可重放的未消费凭证。
+    Integer unconsumed = jdbcTemplate.queryForObject(
+        "select count(*) from wechat_auth_credentials where appid = 'test-appid' and openid = 'openid-liam' and consumed_at is null",
+        Integer.class);
+    assertEquals(0, unconsumed);
   }
 
   @Test

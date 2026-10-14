@@ -133,6 +133,15 @@ public class WechatAuthService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "该用户名不可用。");
     }
     if (userMapper.findByUsername(request.username()) != null) {
+      // 并发或重试：该身份可能已完成注册，按已完成结果返回会话而不是用户名冲突。
+      UserIdentityRow identity = identityMapper.find(credential.provider(), credential.appid(), credential.openid());
+      if (identity != null) {
+        UserRow owner = userMapper.findById(identity.userId());
+        if (owner != null) {
+          consumeResolvedCredential(credential, owner);
+          return new WechatRegisterResponse(tokenIssuer.issue(owner), false);
+        }
+      }
       throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被占用。");
     }
 
@@ -176,23 +185,30 @@ public class WechatAuthService {
   }
 
   private void linkIdentity(WechatCredentialRow credential, UserRow user) {
-    // 唯一约束冲突直接向外抛出，由调用方在事务回滚后区分相同绑定与真实冲突。
+    // 先取凭证行锁，再按取得锁后的实际时刻核验有效期与消费状态；
+    // 唯一约束冲突向外抛出，由调用方在事务回滚后区分相同绑定与真实冲突。
+    WechatCredentialRow locked = credentialMapper.findByIdForUpdate(credential.id());
+    if (locked == null || !locked.expiresAt().isAfter(Instant.now())) {
+      throw invalidCredential();
+    }
+    if (locked.consumedAt() != null) {
+      // 锁等待期间同一绑定已由并发请求完成：由调用方按幂等解析。
+      throw new CredentialConsumedException();
+    }
     identityMapper.insert(user.id(), credential.provider(), credential.appid(), credential.openid(), credential.unionid());
     if (credentialMapper.consume(credential.id(), user.id()) == 0) {
-      // 消费附带有效期条件；失败时区分已过期与已被并发完成。
-      WechatCredentialRow current = credentialMapper.findById(credential.id());
-      if (current != null && !current.expiresAt().isAfter(Instant.now())) throw invalidCredential();
       throw new CredentialConsumedException();
     }
   }
 
   /**
    * 事务因唯一约束回滚后区分真实冲突与已完成的相同绑定：
-   * 身份已属于目标账号时按幂等成功返回会话，其余情况保持冲突。
+   * 身份已属于目标账号时消费当前凭证并按幂等成功返回会话，其余情况保持冲突。
    */
   private AuthResponse resolveBindConflict(WechatCredentialRow credential, UserRow user) {
     UserIdentityRow identity = identityMapper.find(credential.provider(), credential.appid(), credential.openid());
     if (identity != null && identity.userId().equals(user.id())) {
+      consumeResolvedCredential(credential, user);
       return tokenIssuer.issue(user);
     }
     throw new ApiException(
@@ -200,16 +216,32 @@ public class WechatAuthService {
   }
 
   /**
-   * 注册冲突同理：身份已经绑定成功（并发或重试）时返回对应账号的会话；
+   * 注册冲突同理：身份已经绑定成功（并发或重试）时消费当前凭证并返回对应账号的会话；
    * 身份不存在时是用户名冲突。
    */
   private WechatRegisterResponse resolveRegisterConflict(WechatCredentialRow credential) {
     UserIdentityRow identity = identityMapper.find(credential.provider(), credential.appid(), credential.openid());
     if (identity != null) {
       UserRow owner = userMapper.findById(identity.userId());
-      if (owner != null) return new WechatRegisterResponse(tokenIssuer.issue(owner), false);
+      if (owner != null) {
+        consumeResolvedCredential(credential, owner);
+        return new WechatRegisterResponse(tokenIssuer.issue(owner), false);
+      }
     }
     throw new ResponseStatusException(HttpStatus.CONFLICT, "用户名已被占用。");
+  }
+
+  /** 幂等路径也消费当前凭证；已被同一账号消费时保持幂等，其余情况视为无效。 */
+  private void consumeResolvedCredential(WechatCredentialRow credential, UserRow user) {
+    transactionTemplate.executeWithoutResult(transaction -> {
+      WechatCredentialRow locked = credentialMapper.findByIdForUpdate(credential.id());
+      if (locked == null || !locked.expiresAt().isAfter(Instant.now())) throw invalidCredential();
+      if (locked.consumedAt() != null) {
+        if (!user.id().equals(locked.consumedByUserId())) throw invalidCredential();
+        return;
+      }
+      credentialMapper.consume(credential.id(), user.id());
+    });
   }
 
   private ApiException invalidCredential() {

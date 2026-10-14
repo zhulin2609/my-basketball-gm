@@ -881,10 +881,14 @@ function ScanLoginPanel({ onAuthenticated, onBack }: ScanLoginPanelProps) {
             } catch (claimError: unknown) {
               claiming = false;
               if (stopped || !(claimError instanceof ApiError)) return;
-              // 终态明确结束；网络等暂时失败保持等待，下一次轮询重试领取。
+              // 明确的终态才结束；网络或服务器临时错误保持等待，下一次轮询重试领取。
               if (claimError.code === 'TICKET_EXPIRED') setState('expired');
               else if (claimError.code === 'TICKET_REJECTED') setState('rejected');
-              else setState('failed');
+              else if (
+                claimError.code === 'TICKET_CONSUMED' ||
+                claimError.code === 'TICKET_RESOLVED'
+              )
+                setState('failed');
             }
           } else if (current.status === 'expired') {
             setState('expired');

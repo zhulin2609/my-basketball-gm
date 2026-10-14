@@ -79,6 +79,14 @@ const loadAccountStore = async (): Promise<DataStore> => {
     id: createIdentifier,
     clock,
     user: session.user,
+    onUnauthorized: () => {
+      // 仅当全局会话没有切换到其他账号时才恢复游客工作区；旧会话的迟到 401 在此丢弃。
+      const current = api.readSession();
+      if (current === null || current.accessToken === session.accessToken) {
+        api.clearSession();
+        void runtime.swap(loadGuestStore).catch((error: unknown) => console.error(error));
+      }
+    },
   });
 };
 
@@ -139,7 +147,10 @@ export function hasGuestProgress(): boolean {
   return repositories.workspace.peek()?.hasUserProgress ?? false;
 }
 
-/** 导入本机游客工作区；成功后清空游客存档与对应的本地草稿。没有游客进度时直接返回。 */
+/**
+ * 导入本机游客工作区；成功后清空游客存档与对应的本地草稿。没有游客进度时直接返回。
+ * 请求等待期间会话或游客工作区发生变化时保留本地数据：未导入的新内容不得被清除。
+ */
 export async function importGuestProgress(): Promise<'empty' | 'imported'> {
   const repositories = createGuestRepositories({
     storage: miniStorage,
@@ -148,8 +159,15 @@ export async function importGuestProgress(): Promise<'empty' | 'imported'> {
   });
   const workspace = repositories.workspace.peek();
   if (!workspace || !workspace.hasUserProgress) return 'empty';
+  const sessionToken = api.readSession()?.accessToken;
   const players = mergePlayerCatalog(catalogPlayers, repositories.players.list());
   await api.importGuestWorkspace(createGuestImportRequest(workspace, players));
+
+  const sessionUnchanged = api.readSession()?.accessToken === sessionToken;
+  const current = repositories.workspace.peek();
+  const workspaceUnchanged =
+    current?.id === workspace.id && current?.updatedAt === workspace.updatedAt;
+  if (!sessionUnchanged || !workspaceUnchanged) return 'imported';
   repositories.workspace.clear();
   clearGuestDrafts(miniStorage);
   return 'imported';

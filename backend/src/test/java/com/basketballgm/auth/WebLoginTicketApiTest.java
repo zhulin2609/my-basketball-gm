@@ -55,6 +55,8 @@ class WebLoginTicketApiTest {
       (byte) 0xAE, 0x42, 0x60, (byte) 0x82
   };
   private static final HttpServer wechatStub = startStub();
+  private static final java.util.concurrent.atomic.AtomicInteger qrCodeCalls =
+      new java.util.concurrent.atomic.AtomicInteger();
   private static final String USER_PREFIX = "ticket-" + UUID.randomUUID().toString().substring(0, 8) + "-";
 
   @Autowired private MockMvc mockMvc;
@@ -73,6 +75,7 @@ class WebLoginTicketApiTest {
         exchange.close();
       });
       server.createContext("/wxa/getwxacodeunlimit", exchange -> {
+        qrCodeCalls.incrementAndGet();
         exchange.getResponseHeaders().set("Content-Type", "image/png");
         exchange.sendResponseHeaders(200, QR_PNG.length);
         exchange.getResponseBody().write(QR_PNG);
@@ -219,6 +222,51 @@ class WebLoginTicketApiTest {
   }
 
   @Test
+  void ticketExpiringDuringRowLockWaitCannotBeConsumed() throws Exception {
+    // 复现条件：领取请求等待行锁期间跨越到期时间；服务在取得锁后按实际时刻核验，必须拒绝。
+    String binding = UUID.randomUUID().toString();
+    String ticket = createTicket(binding);
+    String session = register(USER_PREFIX + "lockwait");
+    mockMvc
+        .perform(
+            post("/api/v1/auth/web-login-tickets/" + ticket + "/confirm")
+                .header("Authorization", "Bearer " + session))
+        .andExpect(status().isNoContent());
+    String digest = TokenSupport.digest(ticket);
+    jdbcTemplate.update(
+        "update web_login_tickets set expires_at = ? where ticket_digest = ?",
+        Timestamp.from(Instant.now().plusSeconds(2)),
+        digest);
+
+    javax.sql.DataSource dataSource = jdbcTemplate.getDataSource();
+    try (java.sql.Connection locker = dataSource.getConnection()) {
+      locker.setAutoCommit(false);
+      try (java.sql.PreparedStatement lock = locker.prepareStatement(
+          "select id from web_login_tickets where ticket_digest = ? for update")) {
+        lock.setString(1, digest);
+        lock.execute();
+      }
+      var claimStatus = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+        try {
+          return mockMvc
+              .perform(
+                  post("/api/v1/auth/web-login-tickets/" + ticket + "/claim")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(objectMapper.writeValueAsString(Map.of("browserBinding", binding))))
+              .andReturn()
+              .getResponse()
+              .getStatus();
+        } catch (Exception exception) {
+          throw new IllegalStateException(exception);
+        }
+      });
+      Thread.sleep(4000);
+      locker.commit();
+      assertEquals(410, claimStatus.get());
+    }
+  }
+
+  @Test
   void servesTheMiniProgramCodeForTheTicket() throws Exception {
     String binding = UUID.randomUUID().toString();
     String ticket = createTicket(binding);
@@ -243,6 +291,56 @@ class WebLoginTicketApiTest {
             .content(objectMapper.writeValueAsString(Map.of("browserBinding", binding))))
         .andExpect(status().isTooManyRequests())
         .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+  }
+
+  @Test
+  void concurrentCreationCannotExceedTheBindingQuota() throws Exception {
+    String binding = UUID.randomUUID().toString();
+    var results = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+    var threads = new java.util.ArrayList<Thread>();
+    for (int index = 0; index < 35; index++) {
+      threads.add(Thread.ofVirtual().start(() -> {
+        try {
+          int statusCode = mockMvc.perform(post("/api/v1/auth/web-login-tickets")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(Map.of("browserBinding", binding))))
+              .andReturn()
+              .getResponse()
+              .getStatus();
+          results.add(statusCode);
+        } catch (Exception exception) {
+          throw new IllegalStateException(exception);
+        }
+      }));
+    }
+    for (Thread thread : threads) thread.join();
+    long created = results.stream().filter(code -> code == 201).count();
+    long limited = results.stream().filter(code -> code == 429).count();
+    assertEquals(30, created);
+    assertEquals(5, limited);
+  }
+
+  @Test
+  void concurrentQrCodeRequestsShareOneUpstreamCall() throws Exception {
+    String binding = UUID.randomUUID().toString();
+    String ticket = createTicket(binding);
+    qrCodeCalls.set(0);
+    var first = java.util.concurrent.CompletableFuture.supplyAsync(() -> qrCodeStatus(ticket));
+    var second = java.util.concurrent.CompletableFuture.supplyAsync(() -> qrCodeStatus(ticket));
+    assertEquals(200, first.join());
+    assertEquals(200, second.join());
+    assertEquals(1, qrCodeCalls.get());
+  }
+
+  private int qrCodeStatus(String ticket) {
+    try {
+      return mockMvc.perform(get("/api/v1/auth/web-login-tickets/" + ticket + "/qrcode"))
+          .andReturn()
+          .getResponse()
+          .getStatus();
+    } catch (Exception exception) {
+      throw new IllegalStateException(exception);
+    }
   }
 
   private String createTicket(String binding) throws Exception {

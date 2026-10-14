@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -33,9 +35,12 @@ public class WebLoginTicketService {
   private final Duration ticketTtl;
   private final int ticketPerHour;
   private final int ticketGlobalPerHour;
+  private final int qrCodePerMinute;
+  private final AuthRateLimiter rateLimiter;
+  private final TransactionTemplate transactionTemplate;
   private final Map<String, CachedCode> qrCodeCache = new ConcurrentHashMap<>();
 
-  private record CachedCode(byte[] image, Instant expiresAt) {}
+  private record CachedCode(byte[] image, Instant expiresAt, ApiException failure) {}
 
   public WebLoginTicketService(
       WebLoginTicketMapper ticketMapper,
@@ -43,18 +48,24 @@ public class WebLoginTicketService {
       UserMapper userMapper,
       CurrentUser currentUser,
       AuthTokenIssuer tokenIssuer,
+      AuthRateLimiter rateLimiter,
+      TransactionTemplate transactionTemplate,
       @Value("${app.wechat.ticket-ttl:PT5M}") Duration ticketTtl,
       @Value("${app.wechat.ticket-per-hour:30}") int ticketPerHour,
-      @Value("${app.wechat.ticket-global-per-hour:500}") int ticketGlobalPerHour
+      @Value("${app.wechat.ticket-global-per-hour:500}") int ticketGlobalPerHour,
+      @Value("${app.wechat.qrcode-per-minute:30}") int qrCodePerMinute
   ) {
     this.ticketMapper = ticketMapper;
     this.wechatClient = wechatClient;
     this.userMapper = userMapper;
     this.currentUser = currentUser;
     this.tokenIssuer = tokenIssuer;
+    this.rateLimiter = rateLimiter;
+    this.transactionTemplate = transactionTemplate;
     this.ticketTtl = ticketTtl;
     this.ticketPerHour = ticketPerHour;
     this.ticketGlobalPerHour = ticketGlobalPerHour;
+    this.qrCodePerMinute = qrCodePerMinute;
   }
 
   public WebLoginTicketCreateResponse create(WebLoginTicketCreateRequest request) {
@@ -62,16 +73,20 @@ public class WebLoginTicketService {
     if (!wechatClient.configured()) {
       throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "WECHAT_NOT_CONFIGURED", "微信登录能力未配置。");
     }
-    String bindingDigest = TokenSupport.digest(request.browserBinding());
-    Instant hourAgo = Instant.now().minus(Duration.ofHours(1));
-    if (ticketMapper.countRecentForBinding(bindingDigest, hourAgo) >= ticketPerHour
-        || ticketMapper.countRecentGlobal(hourAgo) >= ticketGlobalPerHour) {
-      throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "操作太频繁，请稍后再试。");
-    }
-    String ticket = TokenSupport.newTicket();
-    Instant expiresAt = Instant.now().plus(ticketTtl);
-    ticketMapper.insert(TokenSupport.digest(ticket), bindingDigest, expiresAt);
-    return new WebLoginTicketCreateResponse(ticket, expiresAt);
+    // 计数与插入在同一事务内由咨询锁串行化，避免并发创建越过配额。
+    return transactionTemplate.execute(transaction -> {
+      ticketMapper.acquireCreateLock();
+      String bindingDigest = TokenSupport.digest(request.browserBinding());
+      Instant hourAgo = Instant.now().minus(Duration.ofHours(1));
+      if (ticketMapper.countRecentForBinding(bindingDigest, hourAgo) >= ticketPerHour
+          || ticketMapper.countRecentGlobal(hourAgo) >= ticketGlobalPerHour) {
+        throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "操作太频繁，请稍后再试。");
+      }
+      String ticket = TokenSupport.newTicket();
+      Instant expiresAt = Instant.now().plus(ticketTtl);
+      ticketMapper.insert(TokenSupport.digest(ticket), bindingDigest, expiresAt);
+      return new WebLoginTicketCreateResponse(ticket, expiresAt);
+    });
   }
 
   public WebLoginTicketStatusResponse status(String ticket, String browserBinding) {
@@ -79,35 +94,45 @@ public class WebLoginTicketService {
     return new WebLoginTicketStatusResponse(effectiveStatus(row), row.expiresAt());
   }
 
+  @Transactional
   public void confirm(String ticket, Jwt jwt) {
-    WebLoginTicketRow row = requireTicket(ticket);
+    WebLoginTicketRow row = requireTicketForUpdate(ticket);
+    requireLive(row);
+    if (!"pending".equals(row.status())) {
+      throw new ApiException(HttpStatus.CONFLICT, "TICKET_RESOLVED", "该登录请求已被处理。");
+    }
     if (ticketMapper.approve(row.id(), currentUser.id(jwt)) == 0) {
-      throw resolvedOrExpired(ticket);
+      throw new ApiException(HttpStatus.CONFLICT, "TICKET_RESOLVED", "该登录请求已被处理。");
     }
   }
 
+  @Transactional
   public void reject(String ticket, Jwt jwt) {
-    WebLoginTicketRow row = requireTicket(ticket);
+    WebLoginTicketRow row = requireTicketForUpdate(ticket);
+    requireLive(row);
+    if (!"pending".equals(row.status())) {
+      throw new ApiException(HttpStatus.CONFLICT, "TICKET_RESOLVED", "该登录请求已被处理。");
+    }
     if (ticketMapper.reject(row.id()) == 0) {
-      throw resolvedOrExpired(ticket);
+      throw new ApiException(HttpStatus.CONFLICT, "TICKET_RESOLVED", "该登录请求已被处理。");
     }
   }
 
+  @Transactional
   public AuthResponse claim(String ticket, WebLoginTicketClaimRequest request) {
-    WebLoginTicketRow row = requireBoundRow(ticket, request.browserBinding());
+    WebLoginTicketRow row = requireBoundRowForUpdate(ticket, request.browserBinding());
     if ("rejected".equals(row.status())) {
       throw new ApiException(HttpStatus.CONFLICT, "TICKET_REJECTED", "用户已拒绝该登录请求。");
     }
-    if ("pending".equals(row.status())) {
-      if (!row.expiresAt().isAfter(Instant.now())) throw expired();
+    if ("consumed".equals(row.status())) {
+      throw new ApiException(HttpStatus.GONE, "TICKET_CONSUMED", "该登录结果已被领取。");
+    }
+    if (!row.expiresAt().isAfter(Instant.now())) throw expired();
+    if (!"approved".equals(row.status())) {
       throw new ApiException(HttpStatus.CONFLICT, "TICKET_NOT_APPROVED", "用户尚未确认登录。");
     }
     if (ticketMapper.consume(row.id()) == 0) {
-      WebLoginTicketRow current = requireTicket(ticket);
-      if ("consumed".equals(current.status())) {
-        throw new ApiException(HttpStatus.GONE, "TICKET_CONSUMED", "该登录结果已被领取。");
-      }
-      throw expired();
+      throw new ApiException(HttpStatus.GONE, "TICKET_CONSUMED", "该登录结果已被领取。");
     }
     UserRow user = row.approvedUserId() == null ? null : userMapper.findById(row.approvedUserId());
     if (user == null) throw new IllegalStateException("票据批准的账号不存在。");
@@ -117,16 +142,49 @@ public class WebLoginTicketService {
   public byte[] qrCode(String ticket) {
     WebLoginTicketRow row = requireTicket(ticket);
     if (!row.expiresAt().isAfter(Instant.now())) throw expired();
-    CachedCode cached = qrCodeCache.get(row.id());
-    if (cached != null && cached.expiresAt().isAfter(Instant.now())) return cached.image();
-    byte[] image = wechatClient.createMiniProgramCode(ticket, "pages/auth/index");
-    qrCodeCache.put(row.id(), new CachedCode(image, row.expiresAt()));
-    return image;
+    // computeIfAbsent 使同一票据的并发请求共享一次生成；失败结果短期缓存，
+    // 冷却期内不再调用上游，冷却结束后移除并重试。
+    CachedCode cached = qrCodeCache.computeIfAbsent(row.id(), id -> generateCode(row, ticket));
+    if (!cached.expiresAt().isAfter(Instant.now())) {
+      qrCodeCache.remove(row.id(), cached);
+      cached = qrCodeCache.computeIfAbsent(row.id(), id -> generateCode(row, ticket));
+    }
+    if (cached.failure() != null) throw cached.failure();
+    return cached.image();
+  }
+
+  private CachedCode generateCode(WebLoginTicketRow row, String ticket) {
+    Instant cooldown = Instant.now().plus(Duration.ofSeconds(30));
+    if (!rateLimiter.allow("wechat-qrcode", qrCodePerMinute)) {
+      return new CachedCode(null, cooldown,
+          new ApiException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "操作太频繁，请稍后再试。"));
+    }
+    try {
+      return new CachedCode(wechatClient.createMiniProgramCode(ticket, "pages/auth/index"), row.expiresAt(), null);
+    } catch (ApiException exception) {
+      return new CachedCode(null, cooldown, exception);
+    }
   }
 
   private WebLoginTicketRow requireTicket(String ticket) {
     WebLoginTicketRow row = ticketMapper.findByDigest(TokenSupport.digest(ticket));
     if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "登录票据不存在。");
+    return row;
+  }
+
+  private WebLoginTicketRow requireTicketForUpdate(String ticket) {
+    WebLoginTicketRow row = ticketMapper.findByDigestForUpdate(TokenSupport.digest(ticket));
+    if (row == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "登录票据不存在。");
+    return row;
+  }
+
+  private WebLoginTicketRow requireBoundRowForUpdate(String ticket, String browserBinding) {
+    WebLoginTicketRow row = requireTicketForUpdate(ticket);
+    byte[] expected = row.browserBindingDigest().getBytes(StandardCharsets.UTF_8);
+    byte[] actual = TokenSupport.digest(browserBinding).getBytes(StandardCharsets.UTF_8);
+    if (!MessageDigest.isEqual(expected, actual)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "登录票据不存在。");
+    }
     return row;
   }
 
@@ -140,14 +198,12 @@ public class WebLoginTicketService {
     return row;
   }
 
-  private ApiException resolvedOrExpired(String ticket) {
-    WebLoginTicketRow current = requireTicket(ticket);
-    if (!current.expiresAt().isAfter(Instant.now())) return expired();
-    return new ApiException(HttpStatus.CONFLICT, "TICKET_RESOLVED", "该登录请求已被处理。");
-  }
-
   private ApiException expired() {
     return new ApiException(HttpStatus.GONE, "TICKET_EXPIRED", "登录票据已过期，请刷新网页重新扫码。");
+  }
+
+  private void requireLive(WebLoginTicketRow row) {
+    if (!row.expiresAt().isAfter(Instant.now())) throw expired();
   }
 
   private String effectiveStatus(WebLoginTicketRow row) {

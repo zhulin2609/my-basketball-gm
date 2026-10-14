@@ -43,6 +43,8 @@ function LineupEditor({ store, source, initial, players }: EditorProps) {
   const [memberFeedback, setMemberFeedback] = useState<{ playerId: string; message: string }>();
   const [status, setStatus] = useState(dirty ? '有草稿未保存' : savedText);
   const draftWriteFailed = useRef(false);
+  // Hook 必须在所有条件返回之前调用，保持每次渲染的调用顺序一致。
+  const latestLineup = useRef<Lineup | null>(null);
 
   const reload = () => {
     const loaded = loadLineupEditor(store, initial);
@@ -86,7 +88,6 @@ function LineupEditor({ store, source, initial, players }: EditorProps) {
 
   const { lineup } = editor;
   const validation = validateLineup(lineup);
-  const latestLineup = useRef(lineup);
   latestLineup.current = lineup;
 
   const edit = (updated: Lineup) => {

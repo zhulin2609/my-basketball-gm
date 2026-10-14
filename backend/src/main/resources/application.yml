@@ -31,6 +31,7 @@ app:
     ticket-per-hour: ${WECHAT_TICKET_PER_HOUR:30}
     ticket-global-per-hour: ${WECHAT_TICKET_GLOBAL_PER_HOUR:500}
     exchange-per-minute: ${WECHAT_EXCHANGE_PER_MINUTE:60}
+    qrcode-per-minute: ${WECHAT_QRCODE_PER_MINUTE:30}
   admin:
     # Comma-separated usernames allowed to delete any community post or comment.
     usernames: ${FORUM_ADMIN_USERNAMES:}

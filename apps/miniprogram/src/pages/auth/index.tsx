@@ -131,12 +131,14 @@ function AuthContent() {
         await proceedAfterLogin(result.newAccount);
       }
     } catch (error: unknown) {
-      setSubmitting(false);
       if (error instanceof ApiError && error.status === 409) {
         setFormError(error.message);
         return;
       }
       setState({ step: 'failed', message: authErrorMessage(error) });
+    } finally {
+      // 成功进入导入选择或扫码确认后，后续步骤的按钮必须恢复可用。
+      setSubmitting(false);
     }
   };
 

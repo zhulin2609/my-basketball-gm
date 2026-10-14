@@ -53,10 +53,12 @@ const report = (id: string): Simulation => ({
 let server: TestApiServer;
 let disk: DiskStorage;
 let api: ApiClient;
+let unauthorizedCalls: number;
 
 beforeEach(async () => {
   disk = createDiskStorage();
   server = await startTestApiServer();
+  unauthorizedCalls = 0;
   api = createApiClient({
     baseUrl: server.baseUrl,
     http: createFetchHttpPort(),
@@ -79,7 +81,16 @@ afterEach(async () => {
 });
 
 const createStore = (): Promise<DataStore> =>
-  createAccountStore({ api, storage: disk.storage, id: randomUUID, clock: () => now, user });
+  createAccountStore({
+    api,
+    storage: disk.storage,
+    id: randomUUID,
+    clock: () => now,
+    user,
+    onUnauthorized: () => {
+      unauthorizedCalls += 1;
+    },
+  });
 
 // 边界说明：测试服务器提供的是契约响应，验证对象是账号数据源的状态、顺序与错误处理；
 // 与真实后端的端到端行为由后端集成测试和平台验收覆盖。
@@ -112,6 +123,9 @@ describe('账号数据源', () => {
       id: () => 'new-lineup',
       clock: () => now,
       user,
+      onUnauthorized: () => {
+        unauthorizedCalls += 1;
+      },
     });
     const created = await store.createLineup();
     expect(created.name).toBe('新阵容');
@@ -171,6 +185,20 @@ describe('账号数据源', () => {
     expect(store.getSnapshot().lineups.find((item) => item.id === 'lineup-1')?.name).toBe(
       '提交版本',
     );
+  });
+
+  it('写操作收到 401 时通知运行时，草稿保留', async () => {
+    server.respond('PUT', '/api/v1/lineups/lineup-1', async () => ({
+      status: 401,
+      body: { message: '请先登录或重新登录。' },
+    }));
+    const store = await createStore();
+    store.saveDraft({ ...lineup('lineup-1', '主队'), name: '未保存草稿' });
+    await expect(
+      store.saveLineup({ ...lineup('lineup-1', '主队'), name: '未保存草稿' }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(unauthorizedCalls).toBe(1);
+    expect(store.readDraft('lineup-1')?.name).toBe('未保存草稿');
   });
 
   it('规则对战经服务器计算并前置最新战报，存在草稿或阵容不完整时拒绝发起', async () => {

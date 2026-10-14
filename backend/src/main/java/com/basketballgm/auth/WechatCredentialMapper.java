@@ -41,6 +41,17 @@ public interface WechatCredentialMapper {
       """)
   WechatCredentialRow findById(@Param("id") String id);
 
+  /** 消费前取行锁：有效期与消费状态在取得锁后的实际时刻核验。 */
+  @Select("""
+      select id::text, provider, appid, openid, unionid, failed_attempts as "failedAttempts",
+             expires_at as "expiresAt", consumed_at as "consumedAt",
+             consumed_by_user_id as "consumedByUserId", created_at as "createdAt"
+      from wechat_auth_credentials
+      where id = cast(#{id} as uuid)
+      for no key update
+      """)
+  WechatCredentialRow findByIdForUpdate(@Param("id") String id);
+
   @Select("""
       select count(*) from wechat_auth_credentials
       where provider = #{provider} and appid = #{appid} and openid = #{openid}
@@ -63,7 +74,7 @@ public interface WechatCredentialMapper {
   @Update("""
       update wechat_auth_credentials set consumed_at = now(), consumed_by_user_id = #{userId}
       where id = cast(#{id} as uuid) and consumed_at is null
-        and expires_at > statement_timestamp()
+        and expires_at > clock_timestamp()
       """)
   int consume(@Param("id") String id, @Param("userId") UUID userId);
 

@@ -1,5 +1,12 @@
 import type { Lineup, Player, Simulation } from '@dream-court/core';
-import type { ApiClient, AuthUser, Clock, IdGenerator, StoragePort } from '@dream-court/client';
+import {
+  ApiError,
+  type ApiClient,
+  type AuthUser,
+  type Clock,
+  type IdGenerator,
+  type StoragePort,
+} from '@dream-court/client';
 import { validateLineup } from '@dream-court/core';
 import type { DataSnapshot, DataStore } from './data-store';
 import { validateDraft } from './guest-store';
@@ -10,6 +17,8 @@ export interface AccountStoreDeps {
   id: IdGenerator;
   clock: Clock;
   user: AuthUser;
+  /** 属于本数据源的请求收到 401 时通知运行时恢复游客状态；旧数据源的迟到 401 由运行时按会话丢弃。 */
+  onUnauthorized: () => void;
 }
 
 /**
@@ -53,20 +62,31 @@ export async function createAccountStore(deps: AccountStoreDeps): Promise<DataSt
     return run;
   };
 
-  const refresh = async () => {
-    const [nextPlayers, nextLineups, nextReports] = await Promise.all([
-      deps.api.listPlayers(),
-      deps.api.listLineups(),
-      listAllSimulations(deps.api),
-    ]);
-    snapshot = {
-      ...snapshot,
-      players: nextPlayers,
-      lineups: nextLineups,
-      reports: activeReports(nextReports),
-    };
-    notify();
+  /** 所有认证请求统一在此捕获 401：先通知运行时同步状态，再原样抛出。 */
+  const guarded = async <T>(call: () => Promise<T>): Promise<T> => {
+    try {
+      return await call();
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 401) deps.onUnauthorized();
+      throw error;
+    }
   };
+
+  const refresh = () =>
+    guarded(async () => {
+      const [nextPlayers, nextLineups, nextReports] = await Promise.all([
+        deps.api.listPlayers(),
+        deps.api.listLineups(),
+        listAllSimulations(deps.api),
+      ]);
+      snapshot = {
+        ...snapshot,
+        players: nextPlayers,
+        lineups: nextLineups,
+        reports: activeReports(nextReports),
+      };
+      notify();
+    });
 
   return {
     getSnapshot: () => snapshot,
@@ -76,69 +96,75 @@ export async function createAccountStore(deps: AccountStoreDeps): Promise<DataSt
     },
     refresh,
     createLineup: () =>
-      enqueue(async () => {
-        const now = deps.clock().toISOString();
-        const created: Lineup = {
-          id: deps.id(),
-          name: '新阵容',
-          description: '',
-          members: [],
-          createdAt: now,
-          updatedAt: now,
-        };
-        const saved = await deps.api.saveLineup(created);
-        snapshot = { ...snapshot, lineups: [saved, ...snapshot.lineups] };
-        notify();
-        return saved;
-      }),
+      enqueue(() =>
+        guarded(async () => {
+          const now = deps.clock().toISOString();
+          const created: Lineup = {
+            id: deps.id(),
+            name: '新阵容',
+            description: '',
+            members: [],
+            createdAt: now,
+            updatedAt: now,
+          };
+          const saved = await deps.api.saveLineup(created);
+          snapshot = { ...snapshot, lineups: [saved, ...snapshot.lineups] };
+          notify();
+          return saved;
+        }),
+      ),
     saveLineup: (lineup) =>
-      enqueue(async () => {
-        validateDraft(lineup, snapshot.players);
-        const submitted = JSON.stringify(lineup);
-        const saved = await deps.api.saveLineup({
-          ...lineup,
-          updatedAt: deps.clock().toISOString(),
-        });
-        // 保存期间可能已有更新的编辑写入草稿；只有草稿仍是本次提交的内容时才清理。
-        const drafts = readDrafts();
-        if (drafts[lineup.id] && JSON.stringify(drafts[lineup.id]) === submitted) {
-          delete drafts[lineup.id];
-          deps.storage.setItem(draftsKey, JSON.stringify(drafts));
-        }
-        const exists = snapshot.lineups.some((item) => item.id === saved.id);
-        snapshot = {
-          ...snapshot,
-          lineups: exists
-            ? snapshot.lineups.map((item) => (item.id === saved.id ? saved : item))
-            : [saved, ...snapshot.lineups],
-        };
-        notify();
-      }),
+      enqueue(() =>
+        guarded(async () => {
+          validateDraft(lineup, snapshot.players);
+          const submitted = JSON.stringify(lineup);
+          const saved = await deps.api.saveLineup({
+            ...lineup,
+            updatedAt: deps.clock().toISOString(),
+          });
+          // 保存期间可能已有更新的编辑写入草稿；只有草稿仍是本次提交的内容时才清理。
+          const drafts = readDrafts();
+          if (drafts[lineup.id] && JSON.stringify(drafts[lineup.id]) === submitted) {
+            delete drafts[lineup.id];
+            deps.storage.setItem(draftsKey, JSON.stringify(drafts));
+          }
+          const exists = snapshot.lineups.some((item) => item.id === saved.id);
+          snapshot = {
+            ...snapshot,
+            lineups: exists
+              ? snapshot.lineups.map((item) => (item.id === saved.id ? saved : item))
+              : [saved, ...snapshot.lineups],
+          };
+          notify();
+        }),
+      ),
     readDraft: (id) => readDrafts()[id] ?? null,
     saveDraft: (lineup) => {
       deps.storage.setItem(draftsKey, JSON.stringify({ ...readDrafts(), [lineup.id]: lineup }));
       notify();
     },
     runBattle: (homeId, awayId) =>
-      enqueue(async () => {
-        if (homeId === awayId) throw new Error('请选择两套不同的阵容');
-        if (readDrafts()[homeId] || readDrafts()[awayId]) {
-          throw new Error('请先进入阵容编辑页面，完成草稿保存');
-        }
-        const home = snapshot.lineups.find((lineup) => lineup.id === homeId);
-        const away = snapshot.lineups.find((lineup) => lineup.id === awayId);
-        if (!home || !away) throw new Error('所选阵容已经无法读取');
-        for (const lineup of [home, away]) {
-          validateDraft(lineup, snapshot.players);
-          if (!validateLineup(lineup).isEligibleForSimulation) {
-            throw new Error(`${lineup.name}需要五名首发，覆盖 PG、SG、SF、PF、C`);
+      enqueue(() =>
+        guarded(async () => {
+          if (homeId === awayId) throw new Error('请选择两套不同的阵容');
+          if (readDrafts()[homeId] || readDrafts()[awayId]) {
+            throw new Error('请先进入阵容编辑页面，完成草稿保存');
           }
-        }
-        const report = await deps.api.simulate(homeId, awayId, 'local');
-        snapshot = { ...snapshot, reports: [report, ...snapshot.reports] };
-        notify();
-        return report;
-      }),
+          const home = snapshot.lineups.find((lineup) => lineup.id === homeId);
+          const away = snapshot.lineups.find((lineup) => lineup.id === awayId);
+          if (!home || !away) throw new Error('所选阵容已经无法读取');
+          for (const lineup of [home, away]) {
+            validateDraft(lineup, snapshot.players);
+            if (!validateLineup(lineup).isEligibleForSimulation) {
+              throw new Error(`${lineup.name}需要五名首发，覆盖 PG、SG、SF、PF、C`);
+            }
+          }
+          const report = await deps.api.simulate(homeId, awayId, 'local');
+          snapshot = { ...snapshot, reports: [report, ...snapshot.reports] };
+          notify();
+          return report;
+        }),
+      ),
   };
 }
 

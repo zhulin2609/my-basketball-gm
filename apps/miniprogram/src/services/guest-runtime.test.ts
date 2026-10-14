@@ -196,6 +196,7 @@ describe('游客初始化', () => {
         id: randomUUID,
         clock: () => new Date(),
         user: { id: 'user-1', username: '球员甲', displayName: '球员甲', admin: false },
+        onUnauthorized: () => {},
       });
       const runtime = createGuestRuntime(async () => store);
       await runtime.initialize();

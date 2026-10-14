@@ -43,8 +43,15 @@ export function createGuestRuntime(loadStore: () => Promise<DataStore>) {
     notify();
   };
 
+  const detach = () => {
+    attached?.unsubscribe();
+    attached = undefined;
+  };
+
   const load = (loader: () => Promise<DataStore>): Promise<void> => {
     const current = ++generation;
+    // 加载开始即使旧订阅失效：切换期间旧数据源的成功与失败都不再影响当前状态。
+    detach();
     snapshot = { status: 'loading' };
     notify();
     return Promise.resolve()
@@ -94,14 +101,20 @@ export function createGuestRuntime(loadStore: () => Promise<DataStore>) {
       notify();
     },
     refresh() {
-      if (snapshot.status === 'ready') {
-        void snapshot.store.refresh().catch((error: unknown) => console.error(error));
-      }
+      const entry = attached;
+      if (!entry) return;
+      void entry.store.refresh().catch((error: unknown) => {
+        if (attached === entry) console.error(error);
+      });
     },
-    /** 等待数据源刷新完成；用于导入等绕过数据源自身的写入之后。 */
+    /** 等待数据源刷新完成；用于导入等绕过数据源自身的写入之后。旧数据源的迟到错误直接丢弃。 */
     refreshAsync(): Promise<void> {
-      if (snapshot.status !== 'ready') return Promise.resolve();
-      return snapshot.store.refresh();
+      const entry = attached;
+      if (!entry) return Promise.resolve();
+      return entry.store.refresh().catch((error: unknown) => {
+        if (attached !== entry) return;
+        throw error;
+      });
     },
   };
 }
