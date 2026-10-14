@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Button, Picker, View } from '@tarojs/components';
 import { validateLineup } from '@dream-court/core';
 import { Screen } from '@/components/Screen';
-import type { GuestSnapshot, GuestStore } from '@/services/guest-store';
+import type { DataSnapshot, DataStore } from '@/services/data-store';
 import { prepareIdentifiers } from '@/platform/identifier';
 import { navigate } from '@/platform/navigation';
 import { errorMessage } from '@/constants/text';
 
 interface BattleContentProps {
-  store: GuestStore;
-  data: GuestSnapshot;
+  store: DataStore;
+  data: DataSnapshot;
 }
 
 function BattleContent({ store, data }: BattleContentProps) {
@@ -29,7 +29,7 @@ function BattleContent({ store, data }: BattleContentProps) {
     setError('');
     try {
       await prepareIdentifiers();
-      const report = store.runBattle(home.id, away.id);
+      const report = await store.runBattle(home.id, away.id);
       navigate(`/pages/report-detail/index?id=${encodeURIComponent(report.id)}`);
     } catch (failure: unknown) {
       setError(errorMessage(failure));
@@ -65,7 +65,11 @@ function BattleContent({ store, data }: BattleContentProps) {
         >
           <View className="select">{away?.name ?? '需要另一套阵容'}</View>
         </Picker>
-        <View className="notice">规则引擎在设备上计算，结果保存到本机游客工作区。</View>
+        <View className="notice">
+          {data.source === 'account'
+            ? '比赛由服务器规则引擎计算，战报保存到你的账号。'
+            : '规则引擎在设备上计算，结果保存到本机游客工作区。'}
+        </View>
         {[home, away].map((lineup) => {
           if (!lineup) return null;
           const validation = validateLineup(lineup);

@@ -45,13 +45,15 @@ My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 P
 
 ### 登录数据
 
-存在有效认证会话时，球员、阵容、AI 设置和战报通过 `packages/client` 的 API 客户端访问后端。JWT 保存在 localStorage 的 `dream-court.auth-session.v1`，会话过期判断使用注入的时钟。
+存在有效认证会话时，球员、阵容、AI 设置和战报通过 `packages/client` 的 API 客户端访问后端。JWT 保存在 localStorage 的 `dream-court.auth-session.v1`，会话过期判断使用注入的时钟。登录页同时提供用户名密码与小程序扫码两种方式：扫码登录创建与当前浏览器绑定的短期票据并展示服务端生成的小程序码，用户在小程序中主动确认或拒绝后，浏览器凭绑定值一次性领取会话。
 
 ## 微信小程序
 
-`apps/miniprogram/src/app.config.ts` 注册九个页面，底部入口为球员、阵容、对战、我的。球员浏览提供中文搜索、位置过滤和分页；独立编辑页与球员选择页处理阵容成员；战报列表与详情使用历史快照。
+`apps/miniprogram/src/app.config.ts` 注册十个页面，底部入口为球员、阵容、对战、我的。球员浏览提供中文搜索、位置过滤和分页；独立编辑页与球员选择页处理阵容成员；战报列表与详情使用历史快照。`pages/auth` 提供微信登录、已有账号绑定、免密码新账号创建、游客导入选择与扫码登录确认。
 
-`src/services/guest-store.ts` 通过 client 的游客 repository 读写工作区，复用 core 的目录、校验、模拟与最佳球员计算。游客数据协议保持稳定 UUID、schemaVersion、hasUserProgress、20 场上限与 30 天保留期。示例初始化不计入实际进度。编辑草稿使用独立存储键 `dream-court.lineup-drafts.v1`，逐次输入同步保存；正式保存通过校验后清理草稿，选中阵容仍有草稿时对战返回错误。
+`src/services/data-store.ts` 定义页面统一面对的数据源接口，修改类操作均为异步。`src/services/guest-store.ts` 实现游客本机数据源，`src/services/account-store.ts` 实现登录账号的 API 数据源（写操作串行执行，草稿按账号隔离保存在本机）。`guest-runtime.ts` 管理加载、失败、就绪与数据源切换；`runtime.ts` 连接平台实现、会话与 React 订阅，登录后切换为账号数据源，退出或会话失效恢复游客工作区。登录后阵容、规则对战（`simulationMode: 'local'` 表示服务端规则引擎）与战报读取调用后端；战报列表与详情按 `engineVersion` 标示“规则对战”或“AI 对战”。
+
+`src/services/guest-store.ts` 通过 client 的游客 repository 读写工作区，复用 core 的目录、校验、模拟与最佳球员计算。游客数据协议保持稳定 UUID、schemaVersion、hasUserProgress、20 场上限与 30 天保留期。示例初始化不计入实际进度。编辑草稿使用独立存储键 `dream-court.lineup-drafts.v1`（账号模式下按账号 ID 加后缀隔离），逐次输入同步保存；正式保存通过校验后清理草稿，选中阵容仍有草稿时对战返回错误。
 
 `src/services/guest-runtime.ts` 管理加载、失败和已就绪状态；初始化失败后允许重新读取，初始化进行中复用同一个请求，成功后复用游客服务。`runtime.ts` 连接平台实现与 React 订阅，并在初始化时校验 `MINI_API_BASE_URL`。`src/platform/storage.ts` 使用 Taro 同步存储并传播错误；`identifier.ts` 通过平台密码学随机数据与 uuid 提前准备 UUID；`http.ts` 实现公共 HttpPort。游客流程不调用后端。
 
@@ -63,7 +65,7 @@ My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 P
 
 后端按业务模块组织：
 
-- `auth`：注册、登录、JWT 颁发和当前用户。
+- `auth`：注册、登录、JWT 颁发和当前用户；微信 code 交换、免密码注册、已有账号密码验证绑定与绑定状态查询；Web 扫码登录票据的创建、查询、确认、拒绝、领取与小程序码生成。用户名规则（汉字、英文字母、数字、下划线、连字符，3–32 字符）由 `UsernameRules` 与前端共享包及数据库约束保持一致。
 - `player`：公共球员目录、用户属性覆盖和自定义球员。
 - `lineup`：用户阵容与阵容成员。
 - `simulation`：本地规则模拟、战报保存、查询和到期清理。
@@ -98,7 +100,10 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - 阵容成员引用公共球员或当前用户的自定义球员。
 - 战报保存阵容名称和球员显示快照，后续修改球员不会改写历史战报。
 - 战报创建 30 天后失效，每天北京时间 03:00 清理。
-- `guest_imports` 以游客工作区 UUID 为主键，保证同一账号重试安全，并阻止同一游客工作区进入两个账号。
+- `guest_imports` 以游客工作区 UUID 为主键，保证同一账号重试安全，并阻止同一游客工作区进入两个账号；首次导入为每套阵容生成新的 client key，同事务重映射战报与自定义球员引用。
+- `user_identities` 保存微信身份绑定：`(provider, appid, openid)` 全局唯一，`(user_id, provider, appid)` 每账号最多一条。
+- `wechat_auth_credentials` 保存微信身份确认凭证的摘要、过期时间、失败次数与消费状态；凭证明文只返回一次，不落库。
+- `web_login_tickets` 保存 Web 扫码登录票据：票据与浏览器绑定值均只存摘要，状态机为 pending → approved/rejected → consumed，过期在读取时判定。
 - `shared_lineups` 保存社区公开阵容：成员以 jsonb 快照冻结在公开时刻，`source_lineup_id` 部分唯一索引保证一套阵容最多一个公开帖，评论数与复制数作为计数器维护。
 - `lineup_comments` 保存社区评论，`parent_id` 自引用支持一级回复，删除帖或评论时回复级联删除。
 
@@ -107,7 +112,8 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - Vitest 覆盖共享包的规则、保存队列、对战编排、游客存储与导入转换（含真实本地 HTTP 服务器的契约测试），以及 Web 的入口交互、分页、社区界面与社区错误码映射。
 - 小程序游客服务测试把工作区和草稿真实写入 `.cache/miniprogram-tests`，通过新服务实例验证恢复、阵容约束、模拟、快照、容量与到期清理；该测试不代替微信平台运行验收。
 - 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密、本地敏感词过滤。
-- `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务。
+- `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务与新 client key 分配。
+- `AuthApiTest` 使用同一测试库验证注册规则与数据库用户名约束；`WechatAuthApiTest` 与 `WebLoginTicketApiTest` 通过真实本地 HTTP 服务器替代微信接口，验证免密码注册、绑定、冲突、凭证消费与票据生命周期。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
 - `ForumModerationTest` 使用同一测试库，用收紧的限频配置真实触发词表拦截、秒级与天级限频、新账号链接限制、管理员删除与错误码响应体。
 

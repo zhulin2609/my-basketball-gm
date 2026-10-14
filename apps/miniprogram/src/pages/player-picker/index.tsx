@@ -4,17 +4,13 @@ import { Button, View } from '@tarojs/components';
 import type { Player } from '@dream-court/core';
 import { PlayerBrowser } from '@/components/PlayerBrowser';
 import { Screen } from '@/components/Screen';
-import {
-  addLineupMember,
-  loadLineupEditor,
-  type GuestSnapshot,
-  type GuestStore,
-} from '@/services/guest-store';
+import { addLineupMember, loadLineupEditor } from '@/services/guest-store';
+import type { DataSnapshot, DataStore } from '@/services/data-store';
 import { errorMessage } from '@/constants/text';
 
 interface PickerContentProps {
-  store: GuestStore;
-  data: GuestSnapshot;
+  store: DataStore;
+  data: DataSnapshot;
   lineupId?: string;
   playerId?: string;
 }

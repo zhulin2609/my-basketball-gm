@@ -15,15 +15,16 @@ import {
   type GuestWorkspaceDeps,
   type RandomSeed,
 } from '@dream-court/client';
+import type { DataSnapshot } from './data-store';
 
 const DRAFTS_KEY = 'dream-court.lineup-drafts.v1';
 
-export interface GuestSnapshot {
-  players: Player[];
-  lineups: Lineup[];
-  reports: Simulation[];
-  hasUserProgress: boolean;
+/** 游客草稿与游客工作区同属一份本地数据：成功导入后一并清理。 */
+export function clearGuestDrafts(storage: { removeItem(key: string): void }): void {
+  storage.removeItem(DRAFTS_KEY);
 }
+
+export type GuestSnapshot = DataSnapshot;
 
 export interface GuestStoreDeps extends GuestWorkspaceDeps {
   catalog: Player[];
@@ -44,7 +45,11 @@ export interface GuestStore {
 export type LineupEditorState =
   { status: 'ready'; lineup: Lineup; dirty: boolean } | { status: 'failed'; error: unknown };
 
-export function loadLineupEditor(store: GuestStore, initial: Lineup): LineupEditorState {
+/** 读取草稿只需要同步存储入口，游客与账号数据源都满足。 */
+export function loadLineupEditor(
+  store: { readDraft(id: string): Lineup | null },
+  initial: Lineup,
+): LineupEditorState {
   try {
     const draft = store.readDraft(initial.id);
     return { status: 'ready', lineup: draft ?? initial, dirty: Boolean(draft) };
@@ -182,10 +187,12 @@ export function createGuestStore(deps: GuestStoreDeps): GuestStore {
 
   const listeners = new Set<() => void>();
   const readSnapshot = (): GuestSnapshot => ({
+    source: 'guest',
     players: mergePlayerCatalog(deps.catalog, repositories.players.list()),
     lineups: repositories.lineups.list(),
     reports: repositories.simulations.list(),
     hasUserProgress: repositories.workspace.load().hasUserProgress,
+    user: null,
   });
   let snapshot = readSnapshot();
   const refresh = () => {

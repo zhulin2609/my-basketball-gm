@@ -7,3 +7,4 @@ export * from './simulator';
 export * from './lineup-presets';
 export * from './player-selectors';
 export * from './player-overrides';
+export * from './username';

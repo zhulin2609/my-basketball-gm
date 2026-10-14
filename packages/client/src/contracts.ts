@@ -19,6 +19,38 @@ export interface AuthRequest {
   password: string;
 }
 
+/** 微信 code 交换结果：已绑定身份直接返回会话，未绑定身份返回一次性身份确认凭证。 */
+export interface WechatExchangeResult {
+  status: 'authenticated' | 'confirmation_required';
+  session: AuthSession | null;
+  credentialToken: string | null;
+  credentialExpiresAt: string | null;
+}
+
+export interface WechatRegisterResult {
+  session: AuthSession;
+  newAccount: boolean;
+}
+
+/** 当前账号的绑定状态；不包含 openid 或任何微信密钥。 */
+export interface IdentityInfo {
+  provider: string;
+  appid: string;
+  createdAt: string;
+}
+
+export type WebLoginTicketState = 'pending' | 'approved' | 'rejected' | 'consumed' | 'expired';
+
+export interface WebLoginTicket {
+  ticket: string;
+  expiresAt: string;
+}
+
+export interface WebLoginTicketStatus {
+  status: WebLoginTicketState;
+  expiresAt: string;
+}
+
 /**
  * 游客存档只由客户端产生；提交时使用这一份明确的传输结构，避免把本地
  * 存储 schema 当作对服务端永久开放的接口。

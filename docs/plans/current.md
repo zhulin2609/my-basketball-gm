@@ -6,26 +6,60 @@
 
 ## Task
 
-`wechat-miniprogram-stage3-acceptance`：完成阶段 3 游客小程序剩余的开发者工具、基础库兼容性及 iOS、Android 真机验收。已完成的实现、修复与验证保留在 Current State、Progress 和 Validation。
+`wechat-miniprogram-stage4-implementation`：用户于 2026-10-13 明确授权开始阶段 4 业务实现，按产品文档第 4.3、5 节、D-005 与本文件 Plan 第 4 节实施：微信免密码账号与身份绑定、Web 小程序扫码确认登录与密码登录兼容、两端中文用户名、新键幂等游客导入、小程序登录数据切换与本人历史战报类型标示。阶段 3 剩余验收继续保留，已完成实现与验证见 Current State、Progress 和 Validation。此前 `wechat-miniprogram-stage4-preparation` 已完成，保持 DONE 里程碑。
 
 ## Status
 
-ACTIVE
+VALIDATING
+
+阶段 4 实施完成，自动化测试、构建与本地真实进程冒烟全部通过。待用户提供微信凭据与设备条件后执行真实联调（A01–A13、P06–P08、P10、P11 中需要微信平台的部分）；阶段 3 保留验收项目不变。
 
 ## Owner
 
-- Owner: codex
-- Instance: codex-card-navigation-01a10792-bb63-7713-bc13-6e74fd9164ab
-- Worktree: 当前仓库根目录，使用 `git rev-parse --show-toplevel` 核实。
+- Owner: kimi
+- Instance: kimi-stage4-preparation-f9e441b9-5a00-4c88-9e15-3abe7028d3da
+- Last Writing Agent: codex-stage4-handoff-01a10792-bb63-7713-bc13-6e74fd9164ab；交接完成，停止写入。
+- Worktree: /Users/zhulin/Workspace/my-basketball-gm
 - Branch: mini-app-20261004
-- Base Commit: 4810976cf006b4bbe82506f3ab13362da3a001bc
-- Write Scope: 根据用户 2026-10-13 的明确反馈，仅更新验收记录与开发者工具代码质量复验记录，不修改业务代码。用户已授权提交当前文档变更并推送 `mini-app-20261004` 分支；Google Docs 的真机验收结果已在上一轮同步。本轮提交基线为 `1e027f29ebcce53109135903bac283854419a643`，开始时仅本文件存在当前 Codex 会话的未提交文档修改。
+- Base Commit: b87d67f2eaba02f1db31abec822bda3c9f15e3bd
+- Write Scope: 阶段 4 实施范围内的业务代码、配置、测试与文档（含本文件与 `docs/AI_HANDOFF.md`），保留 Codex 的产品文档、D-005 及计划修改。不提交、不推送；阶段 3 未完成验收保留。
 
 ## Goal
 
-按 `docs/plans/wechat-miniprogram.md` 第 11 节完成阶段 3 游客流程的平台验收，明确设备、基础库和真实运行证据，保护用户已有阵容、战报与 Web 功能。本轮将用户确认的 iPhone 结果同步到验收表与当前计划，明确编号 07 已修复、编号 08/11/12 暂无验收条件及 Android 尚未验收。
+按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；实现已完成，自动化验证通过，真实微信平台联调与真机验收进行中。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+### 阶段 4 实施（本轮）
+
+- [x] V14 迁移：`user_identities`、身份确认凭证、扫码票据三张表及用户名约束重建；既有库升级与新库初始化通过真实 PostgreSQL 验证。
+- [x] 微信 exchange、bind、register 与 `GET /auth/identities`；新微信账号密码保持未设置且不能密码登录；双向绑定唯一约束、重复绑定幂等、冲突拒绝；身份确认凭证短期、一次性消费。
+- [x] 扫码票据全流程：浏览器绑定、小程序内主动确认或拒绝、到期、一次性领取；小程序码由服务端生成，票据内容不含凭据。
+- [x] 两端与数据库用户名规则统一：汉字、英文字母、数字、下划线、连字符，3–32 个字符；重名、保留名、emoji、空格明确拒绝，不自动改写。
+- [x] 游客导入：首次导入每套阵容分配新 client key，同事务重映射战报与自定义球员引用；成功重试复用结果，跨账号冲突拒绝；Web 导入流程回归通过。
+- [x] 小程序 account 与 auth 页面：微信登录、绑定已有账号、创建新账号、游客导入选择、退出与会话切换清理；昵称仅快捷填写用户名。
+- [x] 小程序登录后阵容、规则对战与战报切换为 API 数据源；战报列表与详情按 `engineVersion` 标示“规则对战”或“AI 对战”，读取不触发模型调用。
+- [x] Web 登录页增加扫码登录方式，保留用户名密码登录；既有 Web 功能回归通过。
+- [x] `mvn test`、`npm test`、四包 typecheck、两端构建、格式与差异检查全部通过。
+- [ ] 真实微信联调（A01–A13、P06–P08、P10、P11）：NOT RUN；需要真实 AppID 与 AppSecret 配置、开发者工具及真机条件，微信接口在本轮测试中由真实本地 HTTP 服务器替代，不以替代结果充当平台验收。
+
+### 阶段 4 后续准备与交接（已完成）
+
+- [x] Kimi Code 按 `RECEIVE → VERIFY → ACCEPT → WORK` 核验四份未提交文档、Git 元数据与引用实现，确认 Codex 停止写入后接手。
+- [x] 核对认证请求与 JWT 颁发边界、V7 用户约束、保留名及管理员规则，形成中文用户名、无密码账号及身份绑定的新增迁移和接口计划。
+- [x] 明确扫码票据的浏览器绑定、主动确认、到期与一次领取，游客导入的新键映射和历史战报读取边界，列出真实联调条件及 Web 回归项。
+- [x] 获得后续业务开发授权前保持业务代码与配置不变；准备完成后按同一 Skill 交接或按新的用户指令继续。
+
+### 本轮阶段 4 产品定义
+
+- [x] 产品文档记录免密码注册与 Web 扫码主动确认登录，保留现有用户名密码登录；新微信账号不设置隐藏或随机密码。
+- [x] 微信昵称仅快捷填写用户名，不新增独立昵称或头像功能；用户已确认两端允许中文汉字，保持其他字符、3–32 字符长度、唯一性和保留名规则。
+- [x] 记录已确认的绑定数量、首次导入分配新键及历史 AI 战报范围，更新验收条件，将已确认项移出待确认列表。
+- [x] 接受的长期决定归档为 D-005；注明 `display_name` 已有、ASCII 用户名校验及阶段 4 功能尚未改变。
+- [x] 阶段 3 编号 08/11/12、Android 与剩余基础库兼容性验收保留，不标为 PASS 或 DONE。
+- [x] 文档格式、引用、差异和敏感信息检查通过；修改范围仅为上述三份文档。
+
+### 阶段 3 保留验收与历史实现
 
 - [x] Google Docs 与本文件同步用户确认的 iPhone 验收结果：编号 01–06、09、10 通过，编号 07 已修复；本轮仅更新记录。
 - [x] 开发者工具代码质量面板重新扫描后，按需注入、JavaScript 压缩、WXSS 压缩三项均为“已通过”（2026-10-13，用户确认）。
@@ -59,26 +93,63 @@ ACTIVE
 
 ### 1. Investigation
 
-- [x] 核验已提交的协议、当前 Git 状态、游客初始化与页面配置及剩余产品验收要求。
-- [ ] 接手后核验平台条件和授权的测试数据范围，选定未完成验收项。
+- [x] 阅读仓库规则及相关产品、架构、决策、交接与计划，核验 Git 基线和干净 working tree。
+- [x] 核对用户数据库字段、认证校验、身份缺口、游客导入冲突与历史战报字段，区分实际实现和已确认目标。
 
 ### 2. Implementation
 
-- [x] 游客小程序及此前修复已提交，详情见 Implemented Product State；本轮页面背景修复已验证，提交范围见 Owner。
-- [ ] 执行剩余平台验收；仅在有真实失败证据及对应授权时修复相关问题。
+- [x] 更新产品流程、验收条件、当前计划和长期决策，保留阶段 3 待办和历史验证。
+- [ ] 阶段 4 业务实现：已获用户授权（2026-10-13），按 Plan 第 4 节实施，顺序为迁移与后端、共享包与 client、Web、小程序；每步执行对应测试。
+- [ ] 阶段 3 剩余平台验收：条件就绪后按保留清单执行；本轮不执行。
 
 ### 3. Validation
 
-- [x] 运行交接验证：Git 元数据、四包 typecheck、`npm test`（92 项）、Web 与小程序构建、格式与差异检查全部通过（记录见 Validation）。
-- [ ] 补齐剩余开发者工具、基础库兼容性和两种手机平台的真实运行证据。
-- [ ] 核对所有阶段 3 验收结果，按变更范围运行代码检查和 Web 回归。
-- [x] ZCode 已准备上一轮交接索引并释放 Owner；Codex 已核验接手，当前 Owner 见 Owner 章节。
+- [x] 执行本轮文档格式、路径引用、差异与敏感信息检查，结果见本轮 Validation。
+- [ ] 阶段 4 实施后执行相关行为测试、四包 typecheck、两端构建、后端集成测试及真实微信跨客户端验收；本轮 NOT RUN。
+- [ ] 补齐阶段 3 剩余开发者工具、基础库兼容性和两种手机平台的真实运行证据。
+
+### 4. 阶段 4 实施设计（kimi 核对形成，2026-10-13 获授权并已实施）
+
+对应产品文档第 10 节第 4 项。V1–V13 不修改，新迁移从 V14 递增；接口路径遵循第 5.3 节建议，实现时可统一调整。
+
+1. 迁移 V14：新增 `user_identities`（id、user_id、provider、appid、openid、可空 unionid、created_at；唯一约束 `(provider, appid, openid)` 与 `(user_id, provider, appid)`）；身份确认凭证表（服务端随机值的摘要、过期时间、消费状态）；扫码票据表（票据标识、浏览器绑定值摘要、状态、批准的 user_id、创建与过期时间）；删除 V7 的 `users_username_format_check` 并按明确字符集重建（汉字、英文字母、数字、下划线、连字符，3–32 字符）。迁移测试覆盖既有库升级与新库初始化。
+2. 后端认证：`AuthService` 复用保留名校验、大小写不敏感唯一性与私有 `issue` 的 JWT 签发；新增微信 exchange、bind、register 及 `GET /auth/identities`；身份确认凭证在绑定事务成功时消费，重复同一操作幂等识别；`WechatLoginClient` 隔离微信 `jscode2session` 调用，AppID 与 AppSecret 由配置注入，缺失时明确报告该能力未配置，密码登录不受影响。`SecurityConfig` 精确放行新增的匿名接口，不放行整个 `/auth/**`；凭证交换、绑定、注册与票据接口按配置限频。
+3. 扫码登录：Web 创建票据时提交浏览器生成的随机绑定值，服务端保存其摘要并返回票据标识；Web 展示进入小程序确认页的小程序码（服务端调用 `wxacode.getUnlimited`，票据标识须适配 scene 参数长度限制）；小程序确认页要求登录态，明确展示正在请求登录 My Basketball GM 网页端，由用户主动确认或拒绝；领取接口校验票据、浏览器绑定值与批准状态，一次性签发 JWT；到期、拒绝、重复领取均明确结束。
+4. 用户名校验统一：共享规则进入 `packages/core` 供两端表单使用，后端 `@Pattern` 同步；允许字符均在基本多文种平面内，字符计数与 Unicode code point 计数一致；重名、保留名、emoji、空格与超长明确报错，不静默改写候选值。Web `App.tsx` 的 `pattern` 属性同步更新。
+5. 游客导入改造：`GuestImportService` 首次导入为每套阵容由服务端生成新 client key，同一事务内重映射战报主客队引用与自定义球员 ID；保留 `guest_imports` 主键 reserve/finish 幂等与跨账号冲突行为；成功后客户端才清空游客工作区，失败与跳过保留数据。该改动同时改变 Web 导入行为，列入回归。
+6. 小程序账号与数据：account 页增加账号与绑定状态、登录与退出入口；新增 auth 页完成微信登录、绑定已有账号、创建新账号及游客导入选择；登录后阵容、规则对战与战报切换为 API 数据源（`simulationMode: 'local'` 表示服务端规则引擎）；战报列表与详情按 `engineVersion` 标示“规则对战”或“AI 对战”，读取不触发模型调用；会话切换清理上一账号缓存，迟到的异步响应不得写入新会话。
+7. Web 扫码入口：登录页增加扫码登录方式并保留密码登录；接入票据创建、状态轮询或领取与各类结束状态展示。
+8. 配置与文档：`application.yml`、`compose.yaml`、`.env.example` 增加微信配置占位，真实凭据不进仓库；实施后更新 `docs/ARCHITECTURE.md` 相应章节。
+
+实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
 
+2026-10-13，kimi 阶段 4 实施完成：基线 HEAD `b87d67f`，开始时工作区仅有四份交接与产品文档修改。本轮实现微信免密码注册登录、已有账号密码验证绑定、Web 小程序扫码确认登录、两端与数据库统一的中文用户名规则、首次导入分配新 client key 的幂等游客导入、小程序登录态数据源切换与战报类型标示。后端 63 项测试（含真实 PostgreSQL 既有库升级与全新库初始化）、前端 119 项测试、四包 typecheck、两端构建通过；另以本地真实进程启动新 JAR 对新库冒烟验证中文注册、规则拒绝、微信未配置明确报错、票据全流程与导入新键。真实微信联调与真机验收未取得凭据与设备条件，保持 NOT RUN。未提交、未推送。
+
+实现要点：`AuthTokenIssuer` 统一 JWT 签发；`WechatAuthService` 管理 code 交换、一次性身份确认凭证（仅存摘要、过期、失败次数上限、事务内消费、成功后可识别重试）与绑定双向唯一约束；`WebLoginTicketService` 管理短期票据（票据与浏览器绑定值仅存摘要、状态机、一次性领取）；`WechatLoginClient` 以服务端配置调用 `jscode2session` 与 `getwxacodeunlimit`，会话密钥不读取、不保存。小程序 `data-store.ts` 统一游客与账号数据源，`account-store.ts` 经 API 读写并串行化写操作，草稿按账号隔离在本机；`pages/auth` 处理登录、绑定、注册、导入选择与扫码确认。Web 登录页新增扫码面板（创建票据、轮询、领取后走既有游客导入路径）。用户名规则由 `packages/core/src/username.ts`、后端 `UsernameRules` 与 V14 数据库约束保持一致。
+
+阶段 4 产品文档所述 `GET /simulations/{id}` 私有详情接口未新增：列表响应已包含详情所需全部字段，小程序详情页直接读取列表数据。`.env.docker.example` 受工具敏感文件保护未修改；微信环境变量占位已写入 `application.yml` 与 `compose.yaml`，真实凭据不进仓库。
+
+2026-10-13，kimi 接手核对与阶段 4 实施设计形成：按 `RECEIVE → VERIFY → ACCEPT` 核验，分支 `mini-app-20261004`、HEAD `b87d67f2eaba02f1db31abec822bda3c9f15e3bd`，四份未提交文档与交接声明一致，无暂存或未跟踪文件；四份文档最后修改时间为 19:10，交接后无变化，Codex 声明停止写入且 Owner 已释放。随后设置 Owner 为 kimi、Status 为 ACTIVE，只读核对认证、用户、游客导入、战报与小程序源码，并对运行中的 Compose PostgreSQL 执行只读 SELECT 正则探测（不修改数据）。业务代码与配置未修改。核对结论：
+
+- 中文用户名：`AuthRequest.java` 的 `@Pattern` 与 Web `App.tsx` 登录表单的 `pattern` 属性只允许 ASCII；V7 的数据库约束 `^[[:alnum:]_-]{3,32}$` 在当前 UTF-8 库实测已接受中文、拒绝 emoji 与空格、`{3,32}` 按字符计数，但同时接受韩文与带重音拉丁字母等产品规则之外的字符。V14 删除该约束并按明确字符集重建；`varchar(32)` 与 `lower()` 唯一索引对中文无需变更；允许字符均在基本多文种平面内，字符计数与 code point 计数一致。
+- 无密码账号：`users.password_hash` 可空；`AuthService.login` 已拒绝 `passwordHash()` 为空的账号，微信新账号插入空密码即不能密码登录；现有注册接口强制 `@NotBlank` 密码，微信注册使用独立请求类型；`display_name` 沿用注册时赋值用户名的现状。
+- 微信绑定与 JWT：`AuthService.issue` 私有方法统一签发 HS256 JWT（sub 为 `users.id`、含 username claim、TTL 由 `app.auth.token-ttl` 配置，默认 PT8H）；微信登录、绑定、注册与扫码领取共用该签发路径；保留名与管理员判断按账号用户名执行，微信昵称不参与身份。
+- 扫码票据：`SecurityConfig` 当前只放行注册、登录、健康检查、社区读取与 OPTIONS；票据创建与领取需显式加入匿名放行，确认与拒绝要求小程序会话。小程序码计划由服务端调用 `wxacode.getUnlimited` 生成，票据标识适配 scene 参数长度；个人主体可用性与同机进入方式列入 Open Questions。
+- 游客导入新键：`GuestImportService` 当前以 `lineupMapper.upsert(ownerId, imported.id(), …)` 沿用游客 client key，相同键会覆盖账号已有阵容（如内置 `classic-five`）；首次导入改为服务端生成新 client key，并在同一事务重映射战报主客队引用与自定义球员 ID；重试经 `guest_imports` 主键命中既有结果，不重复创建。
+- 历史战报读取：`GET /simulations?limit=30`（允许 1–100）按 owner 与 `expires_at > now()` 过滤，响应含 `engineVersion`（规则为 `v1`，AI 为 `llm:<model>`）、阵容名快照与技术统计，小程序据此标示类型且读取不触发模型调用；当前无按 ID 的私有详情接口，列表字段已覆盖详情展示，是否新增在实现时按页面需求决定。
+- 前端现状：小程序 account 页仍为游客工作区展示；`packages/client` 尚无微信登录、扫码票据与账号服务接口，`config/env.ts` 已有 `MINI_API_BASE_URL` 校验；Web 登录注册与游客导入流程位于 `apps/web/src/App.tsx`。
+
+2026-10-13，preparing handoff：交接前核验 HEAD `b87d67f2eaba02f1db31abec822bda3c9f15e3bd`、分支 `mini-app-20261004`；三份未提交文档均为当前 Codex 上一轮产品定义修改，无暂存或未跟踪文件。旧 `AI_HANDOFF.md` 指向 ZCode 的 `0688735` 和旧验收待办，已判定 stale，本轮刷新为 Kimi Code 的交接索引。产品定义保持完成；未完成的阶段 4 准备及阶段 3 保留验收设为 HANDOFF_READY，不将交接视为业务开发授权。最终交付共保留四份未提交文档，逐项归属见交接文件。
+
+2026-10-13，阶段 4 产品定义：Git HEAD 为 `b87d67f2eaba02f1db31abec822bda3c9f15e3bd`，本轮开始时 working tree 干净。用户确认微信免密码账号、Web 小程序扫码主动确认登录并保留密码登录；微信昵称只快捷填写用户名，不新增独立昵称或头像功能。用户随后确认允许中文汉字，保持其他用户名规则。绑定数量、游客导入新键策略及本人历史 AI 战报展示范围已接受，完整规则见产品文档第 4.3、5、11 节与 D-005。本轮只修改产品文档、计划和决策；阶段 4 业务功能尚未实施，阶段 3 剩余验收保持未完成。
+
+实现差异已核对：V1 已有 `users.display_name`，当前注册将其赋值为用户名；没有独立昵称功能。`AuthRequest` 用户名校验仍为 `^[A-Za-z0-9_-]{3,32}$`，V7 包含用户名格式约束及大小写不敏感唯一索引；允许中文的目标需要后续同步调整两端、API 和数据库约束，不修改已发布迁移。现有游客导入按 owner/client key 保存，阶段 4 要改为首次导入分配新键；现有历史接口尚需核对 AI 类型展示和私人详情读取。后续实现必须回归 Web 功能，不能将产品决定当作已完成实现。
+
 2026-10-13，代码质量面板复验完成：用户明确确认在微信开发者工具重新扫描后，组件代码按需注入、JavaScript 压缩与 WXSS 压缩三项均显示“已通过”。本文件据此记录 PASS（用户确认），Codex 本轮未独立执行扫描；这些项目已从剩余工作移除。用户授权提交当前文档变更并推送当前分支，业务代码不变；编号 08/11/12 暂无条件与 Android 尚未验收的状态保留。
 
-2026-10-13，验收记录同步：用户明确确认 iPhone 编号 01–06、09、10 真机验证通过，编号 07 的三项体验问题已修复；编号 08 游客离线流程、11 真实存储失败与恢复、12 战报到期与旧详情暂无验收条件，Android 尚未验收。Google Docs 原表已同步这些结果，步骤、通过标准和设备信息保留。表中设备为 iPhone 14 Pro Max、系统 26.6.2、微信 8.0.79；预览构建版本未填写，各用例的基础库及具体构建映射未提供，不将本次 Git HEAD 推定为全部用例的验收版本。当前 Git HEAD 为 `1e027f29ebcce53109135903bac283854419a643`，阶段 3 保持 ACTIVE。下方各轮记录保留其执行时间与范围，当前验收状态以本段和 Validation 的最新记录为准。
+2026-10-13，验收记录同步：用户明确确认 iPhone 编号 01–06、09、10 真机验证通过，编号 07 的三项体验问题已修复；编号 08 游客离线流程、11 真实存储失败与恢复、12 战报到期与旧详情暂无验收条件，Android 尚未验收。Google Docs 原表已同步这些结果，步骤、通过标准和设备信息保留。表中设备为 iPhone 14 Pro Max、系统 26.6.2、微信 8.0.79；预览构建版本未填写，各用例的基础库及具体构建映射未提供，不将该轮 Git 基线推定为全部用例的验收版本。该轮 Git 基线为 `1e027f29ebcce53109135903bac283854419a643`，阶段 3 保持 ACTIVE。下方各轮记录保留其执行时间与范围，阶段 3 当前验收状态以本段和 Validation 的最新记录为准。
 
 2026-10-13，卡片导航实现及验证完成：基线 `2e69eed`，开始时工作区干净。两个列表将导航绑定到卡片外层，保留原按钮，按钮与文字的点击事件通过冒泡到达同一入口。独立游客项目八项页面检查通过：正确目标 ID、单次增加一个页面、返回原列表、导航前后存储不变及战报空列表提示。105 项测试、四包 typecheck、两端构建、格式与差异检查通过，Web 主 JavaScript 和 CSS 保持一致。用户随后确认真机测试没有问题，并授权提交和推送；未提供设备、系统及基础库，不据此判定两种手机平台分别通过。此前首发置顶已提交并推送为 `2e69eed`，用户确认真机测试通过。
 
@@ -120,7 +191,7 @@ Codex 于 2026-10-07 接手：ZCode 的 `docs/AI_HANDOFF.md` 明确声明已停�
 
 ### Deferred Product Goal
 
-完成游客端的代码验证与微信真实运行验收，再按产品文档顺序推进微信身份、登录规则对战和独立分享。恢复时按 `AGENTS.md` 验证接手，并确认当前用户目标与授权范围。
+阶段 3 未完成验收继续保留；阶段 4 产品选择已确认，本轮完成文档准备。后续取得业务开发授权后推进身份、扫码确认登录、联网数据和规则对战，再实施独立分享。恢复时按 `AGENTS.md` 验证接手，并确认当前用户目标与授权范围。
 
 ### Implemented Product State
 
@@ -136,7 +207,7 @@ Codex 于 2026-10-07 接手：ZCode 的 `docs/AI_HANDOFF.md` 明确声明已停�
 
 - 阶段 3 剩余真机用例：编号 08 游客离线流程、11 真实存储失败与恢复、12 战报到期与旧详情暂无验收条件，保留 NOT RUN；Android 编号 01–12 尚未验收。iPhone 编号 01–06、09、10 已通过，编号 07 已修复，具体结果见最新 Validation；关闭重进、草稿恢复、后台与锁屏、对战持久化、中文输入、返回、渲染与安全区域、20 场上限及阵容快照不再列为 iPhone 未完成项。
 - 最低基础库已按 D-002 定为 3.17.3；模板及 uuid 转译配置与该决策一致，2.15.0 不在支持范围。剩余兼容性验收按 3.17.3 及受支持环境执行。
-- 阶段 4 微信身份、新账号 Web 凭据、游客导入同名客户端键冲突处理、登录规则对战与会话切换。
+- 阶段 4 已实现，审查与验收进行中：微信免密码账号及身份绑定、Web 小程序扫码确认登录与密码登录兼容、两端中文用户名校验、新键及引用重映射的幂等游客导入、登录规则对战、本人历史 AI 战报查看与会话切换；审查发现见 `docs/reviews/wechat-login-stage4/`，验收条件见产品文档第 11 节。
 - 阶段 5 独立分享的数据库、接口、审核、创建、接收、复制、管理、撤销与期限。
 - 产品文档第 12 节的剩余选择及上线资格；腾讯云 CMS 真实凭据验证与服务器发布。
 - npm audit 历史报告的 53 个依赖安全问题：1 low、18 moderate、30 high、4 critical；critical 涉及 Taro 依赖链的 Swiper 和 CLI 下载工具 decompress。当前微信构建使用原生组件；仍需兼容性核验与修复验证，本任务没有重新运行 audit。
@@ -184,11 +255,19 @@ mvn test
 
 ### Deferred Product Next Actions
 
-1. 完成阶段 3 的剩余开发者工具流程、基础库兼容性及 iOS、Android 真机验收。
-2. 确认第 12 节中影响微信身份与导入的选择后推进阶段 4，随后实施独立分享。
+1. Kimi Code 先执行 `AGENTS.md` 的 Git verification，核验四份未提交文档与本轮验证范围；确认 Codex 停止写入后，将 Owner 设为 kimi、Status 设为 ACTIVE。
+2. 第一个调查步骤：读取 `backend/src/main/java/com/basketballgm/auth/AuthRequest.java`、同目录 `AuthService.java` 和 `backend/src/main/resources/db/migration/V7__add_password_authentication.sql`，核对产品文档第 5 节与 D-005，记录用户名校验、无密码注册和 JWT 颁发所需变化。随后核对 `GuestImportService` 与战报接口，形成完整实现和验证计划，获得业务开发授权后实施。
+3. 阶段 3 编号 08/11/12、Android 和基础库兼容性验收在条件具备时补齐，不以阶段 4 产品确认替代。
+4. 阶段 5 的分享身份、可见性和有效期等剩余产品选择仍见第 12 节，未自动接受。
 
 ## Progress
 
+- review fixes complete（kimi，2026-10-14）：按 `.agents/skills/code-review` 流程核验 Codex 第一轮 17 项发现（`docs/reviews/wechat-login-stage4/`）。全部确认成立或部分成立后修复：浏览器绑定值移出 URL、数据源切换隔离与重试生命周期、保存期间编辑保护、401 与刷新失败同步页面状态、auth 页不随加载卸载、导入后清理游客草稿、游客进度只读查询、并发绑定幂等、过期与状态原子化、Web 领取终态与图片失败反馈、用户名汉字范围统一（V15）、战报分页与按 ID 详情、限频加固、测试边界说明、计划状态修正。后端 73 项、前端测试与四包 typecheck 通过；报告与清单更新见 Validation。
+- bugfix complete（kimi，2026-10-14，登录后账号数据不刷新）：用户真机验收 M01/M02 时发现登录并导入游客进度后「我的」页显示 0 套阵容 0 场战报，进入战报页再返回才正常。定位为时序问题：`loginWithSession` 切换账号数据源时加载的是导入前的账号数据，`importGuestProgress` 绕过数据源直写服务器后快照未刷新，账号页也没有切回刷新。修复：`importGuestProgress` 成功后等待 `refreshRuntimeAsync` 再进入页面；账号页增加 `useDidShow` 刷新。新增 refreshAsync 回归测试（账号数据源经真实本地 HTTP 服务器刷新取得新数据），全部 120 项前端测试、四包 typecheck、小程序构建与格式检查通过。
+- implementation complete（kimi，2026-10-13，阶段 4）：用户授权后按 Plan 第 4 节实施。后端新增 V14 迁移、微信认证与扫码票据模块；core 增加共享用户名规则；client 增加微信与票据 API；小程序新增 auth 页、账号数据源与会话切换；Web 登录页新增扫码登录。`mvn test` 63 项、`npm test` 119 项、四包 typecheck、两端构建、格式与差异检查通过；本地真实进程冒烟通过。真实微信联调待凭据与设备条件。
+- takeover and stage-4 design complete（kimi，2026-10-13）：核验 Git 元数据、四份未提交文档与引用实现后接手，Owner 设为 kimi、Status 由 HANDOFF_READY 转为 ACTIVE。只读核对认证、游客导入、战报读取与小程序现状，实测现有数据库用户名约束对中文及其他字符的行为；形成阶段 4 实施设计（Plan 第 4 节）与验证计划。业务代码与配置未修改，实施待用户授权。
+- handoff prepared（codex，2026-10-13）：按 canonical Skill 核验 Git 与认证、导入、小程序游客入口，刷新旧 ZCode 交接索引。已完成产品定义保留 DONE 里程碑，阶段 4 后续准备与阶段 3 保留验收设为 HANDOFF_READY；文档检查通过，Owner 释放为 unassigned，Codex 停止写入，目标接手者为 Kimi Code。
+- investigation and product definition complete（codex，2026-10-13）：核对用户名与展示名字段、认证、导入及战报实现；用户确认阶段 4 四项选择及中文用户名规则。更新产品文档、计划与 D-005，保留阶段 3 剩余验收，业务代码未修改。
 - validation complete（用户，2026-10-13，代码质量面板）：重新扫描后，按需注入、JavaScript 压缩与 WXSS 压缩三项均显示“已通过”；Codex 同步复验记录，保留阶段 3 未验收项。用户授权提交及推送当前文档变更。
 - acceptance records updated（codex，2026-10-13）：依据用户明确反馈同步 Google Docs 和 current plan；iPhone 编号 01–06、09、10 通过，07 已修复；08/11/12 暂无条件，Android 未验收。仅更新记录，保留历史验证和阶段 3 剩余工作。
 - user acceptance（2026-10-13，卡片导航）：用户确认真机测试没有问题，授权提交并推送当前分支；设备、系统及基础库未提供，保留阶段 3 其余验收项目。
@@ -231,20 +310,70 @@ mvn test
 
 ## Open Questions
 
+- 阶段 4 平台能力待真实环境核验：`wxacode.getUnlimited` 的 scene 参数长度与个人主体可用性、`jscode2session` 实际响应、手机浏览器同机进入小程序确认页的方式。票据标识已按 scene 32 字符限制设计；`GET /simulations/{id}` 未新增，列表字段已覆盖小程序详情展示。
+- 登录票据有效期已实现为配置项 `WECHAT_TICKET_TTL`（默认 5 分钟），身份确认凭证为 `WECHAT_CREDENTIAL_TTL`（默认 10 分钟）。
+- `.env.docker.example` 受工具敏感文件保护未修改；微信环境变量占位见 `application.yml` 与 `compose.yaml`。
 - 验收表的预览构建版本与各用例基础库映射尚未填写；不由当前 Git HEAD 或此前白闪验证的 SDK 推定所有用例使用相同版本。编号 08/11/12 暂无验收条件，Android 未验收，不记录为 PASS。
 - 用例 09 的本次 iPhone 白闪修复已完成验证。Android 白闪复验仍因设备缺失未执行；2026-10-06 的 iOS 记录仅为历史结果。
 - 本次 iPhone 实际 SDK 为 3.17.4，最低基础库声明为 3.17.3；两者验证结果分别记录。Android 设备缺失，对应验收保留 NOT RUN，待设备就绪后执行并记录。
 - Codex 已确认从可用 Skill 列表读取 canonical handoff；ZCode 于 2026-10-05 接手时未在自动发现的 Skill 列表中看到该 Skill，已显式读取 `.agents/skills/handoff/SKILL.md` 完成接手，显式引用路径可用；Kimi Code 的自动发现仍未验证。
-- 产品文档第 12 节中微信身份、导入和上线资格的选择留待后续产品任务确认；不阻止游客端验收。
+- 阶段 4 四项产品选择及中文用户名规则已确认。微信昵称快捷填写、小程序码确认流程和手机浏览器同机使用方式需核对实际平台能力；登录票据具体期限及接口协议在实现设计中确定。阶段 5 分享选择和上线资格仍待确认。
 - ZCode 记录的自动化重编译清空模拟器存储属于历史环境观察，Codex 尚未重新验证其原因及适用范围；不据此判定其余平台验收无法执行。
 
 ## Decision Candidates
 
-none。已接受决策见 `docs/DECISIONS.md`；此前球员详情页入口决定已记录为 D-004。
+none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
 
 各次执行按日期和 Agent 分开记录；历史结果不代表本次重新执行。历史产品结果另见 Retained Product Evidence。
+
+### Kimi 阶段 4 实施（2026-10-13）
+
+| Command / 检查                                                                                      | Result  | 范围与说明                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mvn test`（Java 21，`basketball_gm_test` 真实 PostgreSQL 16.10 容器，5432）                        | PASS    | 63 项测试全部通过；先在既有库升级上运行，随后重建全新数据库再次完整运行，V14 迁移与新库初始化均通过                                                                                                                             |
+| `npm test -- --maxWorkers=1`                                                                        | PASS    | 24 个测试文件、119 项测试全部通过（含新增 core 用户名规则、client 微信与票据 API、小程序账号数据源测试）                                                                                                                        |
+| `npm run typecheck`                                                                                 | PASS    | core、client、web、miniprogram 四包                                                                                                                                                                                             |
+| `npm run build`、`npm run build:weapp`                                                              | PASS    | 两次构建均含四包 typecheck；小程序产物含第十个页面 `pages/auth/index`，`lazyCodeLoading` 与深色背景保持；保留既有构建体积提示                                                                                                   |
+| `npm run format:check`、`git diff --check`                                                          | PASS    | 初次检查发现若干新文件格式问题，经项目 Prettier 格式化后复验通过；差异无空白错误                                                                                                                                                |
+| 本地真实进程冒烟（`mvn package` 后启动 JAR，`basketball_gm_smoke` 新库，8090 端口，未配置微信凭据） | PASS    | 中文用户名注册 201；韩文与含空格用户名 400；微信 exchange 返回 503 `WECHAT_NOT_CONFIGURED`；票据创建、错误绑定 404、待确认领取 409、确认 204、领取签发会话、重复领取 410；游客导入返回新 client key。冒烟后进程停止、数据库删除 |
+| 微信真实接口、`wxacode.getUnlimited` 实际调用、小程序端真实登录与扫码、iOS/Android 真机             | NOT RUN | 缺少 AppID 与 AppSecret 等凭据及设备条件；微信接口在测试中由真实本地 HTTP 服务器替代，冒烟环境未配置凭据，不以替代结果充当平台验收                                                                                              |
+| Gitleaks 脱敏扫描全部修改文件                                                                       | PASS    | 使用 `.cache/security-audit` 现有工具与配置逐文件扫描；19 处命中逐行核对后均为文案、类型声明、构造赋值、环境变量引用或测试占位，无真实凭据；未扩大允许名单                                                                      |
+
+### Kimi 接手核对与阶段 4 实施设计（2026-10-13）
+
+| Command / 检查                                                                                                                                                                             | Result  | 范围与说明                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------ |
+| `git status --short`、`git branch --show-current`、`git rev-parse HEAD`、`git log -3 --oneline`、`git diff --stat`、`git diff --cached --stat`、`git ls-files --others --exclude-standard` | PASS    | 分支 `mini-app-20261004`、HEAD `b87d67f`；四份文档修改与交接声明一致，无暂存或未跟踪文件   |
+| 四份文档 `stat` 修改时间与交接内容核对                                                                                                                                                     | PASS    | 最后修改 2026-10-13 19:10:31，交接后无变化；Codex 声明停止写入，Owner 已释放               |
+| `AuthRequest`、`AuthService`、`AuthController`、`UserMapper`、`UserRow`、`ReservedUsernames`、`AdminRegistry`、`CurrentUser`、`SecurityConfig` 与 V7 迁移只读核对                          | PASS    | ASCII 校验、空密码拒绝、JWT 签发路径与放行边界确认；差异见 Current State                   |
+| `GuestImportService`、`GuestImportMapper`、`GuestImportController`、`GuestImportRequest`、`GuestLineupImport`、`LineupMapper` 与 V5、V6、V10 迁移只读核对                                  | PASS    | 导入沿用原 client key 的覆盖风险与幂等结构确认                                             |
+| `SimulationController`、`SimulationService`、`SimulationMapper`、`SimulationResponse` 与 AI engineVersion 只读核对                                                                         | PASS    | 列表响应含类型区分字段与快照；当前无按 ID 的私有详情接口                                   |
+| `docker exec dream-court-postgres-1 psql -tAc` 正则探测                                                                                                                                    | PASS    | 只读 SELECT；现有约束实测接受中文、拒绝 emoji 与空格、按字符计数，并接受产品规则之外的字符 |
+| 小程序 account 页、`packages/client` 契约与 API、小程序 `config/env.ts`、Web 登录与导入流程只读核对                                                                                        | PASS    | 阶段 4 前端缺口确认                                                                        |
+| `npx prettier --check docs/plans/current.md`、`git diff --check`、`gitleaks dir docs/plans/current.md`（`.cache/security-audit` 现有工具与配置）                                           | PASS    | 初检表格格式经 Prettier 修正后复验通过；差异无空白错误；扫描无敏感信息发现                 |
+| 前后端业务测试、typecheck、两端构建、`mvn test`                                                                                                                                            | NOT RUN | 本轮仅文档与只读核对，业务代码与配置未修改；历史结果按原日期保留                           |
+
+### Codex 交接给 Kimi Code（2026-10-13）
+
+| Command / 检查                                                                                                                                                                                  | Result  | 范围与说明                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `git status --short`、`git branch --show-current`、`git rev-parse HEAD`、`git log -3 --oneline`、`git diff --stat`、`git diff`、`git diff --cached`、`git ls-files --others --exclude-standard` | PASS    | HEAD `b87d67f`；交接前仅三份 Codex 文档修改，无暂存或未跟踪文件；交接新增 `AI_HANDOFF.md` 修改                           |
+| 认证源码、V7 约束、游客导入与小程序 account 页面只读核对                                                                                                                                        | PASS    | API 仍限制 ASCII 用户名，JWT 颁发在 `AuthService`；导入使用原 client key；小程序 account 页仍为游客入口，阶段 4 尚未实现 |
+| 上一轮三份文档的 Prettier、`git diff --check`、Gitleaks 脱敏扫描                                                                                                                                | PASS    | 本轮交接前实际复跑，无格式、差异或敏感信息问题                                                                           |
+| `npx prettier --check docs/plans/wechat-miniprogram.md docs/plans/current.md docs/DECISIONS.md docs/AI_HANDOFF.md`、`git diff --check`、引用存在性与状态核对、Gitleaks 脱敏扫描                 | PASS    | 四份文档格式与引用通过，无敏感信息；Task、Status、基线与未提交清单一致，Owner 在最后一次写入释放                         |
+| 前后端业务测试、typecheck、构建、真实微信与真机验收                                                                                                                                             | NOT RUN | 本轮仅交接文档，无代码改动；此前结果按日期保留，不作为本次执行                                                           |
+
+### Codex 阶段 4 产品文档确认（2026-10-13）
+
+| Command / 检查                                                                                                         | Result  | 范围与说明                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------ |
+| `git status --short`、`git branch --show-current`、`git rev-parse HEAD`、相关 diff 与最近提交                          | PASS    | 开始时 working tree 干净；分支 `mini-app-20261004`、HEAD `b87d67f`；只读核对相关实现 |
+| `npx prettier --check docs/plans/wechat-miniprogram.md docs/plans/current.md docs/DECISIONS.md`                        | PASS    | 初次检查发现 Markdown 表格格式问题，使用项目 Prettier 格式化后复验通过               |
+| `git diff --check`、`git diff --name-only`、引用文件存在性检查                                                         | PASS    | 仅三份文档修改；产品章节、D-005 及引用路径有效；无业务代码或配置变化                 |
+| `.cache/security-audit/tools/gitleaks dir <各修改文件> --config .cache/security-audit/audit.toml --redact --no-banner` | PASS    | 三份文档逐个扫描通过，无敏感信息发现；使用现有配置，未扩大允许名单                   |
+| 前后端测试、typecheck、两端构建及微信真实登录验收                                                                      | NOT RUN | 本轮文档修改，业务代码未改变；阶段 4 尚未实现，历史 PASS 不作为本轮证据              |
 
 ### 用户开发者工具代码质量面板复验（2026-10-13）
 
@@ -498,7 +627,13 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 
 ## Completion
 
-本轮验收记录已按用户 2026-10-13 的反馈同步到 Google Docs 与本文件，代码质量面板三项重新扫描均为 PASS（用户确认）。编号 08/11/12 和 Android 的未验收状态保留，阶段 3 总体仍为 ACTIVE；业务代码没有修改，用户已授权提交与推送当前文档变更，结果以 Git 核验为准。
+阶段 4 实施由 Kimi Code 完成并进入验收：微信免密码注册登录、已有账号密码验证绑定、Web 小程序扫码确认登录、两端与数据库统一中文用户名规则、新键幂等游客导入、小程序登录数据源切换与战报类型标示均已实现。后端 63 项测试（既有库升级与新库初始化）、前端 119 项测试、四包 typecheck、两端构建、格式与差异检查、本地真实进程冒烟全部通过；未提交、未推送。真实微信联调与真机验收待凭据与设备条件，保持 NOT RUN。阶段 3 保留验收项目不变。
+
+此前交接已准备完成，目标为 Kimi Code；阶段 4 准备与阶段 3 保留验收均为 HANDOFF_READY，产品定义已完成。Owner 已释放为 unassigned，Codex 停止写入。四份文档修改保留未提交，没有推送或业务代码修改；接手者先核验，再取得写入归属，业务实施仍待用户后续授权。
+
+此前阶段 4 产品文档任务已完成：已确认选择记录于产品文档、当前计划及 D-005，流程和验收条件一致，文档检查通过，阶段 3 未完成项与历史证据完整保留。后续阶段 4 实施须通过独立验证。
+
+此前验收记录已按用户 2026-10-13 的反馈同步到 Google Docs 与本文件，代码质量面板三项重新扫描均为 PASS（用户确认）；该轮文档已提交为 `b87d67f`。编号 08/11/12 和 Android 的未验收状态保留，阶段 3 尚未全部验收。
 
 本轮小程序阵容与历史战报卡片导航已实现：点击整张卡片分别进入对应编辑页与战报详情，按钮继续可用，每次只导航一次。105 项测试、四包 typecheck、两端构建、格式检查及独立开发者工具八项页面验证通过，Web 主资源保持一致。用户确认真机测试没有问题，并授权提交和推送当前分支；提交与推送状态以 Git 核验为准。
 
@@ -508,4 +643,4 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 
 此前球员详情页入口调整已提交为 `b62fb252c0c37bcb75dfbfa2123291837c0b215a`：按钮及未使用导入已移除，长期决策记录为 D-004，四包 typecheck、小程序构建与独立开发者工具页面验证通过。
 
-此前用例 09 的 iPhone 白闪修复提交为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42`，[独立排查记录](../troubleshooting/miniprogram-tab-white-flash.md)及文档入口提交为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，均已推送至 `origin/mini-app-20261004`。阶段 3 总体仍为 ACTIVE，Owner 为 codex，剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。正式交出工作时执行 `.agents/skills/handoff/SKILL.md` 并刷新交接索引。
+此前用例 09 的 iPhone 白闪修复提交为 `33bf7330c7e2b0caa94224d2e6de5da74e12cc42`，[独立排查记录](../troubleshooting/miniprogram-tab-white-flash.md)及文档入口提交为 `4ad96577ee82b60f6f2dcca11b788bd80d1140c3`，均已推送至 `origin/mini-app-20261004`。阶段 3 剩余范围见 Remaining Product Work；全部必需平台验收完成后才可设为 DONE。当前状态与 Owner 以本文件顶部及最新交接 checkpoint 为准。

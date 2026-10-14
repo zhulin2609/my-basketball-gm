@@ -200,6 +200,15 @@ button {
   min-height: 46px;
 }
 
+.scan-qr {
+  background: #ffffff;
+  border-radius: 12px;
+  display: block;
+  height: 200px;
+  margin: 0 auto;
+  width: 200px;
+}
+
 .auth-switch {
   color: #a8b2a4;
   margin: 24px 0 12px;

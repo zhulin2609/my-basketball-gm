@@ -49,6 +49,20 @@ public class SecurityConfig {
             // an accidental future auth endpoint from becoming anonymous by wildcard.
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
             .permitAll()
+            // WeChat code exchange, binding and passwordless registration are public; the
+            // identity confirmation credential inside each flow provides the authority.
+            .requestMatchers(
+                HttpMethod.POST,
+                "/api/v1/auth/wechat/exchange",
+                "/api/v1/auth/wechat/bind",
+                "/api/v1/auth/wechat/register")
+            .permitAll()
+            // Web login tickets are created and claimed anonymously, but every ticket is bound
+            // to the initiating browser's random value; confirm/reject stay authenticated.
+            .requestMatchers(HttpMethod.POST, "/api/v1/auth/web-login-tickets").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/auth/web-login-tickets/*/claim").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/v1/auth/web-login-tickets/*").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/v1/auth/web-login-tickets/*/qrcode").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
             // Community reads stay anonymous; writes below still require a JWT.
             .requestMatchers(HttpMethod.GET, "/api/v1/forum/posts", "/api/v1/forum/posts/**").permitAll()

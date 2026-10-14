@@ -18,27 +18,30 @@ import {
   loadLineupEditor,
   removeLineupMember,
   setLineupMemberToggle,
-  type GuestStore,
   type LineupMemberToggle,
 } from '@/services/guest-store';
+import type { DataSnapshot, DataStore } from '@/services/data-store';
 import { errorMessage } from '@/constants/text';
 import { navigate } from '@/platform/navigation';
 
 interface EditorProps {
-  store: GuestStore;
+  store: DataStore;
+  source: DataSnapshot['source'];
   initial: Lineup;
   players: Player[];
 }
 
-function LineupEditor({ store, initial, players }: EditorProps) {
+function LineupEditor({ store, source, initial, players }: EditorProps) {
   const [editor, setEditor] = useState(() => loadLineupEditor(store, initial));
   const [starterIds, setStarterIds] = useState(() =>
     editor.status === 'ready' ? getLineupStarterIds(editor.lineup) : new Set<string>(),
   );
   const dirty = editor.status === 'ready' && editor.dirty;
+  const savedText = source === 'account' ? '已保存到账号' : '已保存到本机';
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [memberFeedback, setMemberFeedback] = useState<{ playerId: string; message: string }>();
-  const [status, setStatus] = useState(dirty ? '有草稿未保存' : '已保存到本机');
+  const [status, setStatus] = useState(dirty ? '有草稿未保存' : savedText);
   const draftWriteFailed = useRef(false);
 
   const reload = () => {
@@ -46,7 +49,7 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     setEditor(loaded);
     if (loaded.status === 'ready') {
       setStarterIds(getLineupStarterIds(loaded.lineup));
-      setStatus(loaded.dirty ? '有草稿未保存' : '已保存到本机');
+      setStatus(loaded.dirty ? '有草稿未保存' : savedText);
       setError('');
       setMemberFeedback(undefined);
     }
@@ -83,6 +86,8 @@ function LineupEditor({ store, initial, players }: EditorProps) {
 
   const { lineup } = editor;
   const validation = validateLineup(lineup);
+  const latestLineup = useRef(lineup);
+  latestLineup.current = lineup;
 
   const edit = (updated: Lineup) => {
     setEditor({ status: 'ready', lineup: updated, dirty: true });
@@ -123,17 +128,27 @@ function LineupEditor({ store, initial, players }: EditorProps) {
     return result.status === 'changed';
   };
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
     setError('');
+    const submitted = lineup;
     try {
-      store.saveLineup(lineup);
+      await store.saveLineup(submitted);
       draftWriteFailed.current = false;
-      setEditor({ status: 'ready', lineup, dirty: false });
-      setStatus('已保存到本机');
+      // 保存期间产生的新编辑保留为未保存草稿，只有内容未变时才显示保存成功。
+      if (latestLineup.current === submitted) {
+        setEditor({ status: 'ready', lineup: submitted, dirty: false });
+        setStatus(savedText);
+      } else {
+        setStatus('有草稿未保存');
+      }
       setMemberFeedback(undefined);
     } catch (failure: unknown) {
       setStatus('尚未保存成功');
       setError(errorMessage(failure));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -159,7 +174,12 @@ function LineupEditor({ store, initial, players }: EditorProps) {
         />
         <View className={dirty ? 'notice draft-warning' : 'notice'}>{status}</View>
         {error && <View className="error">{error}</View>}
-        <Button className="primary" onClick={save} disabled={!dirty}>
+        <Button
+          className="primary"
+          onClick={() => void save()}
+          disabled={!dirty || saving}
+          loading={saving}
+        >
           保存阵容
         </Button>
       </View>
@@ -249,7 +269,13 @@ export default function LineupEditorPage() {
       {(store, data) => {
         const initial = data.lineups.find((lineup) => lineup.id === params.id);
         return initial ? (
-          <LineupEditor key={initial.id} store={store} initial={initial} players={data.players} />
+          <LineupEditor
+            key={initial.id}
+            store={store}
+            source={data.source}
+            initial={initial}
+            players={data.players}
+          />
         ) : (
           <View className="error">阵容已经无法读取</View>
         );

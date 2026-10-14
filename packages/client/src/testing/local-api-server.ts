@@ -9,6 +9,7 @@ export interface RecordedRequest {
   method: string;
   path: string;
   body: unknown;
+  headers: Record<string, string>;
 }
 
 export interface HandlerResult {
@@ -57,6 +58,12 @@ export function startTestApiServer(): Promise<TestApiServer> {
         method: request.method ?? 'GET',
         path: request.url ?? '/',
         body: rawBody ? (JSON.parse(rawBody) as unknown) : null,
+        headers: Object.fromEntries(
+          Object.entries(request.headers).map(([key, value]) => [
+            key,
+            Array.isArray(value) ? value.join(',') : (value ?? ''),
+          ]),
+        ),
       };
       requests.push(record);
       waiters = waiters.filter((waiter) => {

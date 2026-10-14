@@ -1,6 +1,7 @@
 import { useDidShow } from '@tarojs/taro';
-import { Button, View } from '@tarojs/components';
+import { Button, Text, View } from '@tarojs/components';
 import { Screen } from '@/components/Screen';
+import { reportTypeLabel } from '@/services/data-store';
 import { refreshRuntime } from '@/services/runtime';
 import { navigate } from '@/platform/navigation';
 
@@ -10,7 +11,11 @@ export default function ReportsPage() {
     <Screen title="历史战报">
       {(_store, data) => (
         <View>
-          <View className="notice">战报最多保留 20 场，创建 30 天后到期。</View>
+          <View className="notice">
+            {data.source === 'account'
+              ? '战报保存在服务器，创建 30 天后到期。'
+              : '战报最多保留 20 场，创建 30 天后到期。'}
+          </View>
           {!data.reports.length && <View className="card">还没有有效战报</View>}
           {data.reports.map((report) => (
             <View
@@ -26,7 +31,12 @@ export default function ReportsPage() {
               <View className="score">
                 {report.homeScore} : {report.awayScore}
               </View>
-              <View className="muted">{new Date(report.createdAt).toLocaleString('zh-CN')}</View>
+              <View className="muted">
+                <Text>{new Date(report.createdAt).toLocaleString('zh-CN')}</Text>
+                {data.source === 'account' && (
+                  <Text> · {reportTypeLabel(report.engineVersion)}</Text>
+                )}
+              </View>
               <Button className="secondary">查看战报</Button>
             </View>
           ))}

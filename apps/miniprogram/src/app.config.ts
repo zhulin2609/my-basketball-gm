@@ -9,6 +9,7 @@ export default defineAppConfig({
     'pages/player-picker/index',
     'pages/reports/index',
     'pages/report-detail/index',
+    'pages/auth/index',
   ],
   window: {
     navigationBarTitleText: 'My Basketball GM',

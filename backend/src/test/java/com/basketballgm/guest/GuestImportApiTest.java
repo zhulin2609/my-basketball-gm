@@ -1,8 +1,10 @@
 package com.basketballgm.guest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,7 +98,8 @@ class GuestImportApiTest {
     mockMvc.perform(get("/api/v1/lineups")
             .header("Authorization", "Bearer " + firstToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[?(@.id == 'guest-five')]").isNotEmpty());
+        .andExpect(jsonPath("$[?(@.name == 'Guest Five')]").isNotEmpty())
+        .andExpect(jsonPath("$[?(@.id == 'guest-five')]").isEmpty());
 
     mockMvc.perform(post("/api/v1/guest-imports")
             .header("Authorization", "Bearer " + secondToken)
@@ -146,7 +149,7 @@ class GuestImportApiTest {
 
     mockMvc.perform(get("/api/v1/lineups").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[?(@.id == 'custom-lineup')].members[0]").isNotEmpty());
+        .andExpect(jsonPath("$[?(@.name == 'Custom lineup')].members[0]").isNotEmpty());
   }
 
   @Test
@@ -174,12 +177,81 @@ class GuestImportApiTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.simulationCount").value(1));
 
-    mockMvc.perform(get("/api/v1/simulations?limit=30")
+    String lineupsBody = mockMvc.perform(get("/api/v1/lineups")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    String homeKey = null;
+    String awayKey = null;
+    for (JsonNode lineup : objectMapper.readTree(lineupsBody)) {
+      if (lineup.get("name").asText().equals("Home Team")) homeKey = lineup.get("id").asText();
+      if (lineup.get("name").asText().equals("Away Team")) awayKey = lineup.get("id").asText();
+    }
+    assertTrue(homeKey != null && !homeKey.equals("home-team"));
+    assertTrue(awayKey != null && !awayKey.equals("away-team"));
+
+    String simulationsBody = mockMvc.perform(get("/api/v1/simulations?limit=30")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].homeScore").value(108))
         .andExpect(jsonPath("$[0].awayScore").value(104))
-        .andExpect(jsonPath("$[0].homeStats[0].playerId").value("curry"));
+        .andExpect(jsonPath("$[0].homeStats[0].playerId").value("curry"))
+        .andReturn().getResponse().getContentAsString();
+    JsonNode report = objectMapper.readTree(simulationsBody).get(0);
+    assertEquals(homeKey, report.get("homeLineupId").asText());
+    assertEquals(awayKey, report.get("awayLineupId").asText());
+  }
+
+  @Test
+  void assignsFreshClientKeysWhenGuestKeysCollideWithExistingLineups() throws Exception {
+    String token = register(usernamePrefix + "-collision");
+    mockMvc.perform(put("/api/v1/lineups/shared-key")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(Map.of(
+                "name", "Existing Lineup",
+                "description", "Already on the account",
+                "members", List.of()
+            ))))
+        .andExpect(status().isOk());
+
+    for (String suffix : List.of("a", "b")) {
+      Map<String, Object> request = Map.of(
+          "guestWorkspaceId", UUID.randomUUID().toString(),
+          "players", List.of(),
+          "lineups", List.of(Map.of(
+              "id", "shared-key",
+              "lineup", Map.of(
+                  "name", "Imported " + suffix,
+                  "description", "Guest lineup with a colliding key",
+                  "members", List.of()
+              )
+          )),
+          "simulations", List.of()
+      );
+      mockMvc.perform(post("/api/v1/guest-imports")
+              .header("Authorization", "Bearer " + token)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.lineupCount").value(1));
+    }
+
+    String lineupsBody = mockMvc.perform(get("/api/v1/lineups")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    JsonNode lineups = objectMapper.readTree(lineupsBody);
+    assertEquals(3, lineups.size());
+    java.util.Set<String> names = new java.util.HashSet<>();
+    java.util.Set<String> ids = new java.util.HashSet<>();
+    for (JsonNode lineup : lineups) {
+      names.add(lineup.get("name").asText());
+      ids.add(lineup.get("id").asText());
+    }
+    assertEquals(java.util.Set.of("Existing Lineup", "Imported a", "Imported b"), names);
+    assertEquals(3, ids.size());
+    assertTrue(ids.contains("shared-key"));
   }
 
   private Map<String, Object> importedLineup(String id, String name) {

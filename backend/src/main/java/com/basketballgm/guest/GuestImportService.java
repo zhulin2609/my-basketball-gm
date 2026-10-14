@@ -51,13 +51,18 @@ public class GuestImportService {
     }
 
     Map<String, String> importedPlayerIds = importPlayers(ownerId, request.players());
+    // D-005：首次导入为每套阵容分配新的 client key，不沿用游客键，避免覆盖账号已有阵容；
+    // 战报与自定义球员引用在同一事务内重映射。
+    Map<String, String> importedLineupKeys = new HashMap<>();
     for (GuestLineupImport imported : request.lineups()) {
       LineupPayload lineup = remapLineup(imported.lineup(), importedPlayerIds);
       String validationMessage = lineup.validationMessage();
       if (validationMessage != null) throw new IllegalArgumentException(validationMessage);
 
-      lineupMapper.upsert(ownerId, imported.id(), lineup);
-      String databaseId = lineupMapper.findDatabaseId(ownerId, imported.id());
+      String newClientKey = UUID.randomUUID().toString();
+      lineupMapper.upsert(ownerId, newClientKey, lineup);
+      importedLineupKeys.put(imported.id(), newClientKey);
+      String databaseId = lineupMapper.findDatabaseId(ownerId, newClientKey);
       lineupMapper.deleteMembers(databaseId);
       List<LineupMemberWrite> members = toWrites(lineup.members());
       if (!members.isEmpty() && lineupMapper.insertMembers(databaseId, ownerId, members) != members.size()) {
@@ -67,7 +72,8 @@ public class GuestImportService {
     int simulationCount = importSimulations(
         ownerId,
         request.simulations(),
-        importedPlayerIds
+        importedPlayerIds,
+        importedLineupKeys
     );
 
     guestImportMapper.finish(
@@ -116,7 +122,8 @@ public class GuestImportService {
   private int importSimulations(
       UUID ownerId,
       List<GuestSimulationImport> simulations,
-      Map<String, String> importedPlayerIds
+      Map<String, String> importedPlayerIds,
+      Map<String, String> importedLineupKeys
   ) {
     int importedCount = 0;
     Instant now = Instant.now();
@@ -134,8 +141,10 @@ public class GuestImportService {
         throw new IllegalArgumentException("游客战报必须包含两套不同阵容。");
       }
 
-      String homeDatabaseId = lineupMapper.findDatabaseId(ownerId, imported.homeLineupId());
-      String awayDatabaseId = lineupMapper.findDatabaseId(ownerId, imported.awayLineupId());
+      String homeClientKey = importedLineupKeys.get(imported.homeLineupId());
+      String awayClientKey = importedLineupKeys.get(imported.awayLineupId());
+      String homeDatabaseId = homeClientKey == null ? null : lineupMapper.findDatabaseId(ownerId, homeClientKey);
+      String awayDatabaseId = awayClientKey == null ? null : lineupMapper.findDatabaseId(ownerId, awayClientKey);
       if (homeDatabaseId == null || awayDatabaseId == null) {
         throw new IllegalArgumentException("游客战报引用了不存在的阵容。");
       }

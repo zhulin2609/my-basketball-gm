@@ -46,13 +46,14 @@ public class SimulationService {
   }
 
   @Transactional(readOnly = true)
-  public List<SimulationResponse> list(UUID ownerId, int requestedLimit) {
+  public List<SimulationResponse> list(UUID ownerId, int requestedLimit, int requestedOffset) {
     int limit = Math.max(1, Math.min(requestedLimit, 100));
-    List<SimulationRow> reports = simulationMapper.list(ownerId, limit);
+    int offset = Math.max(0, requestedOffset);
+    List<SimulationRow> reports = simulationMapper.list(ownerId, limit, offset);
     Map<String, List<SimulationPlayerStatResponse>> homeStats = new HashMap<>();
     Map<String, List<SimulationPlayerStatResponse>> awayStats = new HashMap<>();
 
-    for (SimulationStatRow row : simulationMapper.listStats(ownerId, limit)) {
+    for (SimulationStatRow row : simulationMapper.listStats(ownerId, limit, offset)) {
       Map<String, List<SimulationPlayerStatResponse>> target = "home".equals(row.side())
           ? homeStats
           : awayStats;
@@ -60,22 +61,27 @@ public class SimulationService {
     }
 
     return reports.stream()
-        .map(report -> new SimulationResponse(
-            report.id(),
-            report.homeLineupId(),
-            report.awayLineupId(),
-            report.homeLineupName(),
-            report.awayLineupName(),
-            report.seed(),
-            report.homeScore(),
-            report.awayScore(),
-            homeStats.getOrDefault(report.id(), List.of()),
-            awayStats.getOrDefault(report.id(), List.of()),
-            report.engineVersion(),
-            report.createdAt(),
-            report.expiresAt()
-        ))
+        .map(report -> toResponse(report, homeStats, awayStats))
         .toList();
+  }
+
+  /** 按 ID 读取本人有效战报；过期或其他账号的记录一律返回 404。 */
+  @Transactional(readOnly = true)
+  public SimulationResponse detail(UUID ownerId, String id) {
+    SimulationRow report = simulationMapper.findOwned(ownerId, id);
+    if (report == null) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.NOT_FOUND, "战报已经到期或无法读取。");
+    }
+    Map<String, List<SimulationPlayerStatResponse>> homeStats = new HashMap<>();
+    Map<String, List<SimulationPlayerStatResponse>> awayStats = new HashMap<>();
+    for (SimulationStatRow row : simulationMapper.listStatsForSimulation(ownerId, report.id())) {
+      Map<String, List<SimulationPlayerStatResponse>> target = "home".equals(row.side())
+          ? homeStats
+          : awayStats;
+      target.computeIfAbsent(row.simulationId(), ignored -> new ArrayList<>()).add(toResponse(row));
+    }
+    return toResponse(report, homeStats, awayStats);
   }
 
   @Transactional
@@ -136,6 +142,28 @@ public class SimulationService {
         engineVersion,
         identity.createdAt(),
         identity.expiresAt()
+    );
+  }
+
+  private SimulationResponse toResponse(
+      SimulationRow report,
+      Map<String, List<SimulationPlayerStatResponse>> homeStats,
+      Map<String, List<SimulationPlayerStatResponse>> awayStats
+  ) {
+    return new SimulationResponse(
+        report.id(),
+        report.homeLineupId(),
+        report.awayLineupId(),
+        report.homeLineupName(),
+        report.awayLineupName(),
+        report.seed(),
+        report.homeScore(),
+        report.awayScore(),
+        homeStats.getOrDefault(report.id(), List.of()),
+        awayStats.getOrDefault(report.id(), List.of()),
+        report.engineVersion(),
+        report.createdAt(),
+        report.expiresAt()
     );
   }
 

@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,10 +34,17 @@ public class SimulationController {
   @GetMapping
   public List<SimulationResponse> list(
       @AuthenticationPrincipal Jwt jwt,
-      @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit
+      @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
+      @RequestParam(defaultValue = "0") @Min(0) int offset
   ) {
     var ownerId = currentUser.id(jwt);
-    return service.list(ownerId, limit);
+    return service.list(ownerId, limit, offset);
+  }
+
+  @GetMapping("/{id}")
+  public SimulationResponse detail(@AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
+    var ownerId = currentUser.id(jwt);
+    return service.detail(ownerId, id);
   }
 
   @PostMapping

@@ -8,6 +8,7 @@ import {
   orderMembersForDisplay,
   selectPlayerOfTheGame,
   STARTER_POSITIONS,
+  USERNAME_PATTERN_SOURCE,
   validateLineup,
   type Lineup,
   type LineupMember,
@@ -17,10 +18,16 @@ import {
   type Simulation,
   type SimulationMode,
 } from '@dream-court/core';
-import { createGuestImportRequest, type AuthSession } from '@dream-court/client';
+import { createGuestImportRequest, ApiError, type AuthSession } from '@dream-court/client';
 import { changeLocale, supportedLocales, type AppLocale } from '@/i18n';
 import { api, isApiEnabled, type LlmCredential } from '@/lib/api';
-import { battleService, lineupSaveQueue, listPlayers, repositories } from '@/lib/runtime';
+import {
+  apiBaseUrl,
+  battleService,
+  lineupSaveQueue,
+  listPlayers,
+  repositories,
+} from '@/lib/runtime';
 import { communityWriteError } from '@/lib/errors';
 import { guestImportFailureMessage } from '@/lib/guest-import-errors';
 import { makeClassicLineup, makeStarterLineup } from '@/lib/presets';
@@ -812,9 +819,145 @@ function AiSettings({ onBack }: AiSettingsProps) {
   );
 }
 
+interface ScanLoginPanelProps {
+  onAuthenticated: (session: AuthSession) => Promise<void>;
+  onBack: () => void;
+}
+
+type ScanState = 'loading' | 'waiting' | 'expired' | 'rejected' | 'failed' | 'unavailable';
+
+/**
+ * 小程序扫码登录面板：创建绑定本浏览器的登录票据，轮询状态，确认后一次性领取会话。
+ * 票据只承载登录请求标识，会话由领取接口在确认后签发。
+ */
+function ScanLoginPanel({ onAuthenticated, onBack }: ScanLoginPanelProps) {
+  const { t } = useTranslation();
+  const [ticket, setTicket] = useState<{ ticket: string; expiresAt: string } | null>(null);
+  const [state, setState] = useState<ScanState>('loading');
+  const bindingRef = useRef('');
+
+  const createTicket = async () => {
+    setState('loading');
+    setTicket(null);
+    const binding = `${createIdentifier()}${createIdentifier()}`;
+    bindingRef.current = binding;
+    try {
+      const created = await api.createWebLoginTicket(binding);
+      setTicket(created);
+      setState('waiting');
+    } catch (requestError: unknown) {
+      setState(
+        requestError instanceof ApiError && requestError.code === 'WECHAT_NOT_CONFIGURED'
+          ? 'unavailable'
+          : 'failed',
+      );
+    }
+  };
+
+  useEffect(() => {
+    void createTicket();
+    // 进入面板时创建一次票据；过期或拒绝后由用户主动重新获取。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (state !== 'waiting' || !ticket) return;
+    let stopped = false;
+    let claiming = false;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        if (stopped || claiming) return;
+        try {
+          const current = await api.webLoginTicketStatus(ticket.ticket, bindingRef.current);
+          if (stopped) return;
+          if (current.status === 'approved') {
+            claiming = true;
+            try {
+              const session = await api.claimWebLoginTicket(ticket.ticket, bindingRef.current);
+              if (stopped) return;
+              stopped = true;
+              window.clearInterval(timer);
+              await onAuthenticated(session);
+            } catch (claimError: unknown) {
+              claiming = false;
+              if (stopped || !(claimError instanceof ApiError)) return;
+              // 终态明确结束；网络等暂时失败保持等待，下一次轮询重试领取。
+              if (claimError.code === 'TICKET_EXPIRED') setState('expired');
+              else if (claimError.code === 'TICKET_REJECTED') setState('rejected');
+              else setState('failed');
+            }
+          } else if (current.status === 'expired') {
+            setState('expired');
+          } else if (current.status === 'rejected') {
+            setState('rejected');
+          } else if (current.status === 'consumed') {
+            setState('failed');
+          }
+        } catch (requestError: unknown) {
+          if (stopped) return;
+          if (requestError instanceof ApiError && requestError.status === 404) {
+            setState('failed');
+          }
+        }
+      })();
+    }, 2000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+    // ticket 与 state 驱动轮询；onAuthenticated 的引用变化不应重启轮询。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, ticket]);
+
+  return (
+    <div className="auth-form">
+      {state === 'loading' && <p className="auth-copy">{t('common.processing')}</p>}
+      {state === 'waiting' && ticket && (
+        <>
+          <img
+            className="scan-qr"
+            src={`${apiBaseUrl}/auth/web-login-tickets/${ticket.ticket}/qrcode`}
+            alt={t('auth.scanTitle')}
+            onError={() => setState('failed')}
+          />
+          <p className="auth-copy">{t('auth.scanWaiting')}</p>
+        </>
+      )}
+      {state === 'expired' && (
+        <p className="auth-error" role="alert">
+          {t('auth.scanExpired')}
+        </p>
+      )}
+      {state === 'rejected' && (
+        <p className="auth-error" role="alert">
+          {t('auth.scanRejected')}
+        </p>
+      )}
+      {state === 'failed' && (
+        <p className="auth-error" role="alert">
+          {t('auth.scanFailed')}
+        </p>
+      )}
+      {state === 'unavailable' && (
+        <p className="auth-error" role="alert">
+          {t('auth.scanUnavailable')}
+        </p>
+      )}
+      {(state === 'expired' || state === 'rejected' || state === 'failed') && (
+        <button className="primary auth-submit" onClick={() => void createTicket()} type="button">
+          {t('auth.scanRetry')}
+        </button>
+      )}
+      <button className="secondary" onClick={onBack} type="button">
+        {t('auth.backToPassword')}
+      </button>
+    </div>
+  );
+}
+
 function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'scan'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -872,6 +1015,16 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
     }
   };
 
+  // 扫码登录领取会话后与密码登录走同一条游客导入路径：有游客进度先询问。
+  const completeScanLogin = async (session: AuthSession) => {
+    api.saveSession(session);
+    if (repositories.workspace.load().hasUserProgress) {
+      setPendingSession(session);
+      return;
+    }
+    await importGuestWorkspace(session);
+  };
+
   if (pendingSession) {
     const summary = repositories.workspace.summary();
     return (
@@ -927,6 +1080,39 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
     );
   }
 
+  if (mode === 'scan') {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card" aria-labelledby="scan-title">
+          <LanguageSwitch />
+          <button className="auth-cancel" onClick={onCancel} type="button">
+            {t('guest.continue')}
+          </button>
+          <div className="brand-mark">GM</div>
+          <p className="eyebrow">My Basketball GM · HISTORY LAB</p>
+          <h1 id="scan-title">{t('auth.scanTitle')}</h1>
+          <p className="auth-copy">{t('auth.scanBody')}</p>
+          {error && (
+            <p className="auth-error" role="alert">
+              {error}
+            </p>
+          )}
+          <ScanLoginPanel
+            onAuthenticated={(session) =>
+              completeScanLogin(session).catch((requestError: unknown) => {
+                setError(guestImportFailureMessage(requestError, t('auth.loginFailed')));
+              })
+            }
+            onBack={() => {
+              setError(null);
+              setMode('login');
+            }}
+          />
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="auth-shell">
       <section className="auth-card" aria-labelledby="auth-title">
@@ -946,7 +1132,7 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
               maxLength={32}
               minLength={3}
               onChange={(event) => setUsername(event.target.value)}
-              pattern="[A-Za-z0-9_-]{3,32}"
+              pattern={USERNAME_PATTERN_SOURCE}
               required
               value={username}
             />
@@ -985,6 +1171,17 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
             type="button"
           >
             {mode === 'login' ? t('auth.createAccount') : t('auth.goLogin')}
+          </button>
+        </p>
+        <p className="auth-switch">
+          <button
+            onClick={() => {
+              setError(null);
+              setMode('scan');
+            }}
+            type="button"
+          >
+            {t('auth.scanLogin')}
           </button>
         </p>
         <p className="auth-hint">{t('auth.hint')}</p>

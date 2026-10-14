@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Button, Text, View } from '@tarojs/components';
 import { validateLineup } from '@dream-court/core';
 import { Screen } from '@/components/Screen';
-import { loadLineupEditor, type GuestSnapshot, type GuestStore } from '@/services/guest-store';
+import { loadLineupEditor } from '@/services/guest-store';
+import type { DataSnapshot, DataStore } from '@/services/data-store';
 import { prepareIdentifiers } from '@/platform/identifier';
 import { navigate } from '@/platform/navigation';
 import { errorMessage } from '@/constants/text';
 
 interface LineupsContentProps {
-  store: GuestStore;
-  data: GuestSnapshot;
+  store: DataStore;
+  data: DataSnapshot;
 }
 
 function LineupsContent({ store, data }: LineupsContentProps) {
@@ -21,7 +22,7 @@ function LineupsContent({ store, data }: LineupsContentProps) {
     setError('');
     try {
       await prepareIdentifiers();
-      const lineup = store.createLineup();
+      const lineup = await store.createLineup();
       navigate(`/pages/lineup-editor/index?id=${encodeURIComponent(lineup.id)}`);
     } catch (failure: unknown) {
       setError(errorMessage(failure));

@@ -18,6 +18,9 @@ import { createIdentifier } from '@/lib/identifier';
 /** Web 平台的 API 地址；未配置时保持原有的离线演示行为。 */
 const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 
+/** 供二维码等资源直链使用；空字符串表示未启用 API。 */
+export const apiBaseUrl = baseUrl ?? '';
+
 /** When unset, the product keeps the original offline demo storage behavior. */
 export const isApiEnabled = Boolean(baseUrl);
 

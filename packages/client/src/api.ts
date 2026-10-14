@@ -4,8 +4,13 @@ import type {
   AuthUser,
   GuestImportRequest,
   GuestImportResponse,
+  IdentityInfo,
   PlayerWriteRequest,
   SimulationRequestBody,
+  WebLoginTicket,
+  WebLoginTicketStatus,
+  WechatExchangeResult,
+  WechatRegisterResult,
 } from './contracts';
 import { ApiError } from './errors';
 import type { Clock, HttpPort, StoragePort } from './ports';
@@ -23,6 +28,8 @@ export interface ApiTransport {
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
+  /** 额外请求头；用于浏览器绑定值等不能进入 URL 的敏感材料。 */
+  headers?: Record<string, string>;
 }
 
 export type RequestSender = <T>(path: string, init?: RequestOptions) => Promise<T>;
@@ -35,7 +42,7 @@ export function createRequestSender(transport: ApiTransport): RequestSender {
   const sessions = createSessionStore({ storage: transport.storage, clock: transport.clock });
 
   const request = async <T>(path: string, init?: RequestOptions): Promise<T> => {
-    if (!transport.baseUrl) throw new Error('VITE_API_BASE_URL is not configured');
+    if (!transport.baseUrl) throw new Error('API 地址未配置');
     const token = sessions.read()?.accessToken;
     const response = await transport.http.send({
       method: init?.method ?? 'GET',
@@ -43,6 +50,7 @@ export function createRequestSender(transport: ApiTransport): RequestSender {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init?.headers,
       },
       ...(init?.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     });
@@ -74,13 +82,23 @@ export interface ApiClient {
   register(credentials: AuthRequest): Promise<AuthSession>;
   login(credentials: AuthRequest): Promise<AuthSession>;
   currentUser(): Promise<AuthUser>;
+  wechatExchange(code: string): Promise<WechatExchangeResult>;
+  wechatBind(credentialToken: string, username: string, password: string): Promise<AuthSession>;
+  wechatRegister(credentialToken: string, username: string): Promise<WechatRegisterResult>;
+  listIdentities(): Promise<IdentityInfo[]>;
+  createWebLoginTicket(browserBinding: string): Promise<WebLoginTicket>;
+  webLoginTicketStatus(ticket: string, browserBinding: string): Promise<WebLoginTicketStatus>;
+  claimWebLoginTicket(ticket: string, browserBinding: string): Promise<AuthSession>;
+  confirmWebLoginTicket(ticket: string): Promise<void>;
+  rejectWebLoginTicket(ticket: string): Promise<void>;
   listPlayers(): Promise<Player[]>;
   createPlayer(player: PlayerWriteRequest): Promise<Player>;
   updatePlayer(id: string, player: PlayerWriteRequest): Promise<Player>;
   importGuestWorkspace(workspace: GuestImportRequest): Promise<GuestImportResponse>;
   listLineups(): Promise<Lineup[]>;
   saveLineup(lineup: Lineup): Promise<Lineup>;
-  listSimulations(): Promise<Simulation[]>;
+  listSimulations(offset?: number): Promise<Simulation[]>;
+  getSimulation(id: string): Promise<Simulation>;
   simulate(
     homeLineupId: string,
     awayLineupId: string,
@@ -102,6 +120,41 @@ export function createApiClient(transport: ApiTransport): ApiClient {
     login: (credentials) =>
       request<AuthSession>('/auth/login', { method: 'POST', body: credentials }),
     currentUser: () => request<AuthUser>('/auth/me'),
+    wechatExchange: (code) =>
+      request<WechatExchangeResult>('/auth/wechat/exchange', { method: 'POST', body: { code } }),
+    wechatBind: (credentialToken, username, password) =>
+      request<AuthSession>('/auth/wechat/bind', {
+        method: 'POST',
+        body: { credentialToken, username, password },
+      }),
+    wechatRegister: (credentialToken, username) =>
+      request<WechatRegisterResult>('/auth/wechat/register', {
+        method: 'POST',
+        body: { credentialToken, username },
+      }),
+    listIdentities: () => request<IdentityInfo[]>('/auth/identities'),
+    createWebLoginTicket: (browserBinding) =>
+      request<WebLoginTicket>('/auth/web-login-tickets', {
+        method: 'POST',
+        body: { browserBinding },
+      }),
+    webLoginTicketStatus: (ticket, browserBinding) =>
+      request<WebLoginTicketStatus>(`/auth/web-login-tickets/${encodeURIComponent(ticket)}`, {
+        headers: { 'X-Login-Ticket-Binding': browserBinding },
+      }),
+    claimWebLoginTicket: (ticket, browserBinding) =>
+      request<AuthSession>(`/auth/web-login-tickets/${encodeURIComponent(ticket)}/claim`, {
+        method: 'POST',
+        body: { browserBinding },
+      }),
+    confirmWebLoginTicket: (ticket) =>
+      request<void>(`/auth/web-login-tickets/${encodeURIComponent(ticket)}/confirm`, {
+        method: 'POST',
+      }),
+    rejectWebLoginTicket: (ticket) =>
+      request<void>(`/auth/web-login-tickets/${encodeURIComponent(ticket)}/reject`, {
+        method: 'POST',
+      }),
     // 这里的路径和请求体是前后端约定，具体表结构见数据库迁移文件。
     listPlayers: () => request<Player[]>('/players'),
     createPlayer: (player) => request<Player>('/players', { method: 'POST', body: player }),
@@ -115,7 +168,9 @@ export function createApiClient(transport: ApiTransport): ApiClient {
     saveLineup: (lineup) =>
       request<Lineup>(`/lineups/${lineup.id}`, { method: 'PUT', body: lineup }),
     // 服务端是云端比赛的权威计算方，并在同一事务中保存比分和球员统计。
-    listSimulations: () => request<Simulation[]>('/simulations?limit=30'),
+    listSimulations: (offset = 0) =>
+      request<Simulation[]>(`/simulations?limit=30&offset=${offset}`),
+    getSimulation: (id) => request<Simulation>(`/simulations/${encodeURIComponent(id)}`),
     simulate: (homeLineupId, awayLineupId, simulationMode, seed) =>
       request<Simulation>('/simulations', {
         method: 'POST',

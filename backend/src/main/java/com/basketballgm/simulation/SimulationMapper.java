@@ -92,9 +92,60 @@ public interface SimulationMapper {
       where simulation.owner_id = #{ownerId}
         and simulation.expires_at > now()
       order by simulation.created_at desc
-      limit #{limit}
+      limit #{limit} offset #{offset}
       """)
-  List<SimulationRow> list(@Param("ownerId") UUID ownerId, @Param("limit") int limit);
+  List<SimulationRow> list(@Param("ownerId") UUID ownerId, @Param("limit") int limit, @Param("offset") int offset);
+
+  @Select("""
+      select simulation.id::text as id,
+             home.client_key as "homeLineupId",
+             away.client_key as "awayLineupId",
+             simulation.home_lineup_name as "homeLineupName",
+             simulation.away_lineup_name as "awayLineupName",
+             simulation.random_seed as seed,
+             simulation.home_score as "homeScore",
+             simulation.away_score as "awayScore",
+             simulation.engine_version as "engineVersion",
+             simulation.created_at as "createdAt",
+             simulation.expires_at as "expiresAt"
+      from simulations simulation
+      join lineups home on home.id = simulation.home_lineup_id
+      join lineups away on away.id = simulation.away_lineup_id
+      where simulation.owner_id = #{ownerId}
+        and simulation.id = cast(#{id} as uuid)
+        and simulation.expires_at > now()
+      """)
+  SimulationRow findOwned(@Param("ownerId") UUID ownerId, @Param("id") String id);
+
+  @Select("""
+      select stat.simulation_id::text as "simulationId",
+             stat.side,
+             coalesce(player.catalog_key, player.id::text) as "playerId",
+             stat.player_name as "playerName",
+             stat.player_initials as "playerInitials",
+             stat.player_accent as "playerAccent",
+             stat.minutes,
+             stat.points,
+             stat.rebounds,
+             stat.assists,
+             stat.steals,
+             stat.blocks,
+             stat.fg_made as "fgMade",
+             stat.fg_attempted as "fgAttempted",
+             stat.three_made as "threeMade",
+             stat.three_attempted as "threeAttempted"
+      from simulation_player_stats stat
+      join simulations simulation on simulation.id = stat.simulation_id
+      join players player on player.id = stat.player_id
+      where simulation.owner_id = #{ownerId}
+        and simulation.id = cast(#{simulationId} as uuid)
+        and simulation.expires_at > now()
+      order by stat.side, stat.points desc
+      """)
+  List<SimulationStatRow> listStatsForSimulation(
+      @Param("ownerId") UUID ownerId,
+      @Param("simulationId") String simulationId
+  );
 
   @Select("""
       select stat.simulation_id::text as "simulationId",
@@ -124,13 +175,14 @@ public interface SimulationMapper {
           where recent.owner_id = #{ownerId}
             and recent.expires_at > now()
           order by recent.created_at desc
-          limit #{limit}
+          limit #{limit} offset #{offset}
         )
       order by simulation.created_at desc, stat.side, stat.points desc
       """)
   List<SimulationStatRow> listStats(
       @Param("ownerId") UUID ownerId,
-      @Param("limit") int limit
+      @Param("limit") int limit,
+      @Param("offset") int offset
   );
 
   @Select("select pg_try_advisory_xact_lock(2026091603)")

@@ -74,6 +74,16 @@ describe('guest workspace', () => {
     expect(restored).toEqual(loaded);
   });
 
+  it('peek 只读查询：不存在时不创建工作区，存在时返回内容', () => {
+    const repository = createGuestWorkspaceRepository(deps());
+    expect(repository.peek()).toBeNull();
+    expect(storage.dump()).toEqual([]);
+
+    const saved = repository.load();
+    expect(repository.peek()?.id).toBe(saved.id);
+    expect(storage.dump()).toEqual([GUEST_WORKSPACE_KEY]);
+  });
+
   it('marks user changes as progress and clears the imported workspace', () => {
     const repository = createGuestWorkspaceRepository(deps());
     const original = repository.load();

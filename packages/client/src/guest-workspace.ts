@@ -41,6 +41,8 @@ export interface GuestWorkspaceDeps {
 
 export interface GuestWorkspaceRepository {
   load(): GuestWorkspace;
+  /** 只读查询：没有已保存的工作区时返回 null，不创建新工作区（也不触发随机标识符）。 */
+  peek(): GuestWorkspace | null;
   savePlayers(players: Player[], markUserProgress?: boolean): GuestWorkspace;
   saveLineups(lineups: Lineup[], markUserProgress?: boolean): GuestWorkspace;
   saveSimulations(simulations: Simulation[], markUserProgress?: boolean): GuestWorkspace;
@@ -89,6 +91,10 @@ export function createGuestWorkspaceRepository(deps: GuestWorkspaceDeps): GuestW
 
   return {
     load,
+    peek() {
+      const saved = deps.storage.getItem(GUEST_WORKSPACE_KEY);
+      return saved ? (JSON.parse(saved) as GuestWorkspace) : null;
+    },
     savePlayers(players, markUserProgress = true) {
       return updateWorkspace({ players }, markUserProgress);
     },

@@ -17,6 +17,20 @@ app:
   auth:
     jwt-secret: ${JWT_SECRET:}
     token-ttl: ${JWT_TOKEN_TTL:PT8H}
+  wechat:
+    # Mini program credentials stay server-side; an empty pair disables the WeChat endpoints
+    # with an explicit WECHAT_NOT_CONFIGURED error while password login keeps working.
+    appid: ${WECHAT_MINI_APPID:}
+    secret: ${WECHAT_MINI_SECRET:}
+    api-base-url: ${WECHAT_API_BASE_URL:https://api.weixin.qq.com}
+    qrcode-env-version: ${WECHAT_QRCODE_ENV_VERSION:release}
+    credential-ttl: ${WECHAT_CREDENTIAL_TTL:PT10M}
+    credential-per-hour: ${WECHAT_CREDENTIAL_PER_HOUR:10}
+    bind-attempts: ${WECHAT_BIND_ATTEMPTS:5}
+    ticket-ttl: ${WECHAT_TICKET_TTL:PT5M}
+    ticket-per-hour: ${WECHAT_TICKET_PER_HOUR:30}
+    ticket-global-per-hour: ${WECHAT_TICKET_GLOBAL_PER_HOUR:500}
+    exchange-per-minute: ${WECHAT_EXCHANGE_PER_MINUTE:60}
   admin:
     # Comma-separated usernames allowed to delete any community post or comment.
     usernames: ${FORUM_ADMIN_USERNAMES:}
