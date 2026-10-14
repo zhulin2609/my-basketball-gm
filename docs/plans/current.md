@@ -262,6 +262,7 @@ mvn test
 
 ## Progress
 
+- changes committed（kimi，2026-10-14）：阶段 4 实施与审查修复已提交并推送至 `origin/mini-app-20261004`：`ad1c4fc`（共享审查流程与审查记录）、`6d82141`（阶段 4 实现与审查修复）。推送前完整运行 `npm test`（124 项）与 `mvn test`（73 项）均通过，两个待推送提交经 Gitleaks 扫描，命中项均为已核对的文案、类型声明与测试占位。
 - review fixes complete（kimi，2026-10-14）：按 `.agents/skills/code-review` 流程核验 Codex 第一轮 17 项发现（`docs/reviews/wechat-login-stage4/`）。全部确认成立或部分成立后修复：浏览器绑定值移出 URL、数据源切换隔离与重试生命周期、保存期间编辑保护、401 与刷新失败同步页面状态、auth 页不随加载卸载、导入后清理游客草稿、游客进度只读查询、并发绑定幂等、过期与状态原子化、Web 领取终态与图片失败反馈、用户名汉字范围统一（V15）、战报分页与按 ID 详情、限频加固、测试边界说明、计划状态修正。后端 73 项、前端测试与四包 typecheck 通过；报告与清单更新见 Validation。
 - bugfix complete（kimi，2026-10-14，登录后账号数据不刷新）：用户真机验收 M01/M02 时发现登录并导入游客进度后「我的」页显示 0 套阵容 0 场战报，进入战报页再返回才正常。定位为时序问题：`loginWithSession` 切换账号数据源时加载的是导入前的账号数据，`importGuestProgress` 绕过数据源直写服务器后快照未刷新，账号页也没有切回刷新。修复：`importGuestProgress` 成功后等待 `refreshRuntimeAsync` 再进入页面；账号页增加 `useDidShow` 刷新。新增 refreshAsync 回归测试（账号数据源经真实本地 HTTP 服务器刷新取得新数据），全部 120 项前端测试、四包 typecheck、小程序构建与格式检查通过。
 - implementation complete（kimi，2026-10-13，阶段 4）：用户授权后按 Plan 第 4 节实施。后端新增 V14 迁移、微信认证与扫码票据模块；core 增加共享用户名规则；client 增加微信与票据 API；小程序新增 auth 页、账号数据源与会话切换；Web 登录页新增扫码登录。`mvn test` 63 项、`npm test` 119 项、四包 typecheck、两端构建、格式与差异检查通过；本地真实进程冒烟通过。真实微信联调待凭据与设备条件。
