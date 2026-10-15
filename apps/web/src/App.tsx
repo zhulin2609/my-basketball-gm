@@ -1134,7 +1134,7 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
             <input
               autoComplete="username"
               maxLength={32}
-              minLength={3}
+              minLength={2}
               onChange={(event) => setUsername(event.target.value)}
               pattern={USERNAME_PATTERN_SOURCE}
               required

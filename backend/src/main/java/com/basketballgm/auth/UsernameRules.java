@@ -6,7 +6,7 @@ package com.basketballgm.auth;
  * All allowed characters are in the BMP, so Java char counting matches Unicode code points.
  */
 public final class UsernameRules {
-  public static final String PATTERN = "^[\\u4e00-\\u9fffA-Za-z0-9_\\-]{3,32}$";
+  public static final String PATTERN = "^[\\u4e00-\\u9fffA-Za-z0-9_\\-]{2,32}$";
 
   private UsernameRules() {}
 }

@@ -8,9 +8,11 @@ describe('isValidUsername', () => {
     expect(isValidUsername('球员Player_01-甲')).toBe(true);
   });
 
-  it('按字符数执行 3–32 长度规则', () => {
-    expect(isValidUsername('张三')).toBe(false);
-    expect(isValidUsername('ab')).toBe(false);
+  it('按字符数执行 2–32 长度规则', () => {
+    expect(isValidUsername('张')).toBe(false);
+    expect(isValidUsername('a')).toBe(false);
+    expect(isValidUsername('张三')).toBe(true);
+    expect(isValidUsername('ab')).toBe(true);
     expect(isValidUsername('张'.repeat(32))).toBe(true);
     expect(isValidUsername('张'.repeat(33))).toBe(false);
   });

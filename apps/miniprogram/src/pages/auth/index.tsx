@@ -115,7 +115,7 @@ function AuthContent() {
     if (state.step !== 'choose' || submitting) return;
     const { credentialToken } = state;
     if (!isValidUsername(username)) {
-      setFormError('用户名需要 3–32 位汉字、字母、数字、下划线或连字符');
+      setFormError('用户名需要 2–32 位汉字、字母、数字、下划线或连字符');
       return;
     }
     setSubmitting(true);
@@ -190,7 +190,7 @@ function AuthContent() {
             type="nickname"
             value={username}
             maxlength={32}
-            placeholder="3–32 位汉字、字母、数字、下划线或连字符"
+            placeholder="2–32 位汉字、字母、数字、下划线或连字符"
             onInput={(event) => setUsername(event.detail.value)}
           />
           {bindMode && (

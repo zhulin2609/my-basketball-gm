@@ -64,6 +64,12 @@ class AuthApiTest {
   }
 
   @Test
+  void acceptsTwoCharacterUsernames() throws Exception {
+    register("ab" + USER_PREFIX.substring(0, 6), 201, null);
+    register("张三" + USER_PREFIX.substring(0, 6), 201, null);
+  }
+
+  @Test
   void rejectsUsernamesOutsideTheAllowedCharacterSet() throws Exception {
     register("한국어用户", 400, "username 字段不合法。");
     register("张三😀", 400, "username 字段不合法。");

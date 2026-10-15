@@ -204,3 +204,32 @@ Date: 2026-10-14
 ### Affected Areas
 
 `backend/src/test/java`（微信与票据相关测试）、`apps/miniprogram/src/services/account-store.test.ts`、`packages/client/src/api-wechat.test.ts`、`apps/web/src/scan-login.test.tsx`、验收记录。
+
+## D-007 — 用户名长度下限调整为 2 个字符
+
+Status: Active
+Date: 2026-10-15
+
+### Context
+
+D-005 确定的用户名规则为 3–32 个字符。3 字下限沿袭自 ASCII 时代的英文社区惯例；中文姓名两字形态非常常见（张三、李四），用户验收 M03 时确认该下限与中文使用习惯冲突。唯一性、保留名与字符集约束已经承担了真正的约束作用，长度下限在当前产品没有公共命名空间压力。
+
+### Decision
+
+用户名规则调整为 2–32 个字符，字符集不变（汉字 U+4E00–U+9FFF、英文字母、数字、下划线、连字符）。用户于 2026-10-15 明确要求执行该调整。此决定替代 D-005 中用户名长度下限的部分，D-005 的其余内容继续有效。
+
+### Alternatives
+
+保持 3 字下限；放宽到 1 字。
+
+### Why Rejected
+
+3 字下限强迫两字中文名加字凑数；1 字可区分性太差且重名体验差。
+
+### Consequences
+
+`packages/core/src/username.ts`、后端 `UsernameRules`、数据库约束（V16 迁移）与两端表单提示统一为 2–32；边界测试覆盖 2 字合法与 1 字非法。若未来出现公开 @提及或用户主页地址，短名字稀缺性需作为独立产品决策重新评估。
+
+### Affected Areas
+
+`packages/core/src/username.ts`、`backend/src/main/java/com/basketballgm/auth/UsernameRules.java`、`backend/src/main/resources/db/migration/V16__username_min_length_two.sql`、Web 与小程序用户名输入及提示、相关测试。
