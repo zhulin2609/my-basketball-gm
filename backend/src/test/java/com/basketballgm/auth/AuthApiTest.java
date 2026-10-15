@@ -1,5 +1,6 @@
 package com.basketballgm.auth;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,6 +37,8 @@ class AuthApiTest {
   @AfterEach
   void cleanUsers() {
     jdbcTemplate.update("delete from users where username like ?", USER_PREFIX + "%");
+    // acceptsTwoCharacterUsernames 的用例名无法携带随机前缀（那会使长度不再是 2），按名精确清理。
+    jdbcTemplate.update("delete from users where username in ('张三', 'ab')");
   }
 
   @Test
@@ -65,8 +68,14 @@ class AuthApiTest {
 
   @Test
   void acceptsTwoCharacterUsernames() throws Exception {
-    register("ab" + USER_PREFIX.substring(0, 6), 201, null);
-    register("张三" + USER_PREFIX.substring(0, 6), 201, null);
+    // 真实边界：恰好两个字符的中文与 ASCII 用户名，注册成功且记录持久化。
+    jdbcTemplate.update("delete from users where username in ('张三', 'ab')");
+    register("张三", 201, null);
+    register("ab", 201, null);
+    Integer persisted = jdbcTemplate.queryForObject(
+        "select count(*) from users where username in ('张三', 'ab')", Integer.class);
+    assertEquals(2, persisted.intValue());
+    register("张三", 409, "用户名已被占用。");
   }
 
   @Test
@@ -101,6 +110,25 @@ class AuthApiTest {
         DataIntegrityViolationException.class,
         () -> jdbcTemplate.update("insert into users (username) values (?)", "球员ꀀ鿿")
     );
+
+    // 数据库直接覆盖长度边界：2 与 32 合法，1 与 33 非法。
+    org.junit.jupiter.api.Assertions.assertThrows(
+        DataIntegrityViolationException.class,
+        () -> jdbcTemplate.update("insert into users (username) values (?)", "两")
+    );
+    String longest = "长".repeat(32);
+    jdbcTemplate.update("insert into users (username) values (?)", longest);
+    jdbcTemplate.update("delete from users where username = ?", longest);
+    org.junit.jupiter.api.Assertions.assertThrows(
+        DataIntegrityViolationException.class,
+        () -> jdbcTemplate.update("insert into users (username) values (?)", "长".repeat(33))
+    );
+
+    // 恰好两个字符的注册值在数据库层合法；使用后精确清理。
+    jdbcTemplate.update("delete from users where username in ('张三', 'ab')");
+    jdbcTemplate.update("insert into users (username) values (?)", "张三");
+    jdbcTemplate.update("insert into users (username) values (?)", "ab");
+    jdbcTemplate.update("delete from users where username in ('张三', 'ab')");
   }
 
   private void register(String username, int expectedStatus, String expectedMessage) throws Exception {

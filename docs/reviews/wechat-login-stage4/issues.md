@@ -3,12 +3,12 @@
 ## 当前任务
 
 - Task：`wechat-login-stage4`。
-- 当前版本审查结论：`CHANGES_REQUIRED`；第五轮最后一次定向复核完成，VERIFIED 16、OPEN 4，无新增问题。
-- Reviewed Commit：`N/A`；HEAD / 本轮比较基线：`024f7f4c472b0845928a144abd086d8cffd0bbd0`；Snapshot ID：`wechat-stage4-round05-20261014`，输入与摘要保存在 `.cache/code-review-round05/input/` 和 `snapshot.json`。
-- 汇总负责人：Codex，`codex-stage4-round05-20261014`；用户确认 Kimi 已停止写入，可由 Codex 接管。
-- 报告列表：[第一轮 Codex 历史报告](round-01-codex.md)、[第二轮 Kimi 核验与修复报告](round-02-kimi.md)、[第三轮 Codex 复核报告](round-03-codex.md)、[第四轮 Kimi 核验与修复报告](round-04-kimi.md)、[第五轮 Codex 最终定向复核](round-05-codex.md)。
+- 当前任务汇总结论：`CHANGES_REQUIRED`；第八轮对 I021–I023 的定向复核为 `PASS`，三项已 VERIFIED；round-05 遗留的 I004、I007、I016、I017 保持 OPEN，本轮未复核，未获风险接受或延期批准。
+- Reviewed Commit：`N/A`；HEAD 为 `5450385c5c3b9bdff1950613acd889dcd979e3a7`，修复后未提交输入绑定 Snapshot `wechat-stage4-round08-20261016`；内容及摘要见 [第八轮报告](round-08-codex.md)。
+- 汇总负责人：Codex，任务标识 `codex-stage4-round08-20261016`；本轮已结束，后续写入须取得新的任务授权。
+- 报告列表：[第一轮 Codex 历史报告](round-01-codex.md)、[第二轮 Kimi 核验与修复报告](round-02-kimi.md)、[第三轮 Codex 复核报告](round-03-codex.md)、[第四轮 Kimi 核验与修复报告](round-04-kimi.md)、[第五轮 Codex 最终定向复核](round-05-codex.md)、[第六轮 Codex 审查](round-06-codex.md)、[第七轮 Kimi 修复记录](round-07-kimi.md)、[第八轮 Codex 最终定向复核](round-08-codex.md)。
 - 当前入口：[REVIEW_FEEDBACK.md](../../REVIEW_FEEDBACK.md)。
-- 后续处置：按用户要求结束本轮，不自动开展下一轮。剩余 I004、I007、I016、I017 保持 OPEN，未获风险接受或延期批准；真实微信及设备验收仍独立保留。
+- 后续处置：本次复核结束，不自动修复或继续审查；历史四项 OPEN 与平台验收由用户另行安排。
 
 ## 历史报告导入说明
 
@@ -26,14 +26,14 @@
 - 迁移时核实的 branch、HEAD 与上述值相同；此信息不能证明未提交代码仍与历史审查输入一致。
 - 规范符合情况：作为第一轮历史报告导入，保留原始格式及版本证据缺口；本次没有按新规范重新执行该轮审查。
 
-原报告中的“本次执行的验证”“已核对的实现”和“当前不可以进入真机验收”均属于 2026-10-13 的历史记录。历史结论要求修复后再进入验收，按新术语对应 `CHANGES_REQUIRED`；此映射仅描述原报告结论。当前版本结论来自第五轮定向复核。
+原报告中的“本次执行的验证”“已核对的实现”和“当前不可以进入真机验收”均属于 2026-10-13 的历史记录。历史结论要求修复后再进入验收，按新术语对应 `CHANGES_REQUIRED`；此映射仅描述原报告结论。I001–I020 保留第五轮及其引用报告的结论，I021–I023 采用第八轮复核结论。
 
 ## 状态与字段约定
 
-历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED。第五轮核验后更新如下，前四轮报告原文保留。
+历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED；第五轮核验后为 16 VERIFIED、4 OPEN。第六轮新增三项，第七轮标记待复核，第八轮全部验证通过。当前总计 23 项，历史报告原文保留。
 
 - `OPEN`：4。
-- `VERIFIED`：16。
+- `VERIFIED`：19。
 - `FIXED_PENDING_REVIEW`、`NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED`：均为 0。
 
 以下通用字段适用于 I001–I020；各项的状态、来源和具体证据见对应条目：
@@ -226,6 +226,33 @@
 - 来源：[round-03-codex.md · R12](round-03-codex.md)。
 - 证据：真实目标版本 API 对携带 X-Login-Ticket-Binding 的预检返回 403 Invalid CORS request，允许列表仅含 Content-Type、Authorization；影响跨域扫码查询与领取，同源代理不受此条件影响。
 - 第四轮修复：见 [round-04-kimi.md](round-04-kimi.md) R12 条目；`WebConfig` 允许该受控请求头，来源限制保持不变。
+
+### I021 · minor · 后端两字符边界测试未提交真实两字符用户名
+
+- 状态：`VERIFIED`（2026-10-16，Codex 第八轮复核通过；2026-10-15 Kimi 标记 FIXED_PENDING_REVIEW）。
+- 修复 / 复核版本：`wechat-stage4-round08-20261016`；修复执行 Kimi Code，复核 Codex，报告见 [round-08-codex.md](round-08-codex.md)。
+- 第八轮证据：实际两字符中文/ASCII 注册、持久化及重复 409；数据库长度 1/2/32/33 和原有字符边界断言通过。定向测试连续两次各 7 项，完整后端 77 项通过。
+- 来源：[round-06-codex.md · R01](round-06-codex.md)。
+- 证据：原测试给两字用户名追加随机前缀，实际长度 8，无法覆盖下限；修复后注册恰好两个字符的中文与 ASCII 用户名并断言持久化与重复 409。
+- 修复记录：见 [round-07-kimi.md](round-07-kimi.md) R01 条目。
+
+### I022 · major · 新增注册测试候选耗尽且清理条件不匹配
+
+- 状态：`VERIFIED`（2026-10-16，Codex 第八轮复核通过；2026-10-15 Kimi 标记 FIXED_PENDING_REVIEW）。
+- 修复 / 复核版本：`wechat-stage4-round08-20261016`；修复执行 Kimi Code，复核 Codex，报告见 [round-08-codex.md](round-08-codex.md)。
+- 第八轮证据：同一独占隔离 PostgreSQL 库连续执行两次 AuthApiTest，均通过；每次及完整后端测试结束后，固定两字符及 32 字符用例残留均为 0。只支持独占测试资源的串行执行范围。
+- 来源：[round-06-codex.md · R02](round-06-codex.md)。
+- 证据：截断前缀只有 16 个候选且清理前缀不匹配；修复后测试开始与结束均按名精确清理，同一测试库连续两次执行通过且无残留。
+- 修复记录：见 [round-07-kimi.md](round-07-kimi.md) R02 条目。
+
+### I023 · minor · 架构文档仍声明用户名 3–32
+
+- 状态：`VERIFIED`（2026-10-16，Codex 第八轮复核通过；2026-10-15 Kimi 标记 FIXED_PENDING_REVIEW）。
+- 修复 / 复核版本：`wechat-stage4-round08-20261016`；修复执行 Kimi Code，复核 Codex，报告见 [round-08-codex.md](round-08-codex.md)。
+- 第八轮证据：ARCHITECTURE.md 第 68 行为 2–32 并引用 D-007，与当前规则及产品文档一致；历史报告及迁移原文保留。
+- 来源：[round-06-codex.md · R03](round-06-codex.md)。
+- 证据：`docs/ARCHITECTURE.md` 第 68 行保留旧下限；已更新为 2–32 并引用 D-007，历史迁移与历史报告保持原文。
+- 修复记录：见 [round-07-kimi.md](round-07-kimi.md) R03 条目。
 
 ## 第三轮验证
 
