@@ -1,12 +1,16 @@
 # Current Plan
 
-更新时间：2026-10-16（Asia/Shanghai）
+更新时间：2026-10-17（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
 
-本轮任务：`wechat-login-stage4-round08-review`。按用户要求，对第七轮 Kimi 修复的 I021–I023 及直接相关回归执行当前变更的最后一轮复核。输入为 HEAD `5450385c5c3b9bdff1950613acd889dcd979e3a7` 上的未提交快照 `wechat-stage4-round08-20261016`，保存于 `.cache/code-review-round08/input/`，清单为 `.cache/code-review-round08/snapshot.json`。仅更新第八轮报告、问题清单、入口及本计划；完成后停止，不自动修复或开启后续轮次。
+本轮任务：`wechat-password-form-20261017`。用户授权实现小程序绑定错误保留表单、原位置重新验证微信身份，以及 Web 登录/注册与小程序绑定共用各端的 PasswordInput 控件。密码默认隐藏，可切换显示；错误后保留输入，切换不提交表单，保持焦点与选区。绑定请求与登录后数据加载分别处理，后端区分密码错误、凭证失效和次数耗尽。此前 M06 临时解绑和备份保留，恢复另待用户指令。交出工作时执行 `.agents/skills/handoff/SKILL.md`。
+
+2026-10-16 的 Codex 接手核验已完成，Owner 为 codex，状态为 ACTIVE；接手证据及历史任务保留如下。
+
+第八轮历史任务：`wechat-login-stage4-round08-review`，已完成。按用户要求，对第七轮 Kimi 修复的 I021–I023 及直接相关回归执行当前变更的最后一轮复核。输入为 HEAD `5450385c5c3b9bdff1950613acd889dcd979e3a7` 上的未提交快照 `wechat-stage4-round08-20261016`，保存于 `.cache/code-review-round08/input/`，清单为 `.cache/code-review-round08/snapshot.json`。仅更新第八轮报告、问题清单、入口及本计划；完成后停止，不自动修复或开启后续轮次。
 
 第五轮历史任务：`wechat-login-stage4-round05-review`，已完成；输入快照 `wechat-stage4-round05-20261014` 保存于 `.cache/code-review-round05/input/`。其审查范围和验证证据继续以第五轮报告为准。以下保留实施任务背景与尚未完成的平台验收。
 
@@ -14,27 +18,51 @@
 
 ## Status
 
-DONE（第八轮最终定向复核）；I021–I023 全部 VERIFIED，本轮范围结论 PASS。阶段 4 产品验收保持 VALIDATING，任务汇总结论仍为 CHANGES_REQUIRED：19 VERIFIED、4 OPEN。历史 I004、I007、I016、I017 保持 OPEN，本轮范围之外。按用户要求停止，不自动开启后续轮次。
+ACTIVE
 
-第五轮核验第四轮未提交修复后，I004、I007、I016、I017 保持 OPEN，其余 16 项 VERIFIED；平台验收未完成，未获得风险接受批准。下方历史实施记录保留其原始声明；本轮事实与范围见第八轮报告。
+本轮密码控件与绑定错误处理已实现，自动化验证见本轮 Validation；小程序开发者工具页面验证未通过，真机键盘、选区与 M06 复验仍待完成。阶段 4 审查记录保留为 19 VERIFIED、4 OPEN（I004、I007、I016、I017，未获风险接受或延期批准）。用户此前真机验收 M01–M04 通过。第八轮复核 DONE 的记录保留。Kimi Code 的交接记录明确停止写入；用户于 2026-10-16 确认 ZCode 已停止写入，Codex 已取得当前工作区写入归属。
+
+历史状态说明（保留）：第五轮核验第四轮未提交修复后，I004、I007、I016、I017 保持 OPEN，其余 16 项 VERIFIED；平台验收未完成，未获得风险接受批准。第八轮最终定向复核 DONE，I021–I023 全部 VERIFIED，该轮范围结论 PASS；阶段 4 产品验收保持 VALIDATING，任务汇总结论仍为 CHANGES_REQUIRED：19 VERIFIED、4 OPEN。
 
 ## Owner
 
 - Owner: codex
-- Instance: codex-stage4-round08-20261016
-- Last Writing Agent: Kimi Code，kimi-stage4-round07-20261015；第七轮修复记录已交付待独立复核，用户于 2026-10-16 将本轮交由 Codex 复核。
+- Instance: codex-stage4-takeover-20261016-01a1421b
+- Last Writing Agent: codex，codex-stage4-takeover-20261016-01a1421b；继续持有当前工作区写入归属。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
 - Branch: mini-app-20261004
-- Base Commit: 5450385c5c3b9bdff1950613acd889dcd979e3a7（本轮接管起点；审查包含第七轮未提交修复）
-- Write Scope: 本工作区 round-08-codex.md、issues.md、docs/REVIEW_FEEDBACK.md、本计划；验证辅助文件与日志仅写 Git 忽略目录，数据库使用本轮独立库。业务代码、测试、架构文档、配置、历史报告和验收表保持原样；不提交、不推送。
+- Base Commit: 03c11587a11c28336693d64ee6f8e5d77e1a9a10（本轮密码表单任务；阶段 4 历史基线保留在历史记录中）
+- Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
+- Write Scope: 两端 PasswordInput、认证页面与相关样式/文案，小程序认证请求服务，后端微信绑定错误与次数处理，针对性测试及状态文档。验证使用独立测试数据库和 Git 忽略的辅助目录；保留验收表与绑定备份。用户已授权提交本轮变更并推送当前分支，不自动恢复用户绑定。Owner 继续为 codex。
 
 ## Goal
 
-本轮目标：独立复核 I021 的真实两字符及数据库边界测试、I022 的重复执行与清理、I023 的当前架构说明，记录实际验证与结论。产品目标及历史实施记录保留如下。
+本轮目标：用户在原表单完成错误修改与重试，两端账号密码输入使用统一交互控件；验证正确密码、错误密码、凭证到期、次数耗尽、网络失败、重复提交与可见性切换。此前 M06 解绑准备、第八轮复核与 Codex 接手证据保留。
 
 按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+### 密码输入与绑定错误处理（2026-10-17）
+
+- [ ] Web 登录/注册与小程序绑定使用各端 PasswordInput，默认隐藏、可切换、禁用与错误样式一致；切换模式或重新进入时恢复隐藏。
+- [ ] 绑定密码错误、冲突及网络失败保留输入；修改字段清除普通错误，凭证失效或次数耗尽在原位置重新验证微信，保留输入且不自动提交。
+- [x] 区分认证失败与认证成功后的数据加载失败，小程序提交使用同步锁并禁用按钮。
+- [x] 执行真实项目 API/PostgreSQL 验证、控件交互测试、四包 typecheck、两端构建和相关格式检查；平台证据与自动化结果分开记录。
+
+### M06 真机验收准备（2026-10-17）
+
+- [x] 核验本地 Docker 数据库、服务连接、小程序构建地址及身份表约束。
+- [x] 确认当前唯一微信绑定对应的账号与用户期望一致。
+- [x] 备份原绑定，精确删除一条记录并核验业务数据保留。
+- [ ] 用户执行真机密码错误及正确输入验证；恢复原绑定另按用户指令执行。
+
+### Codex 接手核验（2026-10-16）
+
+- [x] 按 `AGENTS.md → docs/AI_HANDOFF.md → docs/plans/current.md → Git verification` 核验，并读取 canonical handoff Skill。
+- [x] 核对相关实现与历史审查状态，保留四项 OPEN 和未完成的平台验收。
+- [x] 取得 ZCode 停止写入的用户确认，结合 Kimi 交接声明，将 Owner 设为 codex、状态设为 ACTIVE。
+- [x] 记录类型检查、文档检查和 Git 核验结果；业务代码及既有文件修改保持原样。
 
 ### 第八轮最终定向复核
 
@@ -119,6 +147,10 @@ DONE（第八轮最终定向复核）；I021–I023 全部 VERIFIED，本轮范�
 
 ## Plan
 
+### 当前密码表单任务
+
+本轮实施顺序：拆分认证失败与登录后失败 → 新增两端 PasswordInput → 原表单保留输入与错误提示 → 原位置重新验证微信 → 原子记录失败次数并返回明确错误码 → 真实 API、控件与构建验证。实现已完成；平台验证限制见 Validation。正式交出工作时执行 `.agents/skills/handoff/SKILL.md`，刷新交接索引并释放 Owner。
+
 ### 第八轮复核安排
 
 固定输入 → 检查修复与相关调用 → 在独立 PostgreSQL 数据库执行定向测试及重复运行 → 核对文档和类型检查 → 更新报告与状态 → 检查快照、清理本轮资源并停止。
@@ -156,6 +188,12 @@ DONE（第八轮最终定向复核）；I021–I023 全部 VERIFIED，本轮范�
 实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
+
+2026-10-17，密码表单修复：Web 登录和注册复用 Web PasswordInput，小程序绑定使用 Taro PasswordInput；默认隐藏、显示切换、禁用和错误提示由控件负责。小程序认证请求移到 `services/account-auth.ts`，普通失败保留输入，编辑清除普通错误；凭证失效或次数耗尽提供原位置重新验证，重新验证成功后等待用户再次提交。认证成功后的加载失败使用独立提示。后端第五次错误立即返回 `CREDENTIAL_ATTEMPTS_EXCEEDED`，更新次数与消费凭证在同一条条件 SQL 中完成。具体证据与未验证范围见本轮 Validation；没有执行独立审查，合并前仍须按 canonical code-review Skill 进行。
+
+2026-10-17，M06 准备完成：用户确认目标后，在本地 Compose PostgreSQL 精确删除一条微信绑定，事务已提交；独立连接核验目标绑定为 0。原始记录备份位于 `.cache/m06-unbind-20261017/identity-backup.csv`，目录权限 700、文件权限 600，已被 Git 忽略。备份导入临时表后完整记录摘要匹配。删除事务内 users、lineups、simulations 全表内容摘要未变化；全库仍有 5 个用户、27 套阵容、47 场战报。用户自行执行真机 M06，结果待反馈；恢复原绑定须按用户后续指令执行，并处理测试产生的新绑定冲突。
+
+2026-10-16，Codex 接手：分支 `mini-app-20261004`，HEAD `03c11587a11c28336693d64ee6f8e5d77e1a9a10`；本地 `origin/mini-app-20261004` 引用与 HEAD 一致，未查询远端实时状态。接手前仅两份交接文档未提交、验收表未跟踪，暂存区为空，与 Kimi 交接一致。当前源码的 core、Java 和 V16 用户名规则均为 2–32 字符；已核对小程序账号数据源、直接身份/详情请求、游客导入清理和生产构建地址校验。四项 OPEN 继续保留，本次没有执行新一轮审查或平台验收。`docs/AI_HANDOFF.md` 的验证结果属于 Kimi 交出时记录，本次执行结果见下方 Codex 接手验证。
 
 2026-10-16，第八轮复核完成：I021–I023 全部 VERIFIED。两次定向后端测试各 7 项、完整后端 77 项、core 用户名 5 项与四包 typecheck 通过；每次定向运行及完整后端运行后，固定两字符及 32 字符测试值的数据库残留均为 0。细节、范围与快照见 [第八轮报告](../reviews/wechat-login-stage4/round-08-codex.md)。历史四项 OPEN 与平台验收保持原状态。
 
@@ -298,6 +336,16 @@ mvn test
 
 ## Progress
 
+2026-10-17，本轮实现与自动化验证完成：前端 132 项、后端 80 项、真实 API 小程序服务 2 项、Web 真实浏览器交互通过。小程序开发者工具在独立项目中出现连接超时和 `page node not found`，未获得完整页面交互证据；不将服务测试或构建结果作为真机验收结论。
+
+2026-10-17，本地开发服务更新完成：Docker Web/API 镜像已重建并启动，三个服务 healthy；小程序最终产物指向现有局域网地址。开发库数量仍为 5 个用户、27 套阵容、47 场战报、0 条微信绑定，原备份保留。独立开发者工具项目和测试运行进程已关闭；测试数据库与忽略目录保留验证材料。当前状态为 ACTIVE，Owner 为 codex，继续由上述实例负责。
+
+2026-10-17，M06 preparation complete：用户确认当前唯一微信绑定为本次目标。已备份并在带行数、账号和完整绑定摘要检查的事务中删除，提交后独立连接复核通过；备份恢复到临时表后与原记录摘要一致。业务数据保留，等待用户真机反馈。
+
+2026-10-17，M06 investigation complete：本地 Docker 的 API 连接 `postgres:5432/basketball_gm`，小程序当前构建地址的健康接口返回成功。核验时唯一微信绑定所属账号有 0 套阵容、0 场战报；全库有 5 个用户、27 套阵容、47 场战报。身份表不存在被其他表引用的外键或自定义 trigger。
+
+2026-10-16，takeover complete（codex）：用户确认“ZCode 已停止写入，可以接手”；重新核验 Git 与文档未发生变化后，将 Owner 设为 codex、状态设为 ACTIVE。接手写入范围仅为本计划，保留 Kimi 交接索引和用户验收表。
+
 2026-10-16，用户真机验收记录：M01（新微信免密码创建账号）、M02（新账号自动导入游客进度）、M03（用户名规则）、M04（退出与重新登录）通过（用户明确反馈）；其余验收用例保持 NOT RUN。
 
 2026-10-16，第八轮 validation complete / task complete：I021–I023 三项独立复核通过；更新问题清单与入口为 19 VERIFIED、4 OPEN。按用户要求本轮结束，不自动修复或启动后续轮次。
@@ -365,6 +413,8 @@ mvn test
 
 ## Open Questions
 
+- M06 真机结果待用户反馈；目标账号已获用户确认，解绑准备完成。测试后是否恢复原绑定及恢复时机等待用户指令，具体微信标识和原始绑定仅保存在本地忽略的受限备份文件中。
+
 - 第八轮输入中的 current plan 顶部仍为第五轮，AI_HANDOFF 仍引用第四轮及旧 HEAD；第七轮新增 Progress 已读取。本轮以实际 Git 和固定快照建立复核状态，历史交接不作为当前事实；I017 不重新审查。
 - 第八轮输入 issues.md 顶部为待复核状态，但状态计数仍为第五轮的 20 项；本轮收尾按全部 23 项核对当前入口和计数，历史逐项结论保留。
 
@@ -389,6 +439,43 @@ mvn test
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### 密码输入与绑定错误处理（2026-10-17）
+
+- `npm test`：PASS；26 个文件、132 项测试，包含新增 4 项 PasswordInput 交互测试。既有 App 测试的密码标签查询改为完整匹配，以区分输入框和新增显示按钮。
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/password_form_20261017 mvn -Djava.io.tmpdir=../.cache/java-tmp -Dtest=WechatAuthApiTest test`（backend）：PASS；14 项，包含新增 3 项真实 HTTP 测试，验证错误后正确重试、最后一次失败立即耗尽、换新凭证成功及并发次数上限。
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/password_form_regression_20261017 mvn -Djava.io.tmpdir=../.cache/java-tmp test`（backend）：PASS；80 项。两个数据库均为本轮单独创建，未使用用户开发库。
+- `npm exec vitest run -- --config .cache/password-form/vitest.config.mts`：PASS；2 项。直接调用实际小程序认证服务与 client，通过运行中的 Spring Boot 和 PostgreSQL 验证密码错误、耗尽、无效凭证、成功与冲突；网络失败使用真实不可达地址。外部微信接口使用已授权的合同验证服务，项目 API 未被替代。
+- `node .cache/password-form/verify-web.mjs`：PASS；独立 Chrome，实际点击显示按钮后保留值、焦点及选区；390px、1280px 视口有效点击范围至少 44px，无水平溢出；注册复用同一控件并默认隐藏。没有截图或视觉分析。
+- `npm run build`：PASS；包含四包 typecheck 与 Web 构建。既有资源体积提示保留。
+- `MINI_API_BASE_URL=http://192.168.1.12:8088/api/v1 npm run build:weapp`：PASS；包含四包 typecheck、Taro 构建与产物 API 地址检查。原项目最终产物指向本地真机验收服务；独立自动化项目保留单独的测试 API 产物。
+- 新增/修改 TypeScript、TSX 与样式的 Prettier 检查、`git diff --check`：PASS。
+- `node .cache/password-form/verify-mini.cjs`：FAIL（测试环境）；独立开发者工具项目出现 `timeout waiting for automator response`、`page node not found`，未完成表单交互断言。早期一次域名检查失败已在独立项目关闭域名校验后排除，原项目配置未修改。
+- iOS/Android 真机键盘、选区、M06 复验、独立代码审查：NOT RUN。用户原微信绑定未恢复；原备份继续保留。
+- 本轮辅助脚本及日志位于 Git 忽略的 `.cache/password-form/`，仅当前机器存在；持续回归测试保存在 Web PasswordInput 测试与后端 WechatAuthApiTest。
+- `docker compose build api web`、`docker compose up -d --no-deps --wait --wait-timeout 60 api web`、`docker compose ps`：PASS；本地开发镜像已更新，三个服务 healthy。首次等待 90 秒超时；日志确认 API 正常完成启动、无需迁移，随后启动 Web 成功。
+- `node .cache/password-form/verify-running.mjs`：PASS；运行镜像与本次构建一致，局域网 API 健康检查成功，Web 实际资源包含密码控件。
+- 开发库更新前后只读计数查询：PASS；均为 users 5、lineups 27、simulations 47、user_identities 0。没有恢复原微信绑定。
+
+### M06 准备核验（2026-10-17）
+
+- `docker context show`、`docker compose ps`、`docker compose exec -T api printenv DB_URL`：PASS；本地 Docker Desktop，三个服务 healthy，API 连接 Compose 内的 PostgreSQL 数据库。
+- 构建产物 API 地址检查及 `curl --fail --silent --show-error --max-time 10 http://192.168.1.12:8088/api/v1/health`：PASS；当前构建地址与本地验收服务一致，健康接口返回 `status: ok`。
+- `docker compose exec -T postgres` 内通过 `psql -X -v ON_ERROR_STOP=1` 执行身份与账号关联、业务数量及 `pg_constraint` / `pg_trigger` 只读查询：PASS；结果见本次 Progress，无数据库写入。
+- `COPY ... TO STDOUT WITH (FORMAT csv, HEADER true)` 导出目标绑定、Python `csv.DictReader` 核验及 `chmod 600`：PASS；一条完整目标记录已保存到受限备份文件。
+- `docker compose exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m06-unbind-20261017/unbind.sql`：PASS；事务精确删除一条匹配原摘要的绑定，账号与业务内容摘要保持一致，COMMIT 成功。
+- 独立 `psql` 连接使用 `\copy` 将备份导入临时表并比对摘要：PASS；`backup_exact_match = true`，目标绑定剩余 0，未恢复持久绑定。
+- `git check-ignore .cache/m06-unbind-20261017/identity-backup.csv .cache/m06-unbind-20261017/unbind.sql`、文档 Prettier 及 `git diff --check`：PASS；备份及辅助 SQL 被忽略，文档格式和差异检查通过。
+- 持久恢复原绑定、真机 M06：NOT RUN；用户自行进行真机验证，恢复等待后续指令。本次未修改业务代码，不重复执行业务测试或构建。
+
+### Codex 接手验证（2026-10-16，HEAD `03c1158`）
+
+- `git status --short --branch --untracked-files=all`、`git branch --show-current`、`git rev-parse HEAD`、`git log -3 --oneline`、`git diff --stat`、`git diff`、`git diff --cached`：PASS；Git 与交接声明一致，确认用户答复后重新核验状态、HEAD、文档差异和暂存区。
+- `git rev-list --left-right --count HEAD...origin/mini-app-20261004`：PASS；结果为 `0 0`，仅证明本地引用一致。
+- `git ls-files --error-unmatch`（规则、handoff Skill、架构、决策、两份交接文档、issues 及第五/八轮报告）：PASS；接手所需文件均存在且已跟踪。
+- `npm run typecheck`：PASS；本次接手核验期间执行，core、client、web、miniprogram 四包通过。
+- `node node_modules/prettier/bin/prettier.cjs --check docs/AI_HANDOFF.md docs/plans/current.md`、`git diff --check`：PASS；接手文档格式与差异检查。
+- `npm test`、`mvn test`、两端构建及真实微信/设备验收：NOT RUN；本次仅接手和更新任务状态，历史结果保留原归属。
 
 Codex 第八轮最终定向复核（2026-10-16，快照 `wechat-stage4-round08-20261016`）：
 
@@ -733,6 +820,8 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+2026-10-17 密码表单实现与上述自动化验证已完成，本地开发服务已更新。状态为 ACTIVE，Owner 为 codex，继续负责当前任务。真机交互与独立审查尚未完成；此前 M06 解绑备份、阶段 4 四项 OPEN 和其他平台验收继续保留。用户已授权提交与推送本轮变更，具体提交及远端状态以 Git 核验为准；用户验收表和本地备份不纳入提交。
 
 第八轮定向复核完成，I021–I023 全部 VERIFIED，限定范围结论 PASS；整个任务仍为 CHANGES_REQUIRED，历史 I004、I007、I016、I017 保持 OPEN，平台验收未完成。仅新增第八轮报告并更新问题清单、入口及本计划；Kimi 的修复、架构修改、历史报告及验收表保留。按用户要求停止，不自动修复、继续审查、提交或推送。
 

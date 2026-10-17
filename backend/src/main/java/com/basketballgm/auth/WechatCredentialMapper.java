@@ -65,11 +65,14 @@ public interface WechatCredentialMapper {
   );
 
   @Select("""
-      update wechat_auth_credentials set failed_attempts = failed_attempts + 1
-      where id = cast(#{id} as uuid)
+      update wechat_auth_credentials
+      set failed_attempts = failed_attempts + 1,
+          consumed_at = case when failed_attempts + 1 >= #{limit} then clock_timestamp() else null end
+      where id = cast(#{id} as uuid) and consumed_at is null
+        and expires_at > clock_timestamp()
       returning failed_attempts
       """)
-  Integer markFailed(@Param("id") String id);
+  Integer markFailed(@Param("id") String id, @Param("limit") int limit);
 
   @Update("""
       update wechat_auth_credentials set consumed_at = now(), consumed_by_user_id = #{userId}
@@ -78,9 +81,4 @@ public interface WechatCredentialMapper {
       """)
   int consume(@Param("id") String id, @Param("userId") UUID userId);
 
-  @Update("""
-      update wechat_auth_credentials set consumed_at = now()
-      where id = cast(#{id} as uuid) and consumed_at is null
-      """)
-  int consumeWithoutUser(@Param("id") String id);
 }

@@ -12,6 +12,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
@@ -21,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,7 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
  * 小程序码生成、扫码与确认链路）需要配置真实凭据后以开发者工具和真机验收，当前保持 NOT RUN，
  * 不以本测试通过冒充平台验收。
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class WechatAuthApiTest {
@@ -49,6 +54,7 @@ class WechatAuthApiTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @LocalServerPort private int port;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -296,7 +302,7 @@ class WechatAuthApiTest {
     registerPasswordAccount(username);
     String bindCredential = exchange("code-ivan").get("credentialToken").asText();
     for (int attempt = 0; attempt < 5; attempt++) {
-      bindWithPassword(bindCredential, username, "wrong-password-2026", 401);
+      bindWithPassword(bindCredential, username, "wrong-password-2026", attempt == 4 ? 400 : 401);
     }
     bindWithPassword(bindCredential, username, "visitor-password-2026", 400);
   }
@@ -308,6 +314,75 @@ class WechatAuthApiTest {
             .content(objectMapper.writeValueAsString(Map.of("code", "definitely-invalid"))))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("WECHAT_CODE_INVALID"));
+  }
+
+  @Test
+  void realHttpWrongPasswordCanBeCorrectedWithoutReplacingCredential() throws Exception {
+    String username = USER_PREFIX + "http-retry";
+    registerPasswordAccount(username);
+    String credential = exchange("code-http-retry").get("credentialToken").asText();
+    HttpResponse<String> wrong = bindOverHttp(credential, username, "wrong-password-2026");
+    assertEquals(401, wrong.statusCode());
+    assertEquals("INVALID_ACCOUNT_CREDENTIALS", objectMapper.readTree(wrong.body()).get("code").asText());
+    HttpResponse<String> correct = bindOverHttp(credential, username, "visitor-password-2026");
+    assertEquals(200, correct.statusCode());
+    assertEquals(username, objectMapper.readTree(correct.body()).get("user").get("username").asText());
+    assertEquals(1, jdbcTemplate.queryForObject(
+        "select count(*) from user_identities where appid = 'test-appid' and openid = 'openid-http-retry'", Integer.class));
+  }
+
+  @Test
+  void realHttpFinalWrongAttemptImmediatelyRequiresRenewalAndFreshCredentialWorks() throws Exception {
+    String username = USER_PREFIX + "http-limit";
+    registerPasswordAccount(username);
+    String credential = exchange("code-http-limit").get("credentialToken").asText();
+    for (int attempt = 1; attempt <= 5; attempt++) {
+      HttpResponse<String> response = bindOverHttp(credential, username, "wrong-password-2026");
+      assertEquals(attempt == 5 ? 400 : 401, response.statusCode());
+      assertEquals(attempt == 5 ? "CREDENTIAL_ATTEMPTS_EXCEEDED" : "INVALID_ACCOUNT_CREDENTIALS",
+          objectMapper.readTree(response.body()).get("code").asText());
+    }
+    HttpResponse<String> exhausted = bindOverHttp(credential, username, "visitor-password-2026");
+    assertEquals(400, exhausted.statusCode());
+    assertEquals("CREDENTIAL_ATTEMPTS_EXCEEDED", objectMapper.readTree(exhausted.body()).get("code").asText());
+    assertEquals(5, jdbcTemplate.queryForObject(
+        "select failed_attempts from wechat_auth_credentials where token_digest = ?",
+        Integer.class, TokenSupport.digest(credential)));
+    assertEquals(0, jdbcTemplate.queryForObject(
+        "select count(*) from user_identities where appid = 'test-appid' and openid = 'openid-http-limit'", Integer.class));
+    String fresh = exchange("code-http-limit").get("credentialToken").asText();
+    assertEquals(200, bindOverHttp(fresh, username, "visitor-password-2026").statusCode());
+  }
+
+  @Test
+  void realHttpConcurrentWrongAttemptsCannotExceedTheLimit() throws Exception {
+    String username = USER_PREFIX + "http-race";
+    registerPasswordAccount(username);
+    String credential = exchange("code-http-race").get("credentialToken").asText();
+    for (int attempt = 0; attempt < 4; attempt++) {
+      assertEquals(401, bindOverHttp(credential, username, "wrong-password-2026").statusCode());
+    }
+    try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var first = executor.submit(() -> bindOverHttp(credential, username, "wrong-password-2026"));
+      var second = executor.submit(() -> bindOverHttp(credential, username, "wrong-password-2026"));
+      assertEquals(400, first.get().statusCode());
+      assertEquals(400, second.get().statusCode());
+    }
+    assertEquals(5, jdbcTemplate.queryForObject(
+        "select failed_attempts from wechat_auth_credentials where token_digest = ?",
+        Integer.class, TokenSupport.digest(credential)));
+    assertEquals(400, bindOverHttp(credential, username, "visitor-password-2026").statusCode());
+  }
+
+  private HttpResponse<String> bindOverHttp(String credential, String username, String password) throws Exception {
+    HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/auth/wechat/bind"))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(Map.of(
+            "credentialToken", credential, "username", username, "password", password))))
+        .build();
+    try (HttpClient client = HttpClient.newHttpClient()) {
+      return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
   }
 
   @Test

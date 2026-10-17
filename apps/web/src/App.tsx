@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PasswordInput } from '@/components/PasswordInput';
 import {
   averageRating as average,
   displayPlayerName,
@@ -1135,28 +1136,29 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
               autoComplete="username"
               maxLength={32}
               minLength={2}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => {
+                setUsername(event.target.value);
+                setError(null);
+              }}
               pattern={USERNAME_PATTERN_SOURCE}
               required
               value={username}
             />
           </label>
-          <label>
-            {t('auth.password')}
-            <input
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              minLength={8}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
-          {error && (
-            <p className="auth-error" role="alert">
-              {error}
-            </p>
-          )}
+          <PasswordInput
+            key={mode}
+            label={t('auth.password')}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            minLength={8}
+            onChange={(value) => {
+              setPassword(value);
+              setError(null);
+            }}
+            disabled={isSubmitting}
+            error={error ?? undefined}
+            required
+            value={password}
+          />
           <button className="primary auth-submit" disabled={isSubmitting} type="submit">
             {isSubmitting
               ? t('common.processing')

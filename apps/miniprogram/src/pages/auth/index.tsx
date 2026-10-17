@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Taro, { useRouter } from '@tarojs/taro';
 import { Button, Input, View } from '@tarojs/components';
 import { isValidUsername } from '@dream-court/core';
 import { ApiError } from '@dream-court/client';
 import { PageShell } from '@/components/Screen';
+import { PasswordInput } from '@/components/PasswordInput';
+import { authenticateWechatAccount } from '@/services/account-auth';
 import {
   api,
   hasGuestProgress,
@@ -55,6 +57,8 @@ function AuthContent() {
   const [bindMode, setBindMode] = useState(false);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [renewCredential, setRenewCredential] = useState(false);
+  const requestPending = useRef(false);
 
   const finish = async () => {
     if (ticket) {
@@ -96,6 +100,7 @@ function AuthContent() {
         return;
       }
       if (result.credentialToken) {
+        setRenewCredential(false);
         setState({ step: 'choose', credentialToken: result.credentialToken });
         return;
       }
@@ -112,34 +117,77 @@ function AuthContent() {
   }, []);
 
   const submit = async () => {
-    if (state.step !== 'choose' || submitting) return;
+    if (state.step !== 'choose' || requestPending.current || renewCredential) return;
     const { credentialToken } = state;
     if (!isValidUsername(username)) {
       setFormError('用户名需要 2–32 位汉字、字母、数字、下划线或连字符');
       return;
     }
+    requestPending.current = true;
     setSubmitting(true);
     setFormError('');
     try {
-      if (bindMode) {
-        const session = await api.wechatBind(credentialToken, username, password);
-        await loginWithSession(session);
-        await proceedAfterLogin(false);
-      } else {
-        const result = await api.wechatRegister(credentialToken, username);
-        await loginWithSession(result.session);
-        await proceedAfterLogin(result.newAccount);
-      }
-    } catch (error: unknown) {
-      if (error instanceof ApiError && error.status === 409) {
-        setFormError(error.message);
+      const result = await authenticateWechatAccount(api, {
+        credentialToken,
+        username,
+        password,
+        bindMode,
+      });
+      if (result.status === 'rejected') {
+        setFormError(result.message);
+        setRenewCredential(result.renewCredential);
         return;
       }
-      setState({ step: 'failed', message: authErrorMessage(error) });
+      setPassword('');
+      setState({ step: 'starting' });
+      await loginWithSession(result.session);
+      await proceedAfterLogin(result.newAccount);
+    } catch (error: unknown) {
+      setState({
+        step: 'failed',
+        message: `账号验证已成功，后续加载失败：${authErrorMessage(error)}`,
+      });
     } finally {
-      // 成功进入导入选择或扫码确认后，后续步骤的按钮必须恢复可用。
+      requestPending.current = false;
       setSubmitting(false);
     }
+  };
+
+  const renewWechatIdentity = async () => {
+    if (state.step !== 'choose' || requestPending.current) return;
+    requestPending.current = true;
+    setSubmitting(true);
+    try {
+      const code = await wxLoginCode();
+      const result = await api.wechatExchange(code);
+      if (result.status === 'authenticated' && result.session) {
+        setPassword('');
+        setState({ step: 'starting' });
+        try {
+          await loginWithSession(result.session);
+          await proceedAfterLogin(false);
+        } catch (error: unknown) {
+          setState({
+            step: 'failed',
+            message: `账号验证已成功，后续加载失败：${authErrorMessage(error)}`,
+          });
+        }
+        return;
+      }
+      if (!result.credentialToken) throw new Error('微信登录返回了无法识别的结果');
+      setState({ step: 'choose', credentialToken: result.credentialToken });
+      setRenewCredential(false);
+      setFormError('');
+    } catch (error: unknown) {
+      setFormError(authErrorMessage(error));
+    } finally {
+      requestPending.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  const clearInputError = () => {
+    if (!renewCredential) setFormError('');
   };
 
   const resolveImportChoice = async (shouldImport: boolean) => {
@@ -189,37 +237,41 @@ function AuthContent() {
             className="input"
             type="nickname"
             value={username}
+            disabled={submitting}
             maxlength={32}
             placeholder="2–32 位汉字、字母、数字、下划线或连字符"
-            onInput={(event) => setUsername(event.detail.value)}
+            onInput={(event) => {
+              setUsername(event.detail.value);
+              clearInputError();
+            }}
           />
           {bindMode && (
-            <View>
-              <View className="label">密码</View>
-              <Input
-                className="input"
-                password
-                value={password}
-                maxlength={72}
-                placeholder="账号密码"
-                onInput={(event) => setPassword(event.detail.value)}
-              />
-            </View>
+            <PasswordInput
+              label="密码"
+              value={password}
+              disabled={submitting}
+              error={formError}
+              placeholder="账号密码"
+              onChange={(value) => {
+                setPassword(value);
+                clearInputError();
+              }}
+            />
           )}
-          {formError && <View className="error">{formError}</View>}
+          {!bindMode && formError && <View className="error">{formError}</View>}
           <Button
             className="primary"
             loading={submitting}
             disabled={submitting}
-            onClick={() => void submit()}
+            onClick={() => void (renewCredential ? renewWechatIdentity() : submit())}
           >
-            {bindMode ? '验证密码并绑定' : '创建账号'}
+            {renewCredential ? '重新验证微信' : bindMode ? '验证密码并绑定' : '创建账号'}
           </Button>
           <Button
             className="secondary"
             disabled={submitting}
             onClick={() => {
-              setFormError('');
+              clearInputError();
               setBindMode((current) => !current);
             }}
           >

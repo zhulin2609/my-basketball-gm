@@ -111,9 +111,10 @@ public class WechatAuthService {
     if (user == null
         || user.passwordHash() == null
         || !passwordEncoder.matches(request.password(), user.passwordHash())) {
-      int attempts = credentialMapper.markFailed(credential.id());
-      if (attempts >= bindAttempts) credentialMapper.consumeWithoutUser(credential.id());
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户名或密码错误。");
+      Integer attempts = credentialMapper.markFailed(credential.id(), bindAttempts);
+      if (attempts == null) throw invalidCredential();
+      if (attempts >= bindAttempts) throw exhaustedCredential();
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_ACCOUNT_CREDENTIALS", "用户名或密码错误，请修改后重试。");
     }
 
     try {
@@ -174,6 +175,9 @@ public class WechatAuthService {
   /** A retry of a succeeded bind or register returns the same session instead of failing. */
   private AuthResponse replayIfConsumed(WechatCredentialRow credential) {
     if (credential.consumedAt() == null) return null;
+    if (credential.consumedByUserId() == null && credential.failedAttempts() >= bindAttempts) {
+      throw exhaustedCredential();
+    }
     if (credential.consumedByUserId() != null) {
       UserIdentityRow identity = identityMapper.find(credential.provider(), credential.appid(), credential.openid());
       if (identity != null && identity.userId().equals(credential.consumedByUserId())) {
@@ -246,5 +250,9 @@ public class WechatAuthService {
 
   private ApiException invalidCredential() {
     return new ApiException(HttpStatus.BAD_REQUEST, "CREDENTIAL_INVALID", "身份确认凭证无效或已过期，请重新登录。");
+  }
+
+  private ApiException exhaustedCredential() {
+    return new ApiException(HttpStatus.BAD_REQUEST, "CREDENTIAL_ATTEMPTS_EXCEEDED", "密码尝试次数已用尽，请重新验证微信身份。");
   }
 }

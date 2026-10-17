@@ -24,7 +24,7 @@ describe('guest entry experience', () => {
 
     expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /登录|Sign in/i })).toBeTruthy();
-    expect(screen.queryByLabelText(/密码|Password/i)).toBeNull();
+    expect(screen.queryByLabelText(/^(密码|Password)$/i)).toBeNull();
   });
 
   it('returns from sign-in to the guest player archive', async () => {
@@ -33,12 +33,12 @@ describe('guest entry experience', () => {
 
     render(<App />);
     await user.click(screen.getByRole('button', { name: /登录|Sign in/i }));
-    expect(screen.getByLabelText(/密码|Password/i)).toBeTruthy();
+    expect(screen.getByLabelText(/^(密码|Password)$/i)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /继续游客体验|Continue as guest/i }));
 
     expect(screen.getByRole('heading', { name: /巅峰球员库|Peak player archive/i })).toBeTruthy();
-    expect(screen.queryByLabelText(/密码|Password/i)).toBeNull();
+    expect(screen.queryByLabelText(/^(密码|Password)$/i)).toBeNull();
   });
 });
 
