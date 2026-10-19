@@ -3,12 +3,13 @@
 ## 当前任务
 
 - Task：`wechat-login-stage4`。
-- 当前任务汇总结论：`CHANGES_REQUIRED`；第八轮对 I021–I023 的定向复核为 `PASS`，三项已 VERIFIED；round-05 遗留的 I004、I007、I016、I017 保持 OPEN，本轮未复核，未获风险接受或延期批准。
-- Reviewed Commit：`N/A`；HEAD 为 `5450385c5c3b9bdff1950613acd889dcd979e3a7`，修复后未提交输入绑定 Snapshot `wechat-stage4-round08-20261016`；内容及摘要见 [第八轮报告](round-08-codex.md)。
-- 汇总负责人：Codex，任务标识 `codex-stage4-round08-20261016`；本轮已结束，后续写入须取得新的任务授权。
+- 当前任务汇总结论：`CHANGES_REQUIRED`；第九轮确认 I004、I007、I016 仍为 OPEN；I017 当前文档整理为 FIXED_PENDING_REVIEW。未获风险接受或延期批准。第八轮 I021–I023 的 VERIFIED 保留。
+- Reviewed Commit：`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；I017 文档整理随其后的 develop 文档交付提交保存，不属于已独立复核的版本。
+- 汇总负责人：Codex，任务标识 `codex-stage4-takeover-20261016-01a1421b`；当前任务 `wechat-login-stage4-round09-recheck-20261019`。
+- 最新报告：[第九轮当前版本核验](round-09-codex.md)。
 - 报告列表：[第一轮 Codex 历史报告](round-01-codex.md)、[第二轮 Kimi 核验与修复报告](round-02-kimi.md)、[第三轮 Codex 复核报告](round-03-codex.md)、[第四轮 Kimi 核验与修复报告](round-04-kimi.md)、[第五轮 Codex 最终定向复核](round-05-codex.md)、[第六轮 Codex 审查](round-06-codex.md)、[第七轮 Kimi 修复记录](round-07-kimi.md)、[第八轮 Codex 最终定向复核](round-08-codex.md)。
 - 当前入口：[REVIEW_FEEDBACK.md](../../REVIEW_FEEDBACK.md)。
-- 后续处置：本次复核结束，不自动修复或继续审查；历史四项 OPEN 与平台验收由用户另行安排。
+- 后续处置：三项 OPEN 的业务与测试修复、I017 文档独立复核及 S01–S07 平台验收待安排；本轮不修改业务代码、既有测试或执行合并。
 
 ## 历史报告导入说明
 
@@ -32,9 +33,12 @@
 
 历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED；第五轮核验后为 16 VERIFIED、4 OPEN。第六轮新增三项，第七轮标记待复核，第八轮全部验证通过。当前总计 23 项，历史报告原文保留。
 
-- `OPEN`：4。
+- `OPEN`：3。
 - `VERIFIED`：19。
-- `FIXED_PENDING_REVIEW`、`NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED`：均为 0。
+- `FIXED_PENDING_REVIEW`：1（I017）。
+- `NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED`：均为 0。
+
+第九轮适用版本为上述 Reviewed Commit；I004、I007、I016、I017 的最新证据见各项第九轮记录。其余项目保留原独立复核版本及证据，不声称本轮重跑。I017 由 Codex 整理当前文档，其他修复尚未分配；独立复核者待用户安排。
 
 以下通用字段适用于 I001–I020；各项的状态、来源和具体证据见对应条目：
 
@@ -77,6 +81,7 @@
 ### I004 · major · 运行期间的 401 和刷新失败没有同步到页面状态
 
 - 状态：`OPEN`。
+- 第九轮来源：[round-09-codex.md · R01](round-09-codex.md)。真实 Spring Boot 返回 identities 与 report-detail 的 401 后，会话为空、onUnauthorized 调用次数为 0，真实 runtime 模块仍为 ready/account；保存请求的对照回调为 1。页面直接请求绕过账号数据源 guarded，尚未修复。数据库 `stage4_recheck_20261019`，未运行完整真机页面流程。
 - 第五轮来源与证据：[round-05-codex.md · R01](round-05-codex.md)；保存 401 回调已生效；实际直接 identities 请求的 401 仍仅清会话，runtime 保留 ready/account。详情直接请求亦绕过 guarded。
 - 第三轮来源与证据：[round-03-codex.md · R02](round-03-codex.md)；保存、对战等路径未经过刷新包装，401 清除会话后 runtime 仍可保留账号数据。未伪造 401 运行结果。
 - 第四轮修复：见 [round-04-kimi.md](round-04-kimi.md) R02 条目；账号数据源全部读写统一捕获 401 并通知运行时，按会话代次恢复游客工作区。
@@ -103,6 +108,7 @@
 ### I007 · major · 导入成功后账号快照未刷新，游客草稿也未清理
 
 - 状态：`OPEN`。
+- 第九轮来源：[round-09-codex.md · R02](round-09-codex.md)。真实首次导入 alreadyImported=false，同 ID 新编辑后的重试 alreadyImported=true；数据库只有旧内容，客户端当前清理条件仍成立。草稿保存不改变 workspace.updatedAt，实际清理操作会删除新编辑与草稿；完整 Taro 调用关系通过源码核验，未声称真机复现。尚未修复。
 - 第五轮来源与证据：[round-05-codex.md · R02](round-05-codex.md)；真实 API 确认首次成功后保留工作区并继续编辑，再次导入返回幂等成功但不上传新内容，客户端仍允许清理；草稿变化也未进入工作区版本检查。
 - 第三轮来源与证据：[round-03-codex.md · R03](round-03-codex.md)；新增刷新与清理，但 await 后未校验会话、工作区及内容版本，迟到成功会清除未导入的新游客内容。
 - 第四轮修复：见 [round-04-kimi.md](round-04-kimi.md) R03 条目；导入成功后校验会话与工作区 id、updatedAt，任一变化则保留本地数据。
@@ -186,6 +192,7 @@
 ### I016 · major · 新测试使用伪造微信及业务响应，违反仓库验证规则
 
 - 状态：`OPEN`。
+- 第九轮来源：[round-09-codex.md · R03](round-09-codex.md)。当前 scan-login、account-store、guest-runtime、api-wechat 测试仍预设本项目票据、身份、会话及业务 API 返回值；本地 HTTP 服务直接输出 handler 的响应，未调用真实 Spring Boot。D-006 只允许替代外部微信上游。未运行这些测试来证明系统有效，既有测试原样保留，尚未修复。
 - 第五轮来源与证据：[round-05-codex.md · R03](round-05-codex.md)。用户本轮明确“仅允许替代微信等外部平台，不包含本项目 API”；第四轮 DISMISSED 撤销。本项目票据、会话及业务 API 仍被前端测试服务器预设，未获许可；微信外部上游替代可以保留。
 - 第三轮来源与证据：[round-03-codex.md · R08](round-03-codex.md)；预设微信及业务响应仍存在，增加说明没有消除规则冲突；本轮未运行这些替代响应测试。
 - 第四轮处理：见 [round-04-kimi.md](round-04-kimi.md) R08 条目；测试形态保留（真实 HTTP 与真实 PostgreSQL，本地契约服务器扮演微信上游）。用户于 2026-10-14 决定接受该形态，规则解释见 [docs/DECISIONS.md](../../DECISIONS.md) D-006。
@@ -195,7 +202,9 @@
 
 ### I017 · minor · 当前计划的目标和完成状态相互矛盾
 
-- 状态：`OPEN`。
+- 状态：`FIXED_PENDING_REVIEW`。
+- 第九轮来源：[round-09-codex.md · R04](round-09-codex.md)。在 Reviewed Commit 中，Task 仍称 M06 绑定恢复待指令，Goal 已记录恢复；Current State/Completion 仍使用旧提交和待复核状态，缺少当前统一摘要。本轮按用户授权更新当前任务、基线、R01 独立复核与四项状态，在各当前栏目明确历史记录边界。历史报告和交接文件不改写；当前 Owner codex / ACTIVE。
+- 实施者 / 修复版本：Codex；`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9` 之后的 develop 文档交付提交，文件清单、验证命令见第九轮报告与 current plan。独立复核尚未执行，不能标记 VERIFIED。
 - 第五轮来源与证据：[round-05-codex.md · R04](round-05-codex.md)。第四轮输入的计划仍为第三轮、交接与计划 Owner/Status 不符、问题计数和逐项状态不同。本轮更新审查状态不改变对该输入修复声明的核验结果。
 - 第三轮来源与证据：[round-03-codex.md · R09](round-03-codex.md)；目标版本的计划、未决事项、完成说明和交接仍描述相互矛盾的实施与提交状态。本轮独立工作区记录更新不改变目标提交结论。
 - 第四轮修复：见 [round-04-kimi.md](round-04-kimi.md) R09 条目；current plan 的 Goal、Open Questions、Completion 与 AI_HANDOFF 已更新为当前状态。

@@ -5,26 +5,26 @@
 - 汇总与修复负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`。
 - Base Commit：`03c11587a11c28336693d64ee6f8e5d77e1a9a10`。
 - 原 Reviewed Commit / 修复起点 HEAD：`6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`。
-- 当前 Reviewed Commit：待 Round 02 固定提交后的完整 SHA，以交付提示词及 Git 核验为准。2026-10-18 历史修复 Snapshot：`wechat-password-form-r01-fix-20261018`。
+- 当前 Reviewed Commit：`ba80e115f72c48d81ded5d85fb607256f45361bb`；[Kimi Round 02](round-02-kimi.md) 独立复核 PASS。文档交付起点 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9` 只新增验收表，业务代码一致；后续文档提交不改变被审代码。2026-10-18 历史修复 Snapshot：`wechat-password-form-r01-fix-20261018`。
 - 原始报告：[Kimi Round 01](../../../.cache/review-worktrees/wechat-password-form-20261017-round-01-kimi/docs/reviews/wechat-password-form-20261017/round-01-kimi.md)。该报告仅在本地独立 worktree 中存在，保持原文；SHA-256 为 `3cdaadcf18e87ee0d50d4e4cbe613a53c974225c3f7c71d93e8c963276855c94`。
-- 状态计数：`FIXED_PENDING_REVIEW` 1；`OPEN`、`VERIFIED`、`NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED` 均为 0。
-- 当前结论：`INCOMPLETE`，修复等待独立复核。原 Kimi 报告对原 Reviewed Commit 的 `CHANGES_REQUIRED` 结论保留。
-- 历史范围：[阶段 4 问题清单](../wechat-login-stage4/issues.md)中的 I004、I007、I016、I017 保持 OPEN，本次未处理。
+- 状态计数：`VERIFIED` 1；`OPEN`、`FIXED_PENDING_REVIEW`、`NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED` 均为 0。
+- 当前结论：`PASS`，仅限 Round 02 的 R01 修复与 M11 增量范围。原 Kimi 报告对原 Reviewed Commit 的 `CHANGES_REQUIRED` 结论保留；S01–S07 仍受阻，历史阶段 4 问题另行处理。
+- 历史范围：Kimi Round 02 未覆盖阶段 4 的 I004、I007、I016、I017；Codex 本轮另行核验结果为前三项 OPEN、I017 文档整理 FIXED_PENDING_REVIEW，见[阶段 4 问题清单](../wechat-login-stage4/issues.md)与[第九轮报告](../wechat-login-stage4/round-09-codex.md)。
 
 ## I001 — 第五次密码失败与正确绑定并发时误报身份冲突
 
 - 来源：上述 Kimi Round 01 `R01`；严重度 `major`。
-- 状态：`FIXED_PENDING_REVIEW`。
+- 状态：`VERIFIED`。
 - 适用版本：原 Reviewed Commit 中的 `WechatAuthService.resolveBindConflict`。
 - 触发条件：凭证已有四次失败，第五次错误请求先消费凭证，已读取原凭证的正确请求随后取得行锁；没有实际绑定时返回 409 `IDENTITY_CONFLICT`，小程序无法立即显示重新验证微信入口。
 - 核验：2026-10-18 在修复生产代码前运行新增两种顺序的真实 HTTP 测试。错误请求先取得锁的用例失败，期望 400、实际 409；正确请求先取得锁的用例通过。根因与 Kimi 报告一致。
 - 实施者回复：保留相同绑定的幂等处理；仅在微信身份已属于其他账号或目标账号已绑定同一 provider/appid 的身份时返回冲突。无实际身份绑定时重新读取凭证，耗尽返回 `CREDENTIAL_ATTEMPTS_EXCEEDED`，其余无效状态返回 `CREDENTIAL_INVALID`。
 - 修改文件：`backend/src/main/java/com/basketballgm/auth/WechatAuthService.java`；`backend/src/test/java/com/basketballgm/auth/WechatAuthApiTest.java`。前端、Mapper、迁移未修改。
-- 修复版本：HEAD 上的未提交快照 `wechat-password-form-r01-fix-20261018`；源文件副本、`fix.patch` 与 `sha256.txt` 位于 `.cache/password-form-r01/snapshot/`，仅本机可用。补丁基于上述 HEAD，可重现两个代码文件的修改；没有删除项。
+- 修复版本：`ba80e115f72c48d81ded5d85fb607256f45361bb`。历史未提交快照 `wechat-password-form-r01-fix-20261018` 的源文件副本、`fix.patch` 与 `sha256.txt` 位于 `.cache/password-form-r01/snapshot/`，仅本机可用。
 - 实现文件 SHA-256：`3da16c175d9a416c55cc5d6ddb9265417cf74619f0e0933f90ba78c3131fdb3e`。
 - 测试文件 SHA-256：`dc0a56fa876eaa38ecafa8ce0b25142d2645e503fe60c4296f1d4952a002665e`。
 - 排除项：用户验收表、本地身份备份、Kimi worktree、历史审查报告和本轮状态文档均不属于被测代码快照。数据库和本地运行日志不进入提交。
-- 复核者与复核报告：待用户安排；实施者未将本项标记 VERIFIED。
+- 复核者与复核报告：Kimi Code，`session_67628870-4bfd-4022-b1e6-9c3fbcac9e63`，[Round 02](round-02-kimi.md)。报告逐项确认两种锁顺序、真实双向冲突、耗尽和成功重试，结论 VERIFIED；Codex 依据该独立证据汇总状态。
 
 ### 并发与回归证据
 
@@ -55,6 +55,8 @@
 - 真实微信、开发者工具、iOS/Android、M06 页面交互和独立复核：NOT RUN；本次仅提供后端运行证据。
 
 ### 状态变化与下一步
+
+2026-10-19 本次汇总：原样归档 Kimi 针对 `ba80e11` 的 Round 02 报告，核对原文摘要与测试日志，将 I001 从 FIXED_PENDING_REVIEW 更新为 VERIFIED。前端 140 项、后端 83 项及定向 17 项属于 Kimi 的运行证据，本次汇总未重复运行；本任务无新增缺陷。历史阶段 4 四项的当前版本核验另见该任务 Round 09，不扩大本报告的 PASS 范围。
 
 2026-10-19：用户授权提交并推送当前增量，随后由 Kimi 执行独立复核；R01 / I001 保持 FIXED_PENDING_REVIEW。用户确认 M01–M12、W01–W06 真机验收 PASS，S01–S07 等待注册普通小程序账号而 BLOCKED；这些反馈不替代 R01 的独立代码复核。提交前重复验证见 current plan 的 2026-10-19 交付记录。
 

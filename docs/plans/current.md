@@ -6,6 +6,12 @@
 
 ## Task
 
+当前任务：`develop-docs-delivery-20261019`。用户授权将当前六份文档提交到 develop、推送 origin/develop，并运行全部现有测试；不合并到 main。提交起点为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`。本轮不修改业务代码或既有测试；历史报告原文、用户验收表、身份备份和 Kimi worktree 保留。以下历史任务的授权范围仅适用于对应任务。
+
+前一任务：`develop-local-validation-build-20261019`，已完成本地快进与三端构建。develop 从 `787c2729a98abac1d555cebb230442cdf188f632` 快进到 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；切换前后六份文档 SHA-256 一致。构建产物、本地服务和验证证据见下方历史记录。
+
+前一任务：`wechat-login-stage4-round09-recheck-20261019`，已完成归档与核验。用户授权原样归档 Kimi Round 02 报告、汇总密码表单 R01 为 VERIFIED，并核验 I004、I007、I016、I017 在 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9` 的状态。以下按日期保留历史任务授权与记录，当前范围以本段之前的当前任务为准。
+
 2026-10-19 当前授权：记录用户反馈的 M01–M12、W01–W06 真机验收通过；S01–S07 因等待注册普通小程序账号而受阻。验证并提交、推送当前分支的 R01 修复、对战按钮文案、M11 错误提示及相关记录，提供 Kimi Round 02 独立复核提示词。原工作区 Owner 继续 codex / ACTIVE；R01 保持 FIXED_PENDING_REVIEW，不合并。用户验收表、本地身份备份、历史报告及 Kimi 独立 worktree 保留原状，不纳入本次提交。
 
 2026-10-18 补充任务：M11 对战失败提示。用户确认断网文案为“网络错误，请稍后重试。”，原因未明确时为“暂时无法对战，请稍后重试。”。仅修改小程序对战错误展示与必要的平台网络状态读取；验收要求：不向用户暴露底层错误字符串，失败后保留所选阵容并允许再次提交；四包 typecheck、小程序构建及相关前端回归通过。本次增量基线为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`。
@@ -26,6 +32,8 @@
 
 ACTIVE
 
+当前状态：完整前端 140 项、后端 83 项测试及四包类型检查通过，六份文档进入提交与推送流程。当前保持 develop，Owner codex / ACTIVE。审查结论保留：密码表单 I001 / R01 VERIFIED；阶段 4 I004、I007、I016 OPEN，I017 FIXED_PENDING_REVIEW，19 VERIFIED、3 OPEN、1 FIXED_PENDING_REVIEW，CHANGES_REQUIRED。用户验收 M01–M12、W01–W06 PASS，S01–S07 BLOCKED。下面为此前 checkpoint 的状态，不代表本轮待办。
+
 2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
 
 2026-10-18：Kimi Round 01 已完成，R01 已确认并修复，当前为 FIXED_PENDING_REVIEW，证据见[本任务问题清单](../reviews/wechat-password-form-20261017/issues.md)。原 Reviewed Commit 上的 CHANGES_REQUIRED 保留，修复后的独立复核尚未执行。以下 2026-10-17 状态属于修复前 checkpoint。
@@ -40,16 +48,18 @@ ACTIVE
 - Instance: codex-stage4-takeover-20261016-01a1421b
 - Last Writing Agent: codex，codex-stage4-takeover-20261016-01a1421b；继续持有当前工作区写入归属。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
-- Branch: mini-app-20261004
-- Base Commit: 03c11587a11c28336693d64ee6f8e5d77e1a9a10（本轮密码表单任务；阶段 4 历史基线保留在历史记录中）
+- Branch: develop
+- Base Commit: 86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9（本轮文档交付起点；业务代码验证版本）
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: 当前未提交的 WechatAuthService、WechatAuthApiTest、小程序对战文案与错误处理及测试、current plan、当前审查入口与本任务问题记录。验证使用本轮独立 PostgreSQL 数据库和 Git 忽略的辅助目录；保留用户验收表、身份备份、历史报告及 Kimi worktree。用户已授权提交和推送当前分支，不合并。Owner 继续为 codex。
+- Write Scope: 提交此前六份文档、更新本轮验证记录、推送 develop；忽略的测试日志与本轮独立测试数据库。原始审查报告按原文归档，业务代码、既有测试、身份备份、验收表、AGENTS.md 和 Kimi worktree 保留；不合并到 main。
 
 2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
 
 2026-10-18 M06 数据准备授权：用户明确要求备份并临时解除当前微信与账号 `link` 的绑定，随后明确授权恢复账号 A 的绑定。已在本地开发库 `basketball_gm` 完成这一条 `user_identities` 记录的备份、临时删除和原样恢复；备份继续保留，等待用户在已有表单提交账号 B 进行真机冲突验收。Owner 保持 codex，状态 ACTIVE。
 
 ## Goal
+
+当前目标：完成六份文档的提交与 develop 远端同步，执行全部现有前后端测试并记录结果。此前本地合并、三端构建、归档与四项核验已完成，以下为历史目标，未完成的平台验收继续保留。
 
 2026-10-19 M12：用户确认测试通过，并明确授权将当前微信从 `linktest` 恢复绑定到 `link`。已在本地开发库 `basketball_gm` 将唯一对应身份行原样恢复为 M12 前的备份内容，两个账号的数据保留。原绑定备份继续保留；手机已有会话须退出后重新微信登录，才能进入 `link`。
 
@@ -61,11 +71,32 @@ ACTIVE
 
 ## Acceptance Criteria
 
+### develop 文档交付与完整测试（2026-10-19）
+
+- [x] 前端完整测试、后端完整测试和四包类型检查通过；后端使用本轮独立 PostgreSQL 数据库。
+- [x] 六份文档记录审查结果、既有问题和本轮实际验证；两份原始报告保持原文。
+- [ ] 检查完整暂存内容及全部待推送提交，提交并推送 develop，核验本地与远端一致。提交 SHA 与最终结果由 Git 核验及交付回执记录。
+- [ ] 收尾确认本地保持 develop，main 未变化，工作区没有未提交修改。
+
+### 本地 develop 合并与构建（2026-10-19）
+
+- [x] develop 快进到源分支 HEAD，保持 develop 检出，六份未提交文档内容通过摘要核验。
+- [x] Web、小程序和后端构建通过；小程序使用当前局域网 API 地址，产物校验通过。
+- [x] 后端打包测试使用本轮独立 PostgreSQL，记录命令、结果与未验证范围。
+- [x] 本地 Web/API 镜像构建及容器健康检查通过，首页、JS、CSS 和局域网 API 健康请求通过。
+
+### 第九轮归档与核验（2026-10-19）
+
+- [x] Kimi Round 02 原样归档，副本与原文 SHA-256 一致；密码表单 I001 / R01 依据独立复核改为 VERIFIED。
+- [x] 核验四个历史问题在 HEAD 的实现、规则及文档证据，完成真实 API 与独立 PostgreSQL 验证。
+- [x] 完成第九轮报告、处理建议与未验证范围，更新当前入口、问题清单和本计划；业务代码、既有测试、用户验收表、身份备份、历史报告及 Kimi worktree 保留。
+- [ ] I017 当前文档整理待独立复核；三项 OPEN 的修复与 S01–S07 验收待安排。此项不属于本轮核验完成条件。
+
 ### 当前交付与平台验收（2026-10-19）
 
 - [x] M01–M12、W01–W06：用户确认真机验收通过，按用户提供的编号记录。
 - [ ] S01–S07：BLOCKED，等待用户注册普通小程序账号后继续验收。
-- [ ] 当前变更的独立复核：由用户安排 Kimi Round 02；R01 保持 FIXED_PENDING_REVIEW。
+- [x] 当前增量独立复核：Kimi Round 02 对 `ba80e11` 给出 PASS，R01 已汇总为 VERIFIED；本结论不关闭阶段 4 四个历史问题。
 
 ### R01 修复（2026-10-18）
 
@@ -73,7 +104,7 @@ ACTIVE
 - [x] 无实际身份绑定且凭证耗尽时返回 CREDENTIAL_ATTEMPTS_EXCEEDED；真实双向身份冲突保持 IDENTITY_CONFLICT。
 - [x] 固定并验证两个请求锁顺序的 HTTP 状态、错误码、失败次数、身份表及消费状态；普通错误后正确重试、成功重试保留。
 - [x] WechatAuthApiTest 17 项、后端完整测试复跑 83 项、四包 typecheck 通过；首次完整运行的非本轮 LLM 测试错误保留记录。
-- [ ] R01 独立复核；当前仅 FIXED_PENDING_REVIEW。
+- [x] R01 独立复核：Kimi Round 02 已确认，见本任务归档报告。
 
 ### 密码输入与绑定错误处理（2026-10-17）
 
@@ -179,6 +210,10 @@ ACTIVE
 
 ## Plan
 
+本轮计划：核验六份文档和远端基线 → 完整前后端测试与类型检查 → 更新验证记录并检查全部暂存内容 → 扫描全部待推送提交 → 提交并推送 develop → 核验远端及本地状态。此前计划保持历史记录。
+
+第九轮计划已执行：归档独立报告并同步 R01 → 核验四项当前证据 → 隔离数据库验证 → 更新报告、状态和建议。下面实施计划属于此前任务，不能作为本轮业务修改授权。
+
 ### M11 对战失败提示（2026-10-18）
 
 已完成：检查错误来源与 Taro 网络类型契约 → 失败后读取网络状态并映射用户确认文案 → 执行纯函数提示测试、比赛与阵容规则回归、四包 typecheck 和小程序构建。网络状态为 `none` 时显示网络文案，其余状态及状态查询失败时显示原因未明确的文案。
@@ -228,6 +263,12 @@ ACTIVE
 实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
+
+本轮交付 checkpoint：完整前端 27 个文件、140 项测试通过；完整后端 83 项测试通过，0 failures/errors/skipped；四包类型检查通过。独立数据库 `develop_delivery_20261019` 位于 `basketball-gm-test-pg`，未操作用户开发库。日志位于 `.cache/develop-delivery-20261019/`。交付前 origin/develop 与 origin/main 均为 `787c2729a98abac1d555cebb230442cdf188f632`，develop 领先 30 个提交；本轮仅增加文档提交，最终同步状态通过 Git refs 核验。
+
+历史 checkpoint（develop 合并构建）：检出 develop，HEAD 为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`，与 mini-app-20261004 相同；当时本地 develop 比 origin/develop 领先 30 个提交，未推送。六份此前未提交文档保留，其中 current plan 随该任务更新。产物为 `apps/web/dist/`、`apps/miniprogram/dist/`、`backend/target/basketball-gm-api-0.0.1-SNAPSHOT.jar`。本地入口 `http://127.0.0.1:8088/`；当时局域网入口 `http://192.168.1.12:8088/`，小程序 API 为该地址下的 `/api/v1`。Web/API 容器已使用该轮构建镜像并通过健康检查；数据库容器未重建。以下记录为之前核验与实施的历史 checkpoint。
+
+当前事实（2026-10-19 Round 09）：HEAD 为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`。`ba80e115f72c48d81ded5d85fb607256f45361bb` 已包含 R01、M11 和按钮变更；HEAD 相对该提交只增加 `阶段4验收用例.xlsx`。Kimi Round 02 PASS、R01 VERIFIED。I004、I007 的残余路径已由真实 API 复现；I016 的预设项目 API 响应仍在测试源码；I017 本轮文档整理待独立复核。微信与 link 绑定的恢复、M/W 用户验收结果沿用已记录证据，本轮未连接用户开发库。以下均为历史 checkpoint，旧 HEAD、未提交、解绑待恢复及待验收描述只适用于对应日期。
 
 2026-10-18：R01 仅修改 WechatAuthService 与 WechatAuthApiTest。事务失败后的绑定解析先核验实际身份关系；没有绑定时重新读取凭证，按耗尽或无效状态返回错误。真实 PostgreSQL 行锁与等待队列固定两个并发顺序，新增双向真实 HTTP 冲突回归，并补充普通错误后成功重试断言。HEAD 仍为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`，修复未提交，源码快照 `wechat-password-form-r01-fix-20261018` 保存在 `.cache/password-form-r01/snapshot/`。Owner codex / ACTIVE；I001（来源 R01）为 FIXED_PENDING_REVIEW。
 
@@ -378,6 +419,12 @@ mvn test
 
 ## Progress
 
+2026-10-19 develop 文档交付：完整前端 140 项、独立数据库完整后端 83 项和四包类型检查通过；已检查六份文档，Kimi 原文归档摘要一致。用户授权提交并推送 develop，最终提交及同步状态由 Git 核验。
+
+2026-10-19 develop 构建：完成本地快进与分支切换；切换前后六份文档摘要一致。Web、小程序、后端 JAR 和 Web/API Docker 镜像构建完成，四包 typecheck 与独立库后端 83 项通过。更新本地验证服务并验证首页、静态资源与 API 健康接口。
+
+2026-10-19 Round 09：原样归档 Kimi 报告并验证 SHA-256；完成四项核验和独立库真实 HTTP 探针，后端 AuthApiTest + GuestImportApiTest 共 12 项通过；更新当前状态文档。后续段落保留各历史任务当时的状态。
+
 2026-10-19：记录用户 M01–M12、W01–W06 验收通过和 S01–S07 受阻；开始提交前验证，新增隔离测试库 `wechat_form_delivery_20261019`，不连接用户开发库。当前授权包括提交与推送分支 `mini-app-20261004`，R01 待独立复核。
 
 2026-10-19，M12 用户验收通过：用户明确反馈“M12 测试通过了”；按其指令完成 `linktest` → `link` 微信绑定恢复，原始绑定内容和业务数据校验通过。此结论记录为用户验收结果，R01 待独立复核及其他验收状态保持不变。
@@ -463,6 +510,12 @@ mvn test
 
 ## Open Questions
 
+当前授权边界：用户已授权提交六份文档、推送 develop 并运行全部测试。问题状态和平台未验收范围继续保留，不据此标记 VERIFIED、DEFERRED 或产品 DONE；不合并到 main。
+
+当前未完成事项：I004、I007、I016 尚未修复；I017 文档整理待独立复核；S01–S07 等待普通小程序账号。没有接受这些问题的剩余风险或批准延期。具体证据、处理建议及本轮验证边界见[第九轮报告](../reviews/wechat-login-stage4/round-09-codex.md)。
+
+以下为历史 discrepancy 和验证限制的追溯记录。已经由本轮当前摘要纠正的旧任务、HEAD、R01 状态及计数不再是当前事实；历史缺陷处理以问题清单的最新状态为准。`docs/AI_HANDOFF.md` 是 2026-10-17 的旧交接索引，本轮未交出工作，故不刷新该文件。
+
 - 2026-10-18 完整后端测试首次运行的 LlmSimulationClientRequestBodyTest 收到 HTTP 404；单独复跑和完整复跑均通过，原因未确定。相关代码无差异，未扩展修复范围；日志保留在 `.cache/password-form-r01/`。
 
 - S01–S07 等待用户注册普通小程序账号后验收；M01–M12、W01–W06 已按用户反馈通过，微信与 link 的绑定已按授权恢复。具体微信标识和原始绑定仅保存在本地忽略的受限备份文件中。
@@ -491,6 +544,46 @@ mvn test
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### develop 文档交付与完整测试（2026-10-19）
+
+以下为本轮实际运行结果，被测业务代码为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；本轮后续仅修改文档。
+
+- `docker exec basketball-gm-test-pg createdb -U zhulin develop_delivery_20261019`：PASS；本轮独立 PostgreSQL 数据库。
+- `npm test`：PASS；27 个测试文件、140 项测试，日志 `.cache/develop-delivery-20261019/frontend-test.log`。
+- 在 `backend` 执行 `SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/develop_delivery_20261019 mvn -Djava.io.tmpdir=../.cache/java-tmp --batch-mode --no-transfer-progress test`：PASS；83 项，0 failures/errors/skipped，日志 `.cache/develop-delivery-20261019/backend-test.log`。真实 Spring Boot 与 PostgreSQL；微信上游按 D-006 使用现有契约服务。
+- `npm run typecheck`：PASS；四包类型检查，日志 `.cache/develop-delivery-20261019/typecheck.log`。
+- `.cache/security-audit/tools/gitleaks git --redact --no-banner --config .cache/security-audit/audit.toml --log-opts=787c2729a98abac1d555cebb230442cdf188f632..HEAD --report-format json --report-path .cache/develop-delivery-20261019/outgoing-initial.json`：自动扫描 FAIL（退出码 1，33 条匹配）；逐条核验，32 条为测试常量、类型定义、变量赋值、样式或文案，未发现真实凭据；1 条为历史公开 AppID，位于 `337fb3a` 的 `apps/miniprogram/project.config.json:7`。该文件已由 `33361f2` 移出追踪，历史提交已存在于 origin/mini-app-20261004。保留此已知历史记录，不修改扫描规则或允许名单。提交后按完整范围再次扫描。
+- 真实微信、真机及 S01–S07：NOT RUN；本轮执行现有自动化套件，不替代平台验收，不改变 I004、I007、I016、I017 的状态。前端既有测试中的 I016 验证方式问题仍为 OPEN。
+
+### 本地 develop 合并与构建（2026-10-19）
+
+日志目录：`.cache/develop-build-20261019/`。源分支 HEAD 为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；合并前 develop 为 `787c2729a98abac1d555cebb230442cdf188f632`。日志与构建产物均为 Git 忽略内容。
+
+- `git ls-remote origin refs/heads/develop refs/heads/mini-app-20261004`：PASS；远端分支分别与上述提交一致。`git merge-base --is-ancestor develop mini-app-20261004`、`git rev-list --left-right --count develop...mini-app-20261004`：PASS，祖先关系成立，差异 0/30。
+- `git fetch --no-write-fetch-head . refs/heads/mini-app-20261004:refs/heads/develop` 后执行 `git switch develop`：PASS；以 Git 非强制 refspec 完成本地快进，当前检出 develop。此方法保留工作区未提交文档，无 stash、回滚或额外提交。`shasum -a 256 -c .cache/develop-build-20261019/documents-before.sha256`：PASS，切换前后六份文档完全一致；随后仅更新 current plan。
+- `ipconfig getifaddr en0`、`route -n get default`：普通沙箱读取失败，提升权限后 PASS，当前 en0 IPv4 为 `192.168.1.12`。
+- `npm run build`：PASS；包含四包 typecheck，产物 `apps/web/dist/`；日志 `web-build.log`。保留既有主资源超过 500 kB 提示。
+- `MINI_API_BASE_URL=http://192.168.1.12:8088/api/v1 npm run build:weapp`：PASS；包含四包 typecheck、Taro 构建与 verify-dist，产物 `apps/miniprogram/dist/`，实际包含指定地址；日志 `mini-build.log`。保留既有 common.js 286 KiB 提示。
+- `docker exec basketball-gm-test-pg createdb -U zhulin develop_build_20261019`：PASS。后端测试使用该独立 PostgreSQL 数据库（测试容器 5432），不使用用户开发库。
+- backend 目录执行 `SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/develop_build_20261019 mvn -Djava.io.tmpdir=../.cache/java-tmp --batch-mode --no-transfer-progress package`：PASS；83 项，0 failures/errors/skipped，生成 `backend/target/basketball-gm-api-0.0.1-SNAPSHOT.jar`；日志 `backend-package.log`。
+- `docker compose build web api`：首次 FAIL，沙箱禁止写入 Docker Buildx activity；提升权限重跑 PASS，日志 `compose-build.log`、`compose-build-rerun.log`。Dockerfile 后端打包跳过测试，测试证据使用上述本机完整 83 项。
+- `docker compose up -d --no-deps --wait --wait-timeout 120 api web`：PASS；本地 API 容器更新，日志 `compose-up.log`。随后执行 `docker compose up -d --no-deps --force-recreate --wait --wait-timeout 60 web`：PASS，确保 Web 容器使用本轮镜像，日志 `compose-web-refresh.log`；二者均 healthy。未重建数据库容器、未执行用户账号或绑定数据操作。
+- `docker inspect` 容器 Image 与 `docker image inspect` 本地镜像 Id：PASS，两项均匹配本轮构建镜像。
+- `curl --fail --silent --show-error --max-time 10` 验证 `http://127.0.0.1:8088/`、首页实际引用的 JS/CSS：PASS，均 HTTP 200；`http://192.168.1.12:8088/api/v1/health`：PASS，status=ok。
+- 前端完整测试及真机交互：NOT RUN，本轮无业务代码修改；本次构建与 HTTP 冒烟不替代 I004/I007 修复验证及平台验收。I016 涉及的预设项目 API 响应测试未重跑。
+- `node node_modules/prettier/bin/prettier.cjs --check docs/plans/current.md`、`git diff --check`：PASS。收尾 `git branch --show-current` 为 develop；`git rev-list --left-right --count develop...mini-app-20261004` 为 0/0，`origin/develop...develop` 为 0/30。业务代码与保护文件差异为空；未提交文件仍为此前六份文档，本轮仅更新其中的 current plan。
+
+### 第九轮归档与核验（2026-10-19）
+
+- 版本：`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；独立数据库 `stage4_recheck_20261019`，测试容器 `basketball-gm-test-pg`，端口 5432。用户开发库未连接。辅助文件与日志位于 `.cache/stage4-recheck-20261019/`。
+- `shasum -a 256` 校验归档报告及 Kimi 原文：PASS，摘要一致；`git diff ba80e115f72c48d81ded5d85fb607256f45361bb HEAD --stat`：PASS，只有验收表增量。
+- `docker exec basketball-gm-test-pg createdb -U zhulin stage4_recheck_20261019`：PASS。Spring Boot 首次启动因未提供 JWT_SECRET 失败；补充独立进程临时密钥后启动 PASS。首次探针在服务就绪前连接失败，健康检查后重新运行 PASS；失败日志保留。
+- `node .cache/stage4-recheck-20261019/run-probe.mjs`：PASS，断言确认 I004、I007 仍存在；业务判定 FAIL。使用真实项目 client/runtime/store 模块、磁盘存储、Spring Boot HTTP 与 PostgreSQL，未预设项目 API 返回值。完整 Taro 页面流程 NOT RUN。
+- 在 backend 执行 `SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/stage4_recheck_20261019 mvn -Djava.io.tmpdir=../.cache/java-tmp -Dtest=AuthApiTest,GuestImportApiTest test`：PASS，12 项，0 failures/errors/skipped。
+- PostgreSQL `SELECT current_database(), name FROM lineups WHERE name LIKE 'r09_%'`：PASS，只有首次导入的 `r09_initial_import`，重试的新编辑未入库。
+- 完整前后端测试、typecheck、构建、真机：NOT RUN，本轮没有业务代码或既有测试修改；I016 涉及的预设项目响应测试没有重跑。Kimi 全量验证属于独立报告中的历史执行，未计为本轮执行。
+- 实际命令、环境失败、文档验证、资源收尾和覆盖边界统一记录于[第九轮报告](../reviews/wechat-login-stage4/round-09-codex.md)。下方为以前任务的验证记录。
 
 ### 提交前完整验证与用户验收记录（2026-10-19）
 
@@ -532,7 +625,7 @@ none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用�
 
 ### M11 对战失败提示（2026-10-18）
 
-- 修改：`apps/miniprogram/src/pages/battle/index.tsx`、`apps/miniprogram/src/constants/text.ts`，新增 `apps/miniprogram/src/platform/battle-error.ts` 和 `apps/miniprogram/src/constants/text.test.ts`。网络状态查询仅发生在对战失败后，不以 `getRandomValues:fail` 推断断网，不更改主客队选择。此前“开始对战”按钮文案保留。
+- 修改：`apps/miniprogram/src/pages/battle/index.tsx`、`apps/miniprogram/src/constants/text.ts`，新增 `apps/miniprogram/src/platform/battle-error.ts` 和 `apps/miniprogram/src/constants/text.test.ts`。网络状态查询仅发生在对战失败后，不以 `getRandomValues:fail` 推断断网，不更改主客队选择。相对增量基线 `6c1d1ba`，按钮文案由“开始规则对战”改为“开始对战”，随 `ba80e11` 提交。
 - `npm test -- apps/miniprogram/src/constants/text.test.ts packages/core/src/simulator.test.ts packages/core/src/lineup-validation.test.ts`：PASS；3 个文件、17 项测试，其中 8 项验证断网、各联网类型、unknown 与无法获得网络状态时的提示。测试直接调用纯函数及真实比赛规则，未替换平台或项目 API。
 - `MINI_API_BASE_URL=http://172.17.11.117:8088/api/v1 npm run build:weapp`：PASS；包含四包 typecheck、Taro 构建及产物地址校验。日志：`.cache/m11-battle-error-build-20261018.log`。保留现有 common.js 286 KiB 体积提示。
 - `npx prettier --check apps/miniprogram/src/constants/text.ts apps/miniprogram/src/constants/text.test.ts apps/miniprogram/src/platform/battle-error.ts apps/miniprogram/src/pages/battle/index.tsx`：首次 FAIL（新表达式换行格式），手动修正后 PASS；`git diff --check`：PASS。
@@ -953,6 +1046,12 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+本轮完整自动化验证已完成，六份文档按用户授权提交并推送 develop；实际提交 SHA、推送成功与工作区收尾结果以 Git 核验及交付回执为准。Owner 保持 codex / ACTIVE，产品既有问题及 S01–S07 受阻状态保留。本轮不合并到 main。以下为此前任务的历史完成记录。
+
+本地 develop 合并与三端构建完成。当前保持 develop / `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；Web/API 验证服务 healthy，入口及产物见 Current State。四包 typecheck、后端完整 83 项、两端构建与 HTTP 冒烟通过。Owner codex / ACTIVE，用户继续验证；既有问题和 S01–S07 受阻状态保留。六份文档未提交，未推送远端。本段为最新结果，以下关于未合并的说明属于之前任务的授权边界。
+
+第九轮归档与核验完成：R01 VERIFIED；阶段 4 为 19 VERIFIED、3 OPEN、1 FIXED_PENDING_REVIEW，整体 CHANGES_REQUIRED。当前六份文档变更未提交；无业务代码、既有测试或验收表改动，无推送或合并。Owner codex / ACTIVE，不进行工作交接。下一步需要业务与测试修复、I017 文档独立复核及 S01–S07 平台验收，见第九轮建议。以下均为历史完成记录，不能授予本轮提交、推送或修改业务的权限。
 
 2026-10-19：当前变更完整自动化验证通过，用户平台验收结果已记录。用户授权提交并推送 `mini-app-20261004`，实际提交 SHA 与远端结果由交付提示词及 Git 核验记录；不合并。R01 为 FIXED_PENDING_REVIEW，S01–S07 受阻，历史四项 OPEN 保留。Owner 继续 codex / ACTIVE，不进行工作交接。
 
