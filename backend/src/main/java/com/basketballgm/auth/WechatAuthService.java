@@ -205,18 +205,25 @@ public class WechatAuthService {
     }
   }
 
-  /**
-   * 事务因唯一约束回滚后区分真实冲突与已完成的相同绑定：
-   * 身份已属于目标账号时消费当前凭证并按幂等成功返回会话，其余情况保持冲突。
-   */
+  /** 事务失败后区分相同绑定、真实身份冲突与并发消费凭证的原因。 */
   private AuthResponse resolveBindConflict(WechatCredentialRow credential, UserRow user) {
     UserIdentityRow identity = identityMapper.find(credential.provider(), credential.appid(), credential.openid());
     if (identity != null && identity.userId().equals(user.id())) {
       consumeResolvedCredential(credential, user);
       return tokenIssuer.issue(user);
     }
-    throw new ApiException(
-        HttpStatus.CONFLICT, "IDENTITY_CONFLICT", "该微信身份已绑定其他账号，或当前账号已绑定其他微信。");
+    boolean conflictingIdentity = identity != null || identityMapper.listByUser(user.id()).stream()
+        .anyMatch(bound -> bound.provider().equals(credential.provider()) && bound.appid().equals(credential.appid()));
+    if (conflictingIdentity) {
+      throw new ApiException(
+          HttpStatus.CONFLICT, "IDENTITY_CONFLICT", "该微信身份已绑定其他账号，或当前账号已绑定其他微信。");
+    }
+    WechatCredentialRow latest = credentialMapper.findById(credential.id());
+    if (latest != null && latest.consumedAt() != null && latest.consumedByUserId() == null
+        && latest.failedAttempts() >= bindAttempts) {
+      throw exhaustedCredential();
+    }
+    throw invalidCredential();
   }
 
   /**

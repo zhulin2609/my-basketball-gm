@@ -5,7 +5,7 @@ import { Screen } from '@/components/Screen';
 import type { DataSnapshot, DataStore } from '@/services/data-store';
 import { prepareIdentifiers } from '@/platform/identifier';
 import { navigate } from '@/platform/navigation';
-import { errorMessage } from '@/constants/text';
+import { getBattleErrorMessage } from '@/platform/battle-error';
 
 interface BattleContentProps {
   store: DataStore;
@@ -31,8 +31,8 @@ function BattleContent({ store, data }: BattleContentProps) {
       await prepareIdentifiers();
       const report = await store.runBattle(home.id, away.id);
       navigate(`/pages/report-detail/index?id=${encodeURIComponent(report.id)}`);
-    } catch (failure: unknown) {
-      setError(errorMessage(failure));
+    } catch {
+      setError(await getBattleErrorMessage());
     } finally {
       setRunning(false);
     }
@@ -84,7 +84,7 @@ function BattleContent({ store, data }: BattleContentProps) {
         })}
         {error && <View className="error">{error}</View>}
         <Button className="primary" loading={running} disabled={running || !eligible} onClick={run}>
-          {running ? '正在模拟比赛' : '开始规则对战'}
+          {running ? '正在模拟比赛' : '开始对战'}
         </Button>
       </View>
       <Button className="secondary" onClick={() => navigate('/pages/reports/index')}>

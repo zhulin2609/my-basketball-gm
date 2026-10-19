@@ -30,3 +30,7 @@ export function errorMessage(error: unknown): string {
   }
   return String(error);
 }
+
+export function battleErrorMessage(networkType: string | undefined): string {
+  return networkType === 'none' ? '网络错误，请稍后重试。' : '暂时无法对战，请稍后重试。';
+}

@@ -1,5 +1,15 @@
 # 当前代码审查
 
+- Task：`wechat-password-form-20261017`，更新日期 2026-10-19（Asia/Shanghai）。
+- 当前结论：`INCOMPLETE`；Kimi R01 的修复已完成，等待独立复核。
+- 当前待审范围：基于 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7` 的 R01 修复、对战按钮文案及 M11 错误提示。Round 02 的 Reviewed Commit 由提交后的交付提示词提供完整 SHA，审查者须核验并写入报告；2026-10-18 的修复快照及摘要仍见问题清单。
+- 汇总与修复负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`；原工作区 Owner codex / ACTIVE。
+- [本任务问题清单](reviews/wechat-password-form-20261017/issues.md)：I001 对应 Kimi R01，`FIXED_PENDING_REVIEW` 1，其他状态均为 0；原始报告链接与修复验证记录见清单。
+- 平台验收：2026-10-19 用户确认 M01–M12、W01–W06 真机验收 PASS；S01–S07 BLOCKED，等待注册普通小程序账号。本轮 Agent 未另行执行真机验收。
+- 下一步：完成用户授权的当前分支提交与推送，由用户安排独立复核。R01 保持 FIXED_PENDING_REVIEW；原工作区由 Codex 继续持有，未授权合并。
+
+## 历史任务：wechat-login-stage4
+
 - Task：`wechat-login-stage4`。
 - 更新日期：2026-10-16（Asia/Shanghai）。
 - 当前任务汇总结论：`CHANGES_REQUIRED`；第八轮 I021–I023 定向复核 `PASS`，三项全部 VERIFIED；round-05 遗留 I004、I007、I016、I017 保持 OPEN，本轮未重新复核。

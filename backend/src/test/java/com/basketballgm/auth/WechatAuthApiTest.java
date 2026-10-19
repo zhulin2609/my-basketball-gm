@@ -2,6 +2,7 @@ package com.basketballgm.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,9 +18,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +59,7 @@ class WechatAuthApiTest {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private DataSource dataSource;
   @LocalServerPort private int port;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -327,6 +333,10 @@ class WechatAuthApiTest {
     HttpResponse<String> correct = bindOverHttp(credential, username, "visitor-password-2026");
     assertEquals(200, correct.statusCode());
     assertEquals(username, objectMapper.readTree(correct.body()).get("user").get("username").asText());
+    HttpResponse<String> replay = bindOverHttp(credential, username, "visitor-password-2026");
+    assertEquals(200, replay.statusCode());
+    assertEquals(objectMapper.readTree(correct.body()).get("user").get("id"),
+        objectMapper.readTree(replay.body()).get("user").get("id"));
     assertEquals(1, jdbcTemplate.queryForObject(
         "select count(*) from user_identities where appid = 'test-appid' and openid = 'openid-http-retry'", Integer.class));
   }
@@ -374,11 +384,155 @@ class WechatAuthApiTest {
     assertEquals(400, bindOverHttp(credential, username, "visitor-password-2026").statusCode());
   }
 
+  @Test
+  void realHttpFifthWrongAttemptLocksBeforeCorrectRequest() throws Exception {
+    assertOrderedBindRace(false);
+  }
+
+  @Test
+  void realHttpCorrectRequestLocksBeforeFifthWrongAttempt() throws Exception {
+    assertOrderedBindRace(true);
+  }
+
+  private void assertOrderedBindRace(boolean correctFirst) throws Exception {
+    String suffix = correctFirst ? "correct-first" : "wrong-first";
+    String username = USER_PREFIX + suffix;
+    JsonNode user = registerOverHttp(username);
+    String credential = exchangeOverHttp("code-" + suffix);
+    for (int attempt = 0; attempt < 4; attempt++) {
+      assertHttpError(bindOverHttp(credential, username, "wrong-password-2026"),
+          401, "INVALID_ACCOUNT_CREDENTIALS");
+    }
+
+    try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      Future<HttpResponse<String>> first;
+      Future<HttpResponse<String>> second;
+      // 仅持有真实行锁，不修改数据；观察数据库等待关系后再释放，固定请求顺序。
+      try (var connection = dataSource.getConnection()) {
+        connection.setAutoCommit(false);
+        int blockerPid;
+        try (var statement = connection.prepareStatement(
+            "select pg_backend_pid() from wechat_auth_credentials where token_digest = ? for no key update")) {
+          statement.setString(1, TokenSupport.digest(credential));
+          try (var rows = statement.executeQuery()) {
+            assertTrue(rows.next());
+            blockerPid = rows.getInt(1);
+          }
+        }
+        first = executor.submit(() -> bindOverHttp(credential, username,
+            correctFirst ? "visitor-password-2026" : "wrong-password-2026"));
+        int firstPid = awaitBlockedBind(blockerPid, correctFirst);
+        second = executor.submit(() -> bindOverHttp(credential, username,
+            correctFirst ? "wrong-password-2026" : "visitor-password-2026"));
+        awaitBlockedBind(firstPid, !correctFirst);
+        connection.commit();
+      }
+      HttpResponse<String> firstResponse = first.get(30, TimeUnit.SECONDS);
+      HttpResponse<String> secondResponse = second.get(30, TimeUnit.SECONDS);
+      if (correctFirst) {
+        assertEquals(200, firstResponse.statusCode());
+        JsonNode body = objectMapper.readTree(firstResponse.body());
+        assertEquals(user.get("user").get("id"), body.get("user").get("id"));
+        assertTrue(!body.has("code"));
+        assertHttpError(secondResponse, 400, "CREDENTIAL_INVALID");
+      } else {
+        assertHttpError(firstResponse, 400, "CREDENTIAL_ATTEMPTS_EXCEEDED");
+        assertHttpError(secondResponse, 400, "CREDENTIAL_ATTEMPTS_EXCEEDED");
+      }
+    }
+
+    var state = jdbcTemplate.queryForMap(
+        "select failed_attempts, consumed_at, consumed_by_user_id from wechat_auth_credentials where token_digest = ?",
+        TokenSupport.digest(credential));
+    assertEquals(correctFirst ? 4 : 5, state.get("failed_attempts"));
+    assertNotNull(state.get("consumed_at"));
+    assertEquals(correctFirst ? UUID.fromString(user.get("user").get("id").asText()) : null,
+        state.get("consumed_by_user_id"));
+    var identities = jdbcTemplate.queryForList(
+        "select user_id from user_identities where provider = 'wechat' and appid = 'test-appid' and openid = ?",
+        UUID.class, "openid-" + suffix);
+    assertEquals(correctFirst ? 1 : 0, identities.size());
+    if (correctFirst) {
+      assertEquals(UUID.fromString(user.get("user").get("id").asText()), identities.getFirst());
+      HttpResponse<String> replay = bindOverHttp(credential, username, "visitor-password-2026");
+      assertEquals(200, replay.statusCode());
+      assertEquals(user.get("user").get("id"), objectMapper.readTree(replay.body()).get("user").get("id"));
+    } else {
+      assertHttpError(bindOverHttp(credential, username, "visitor-password-2026"),
+          400, "CREDENTIAL_ATTEMPTS_EXCEEDED");
+    }
+  }
+
+  private int awaitBlockedBind(int blockerPid, boolean correctPassword) throws Exception {
+    long deadline = System.nanoTime() + Duration.ofSeconds(15).toNanos();
+    String queryPattern = correctPassword ? "%for no key update%" : "%set failed_attempts = failed_attempts + 1%";
+    while (System.nanoTime() < deadline) {
+      var pids = jdbcTemplate.queryForList("""
+          select pid from pg_stat_activity
+          where datname = current_database() and wait_event_type = 'Lock'
+            and ? = any(pg_blocking_pids(pid)) and query like ?
+          """, Integer.class, blockerPid, queryPattern);
+      if (pids.size() == 1) return pids.getFirst();
+      assertTrue(pids.isEmpty(), "出现额外的凭证锁等待请求");
+      Thread.sleep(25);
+    }
+    throw new AssertionError("未观察到指定顺序的真实绑定请求锁等待");
+  }
+
+  @Test
+  void realHttpIdentityConflictsInBothDirectionsRemainConflicts() throws Exception {
+    String first = USER_PREFIX + "http-owner";
+    String second = USER_PREFIX + "http-other";
+    JsonNode owner = registerOverHttp(first);
+    registerOverHttp(second);
+    String credential = exchangeOverHttp("code-http-conflict");
+    String competingCredential = exchangeOverHttp("code-http-conflict");
+    assertEquals(200, bindOverHttp(credential, first, "visitor-password-2026").statusCode());
+    assertHttpError(bindOverHttp(competingCredential, second, "visitor-password-2026"),
+        409, "IDENTITY_CONFLICT");
+    String otherIdentity = exchangeOverHttp("code-http-conflict-other");
+    assertHttpError(bindOverHttp(otherIdentity, first, "visitor-password-2026"),
+        409, "IDENTITY_CONFLICT");
+    assertEquals(UUID.fromString(owner.get("user").get("id").asText()), jdbcTemplate.queryForObject(
+        "select user_id from user_identities where appid = 'test-appid' and openid = 'openid-http-conflict'", UUID.class));
+    assertEquals(0, jdbcTemplate.queryForObject(
+        "select count(*) from user_identities where appid = 'test-appid' and openid = 'openid-http-conflict-other'", Integer.class));
+    for (String rejected : java.util.List.of(competingCredential, otherIdentity)) {
+      assertEquals(1, jdbcTemplate.queryForObject("""
+          select count(*) from wechat_auth_credentials
+          where token_digest = ? and consumed_at is null and failed_attempts = 0
+          """, Integer.class, TokenSupport.digest(rejected)));
+    }
+  }
+
+  private JsonNode registerOverHttp(String username) throws Exception {
+    HttpResponse<String> response = postOverHttp("/auth/register",
+        Map.of("username", username, "password", "visitor-password-2026"));
+    assertEquals(201, response.statusCode());
+    return objectMapper.readTree(response.body());
+  }
+
+  private String exchangeOverHttp(String code) throws Exception {
+    HttpResponse<String> response = postOverHttp("/auth/wechat/exchange", Map.of("code", code));
+    assertEquals(200, response.statusCode());
+    return objectMapper.readTree(response.body()).get("credentialToken").asText();
+  }
+
+  private void assertHttpError(HttpResponse<String> response, int status, String code) throws Exception {
+    assertEquals(status, response.statusCode());
+    assertEquals(code, objectMapper.readTree(response.body()).get("code").asText());
+  }
+
   private HttpResponse<String> bindOverHttp(String credential, String username, String password) throws Exception {
-    HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/auth/wechat/bind"))
+    return postOverHttp("/auth/wechat/bind",
+        Map.of("credentialToken", credential, "username", username, "password", password));
+  }
+
+  private HttpResponse<String> postOverHttp(String path, Map<String, String> body) throws Exception {
+    HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1" + path))
+        .timeout(Duration.ofSeconds(30))
         .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(Map.of(
-            "credentialToken", credential, "username", username, "password", password))))
+        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
         .build();
     try (HttpClient client = HttpClient.newHttpClient()) {
       return client.send(request, HttpResponse.BodyHandlers.ofString());

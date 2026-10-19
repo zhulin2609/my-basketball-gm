@@ -1,10 +1,16 @@
 # Current Plan
 
-更新时间：2026-10-17（Asia/Shanghai）
+更新时间：2026-10-19（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
+
+2026-10-19 当前授权：记录用户反馈的 M01–M12、W01–W06 真机验收通过；S01–S07 因等待注册普通小程序账号而受阻。验证并提交、推送当前分支的 R01 修复、对战按钮文案、M11 错误提示及相关记录，提供 Kimi Round 02 独立复核提示词。原工作区 Owner 继续 codex / ACTIVE；R01 保持 FIXED_PENDING_REVIEW，不合并。用户验收表、本地身份备份、历史报告及 Kimi 独立 worktree 保留原状，不纳入本次提交。
+
+2026-10-18 补充任务：M11 对战失败提示。用户确认断网文案为“网络错误，请稍后重试。”，原因未明确时为“暂时无法对战，请稍后重试。”。仅修改小程序对战错误展示与必要的平台网络状态读取；验收要求：不向用户暴露底层错误字符串，失败后保留所选阵容并允许再次提交；四包 typecheck、小程序构建及相关前端回归通过。本次增量基线为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`。
+
+当前修复：仅处理 Kimi Round 01 的 R01（第五次密码失败与正确请求并发时误报身份冲突）。原 Reviewed Commit 为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`；任务 Base Commit 保持 `03c11587a11c28336693d64ee6f8e5d77e1a9a10`。原始报告在 `.cache/review-worktrees/wechat-password-form-20261017-round-01-kimi/docs/reviews/wechat-password-form-20261017/round-01-kimi.md`，只读保留。
 
 本轮任务：`wechat-password-form-20261017`。用户授权实现小程序绑定错误保留表单、原位置重新验证微信身份，以及 Web 登录/注册与小程序绑定共用各端的 PasswordInput 控件。密码默认隐藏，可切换显示；错误后保留输入，切换不提交表单，保持焦点与选区。绑定请求与登录后数据加载分别处理，后端区分密码错误、凭证失效和次数耗尽。此前 M06 临时解绑和备份保留，恢复另待用户指令。交出工作时执行 `.agents/skills/handoff/SKILL.md`。
 
@@ -20,6 +26,10 @@
 
 ACTIVE
 
+2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
+
+2026-10-18：Kimi Round 01 已完成，R01 已确认并修复，当前为 FIXED_PENDING_REVIEW，证据见[本任务问题清单](../reviews/wechat-password-form-20261017/issues.md)。原 Reviewed Commit 上的 CHANGES_REQUIRED 保留，修复后的独立复核尚未执行。以下 2026-10-17 状态属于修复前 checkpoint。
+
 本轮密码控件与绑定错误处理已实现，自动化验证见本轮 Validation；小程序开发者工具页面验证未通过，真机键盘、选区与 M06 复验仍待完成。阶段 4 审查记录保留为 19 VERIFIED、4 OPEN（I004、I007、I016、I017，未获风险接受或延期批准）。用户此前真机验收 M01–M04 通过。第八轮复核 DONE 的记录保留。Kimi Code 的交接记录明确停止写入；用户于 2026-10-16 确认 ZCode 已停止写入，Codex 已取得当前工作区写入归属。
 
 历史状态说明（保留）：第五轮核验第四轮未提交修复后，I004、I007、I016、I017 保持 OPEN，其余 16 项 VERIFIED；平台验收未完成，未获得风险接受批准。第八轮最终定向复核 DONE，I021–I023 全部 VERIFIED，该轮范围结论 PASS；阶段 4 产品验收保持 VALIDATING，任务汇总结论仍为 CHANGES_REQUIRED：19 VERIFIED、4 OPEN。
@@ -33,15 +43,37 @@ ACTIVE
 - Branch: mini-app-20261004
 - Base Commit: 03c11587a11c28336693d64ee6f8e5d77e1a9a10（本轮密码表单任务；阶段 4 历史基线保留在历史记录中）
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: 两端 PasswordInput、认证页面与相关样式/文案，小程序认证请求服务，后端微信绑定错误与次数处理，针对性测试及状态文档。验证使用独立测试数据库和 Git 忽略的辅助目录；保留验收表与绑定备份。用户已授权提交本轮变更并推送当前分支，不自动恢复用户绑定。Owner 继续为 codex。
+- Write Scope: 当前未提交的 WechatAuthService、WechatAuthApiTest、小程序对战文案与错误处理及测试、current plan、当前审查入口与本任务问题记录。验证使用本轮独立 PostgreSQL 数据库和 Git 忽略的辅助目录；保留用户验收表、身份备份、历史报告及 Kimi worktree。用户已授权提交和推送当前分支，不合并。Owner 继续为 codex。
+
+2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
+
+2026-10-18 M06 数据准备授权：用户明确要求备份并临时解除当前微信与账号 `link` 的绑定，随后明确授权恢复账号 A 的绑定。已在本地开发库 `basketball_gm` 完成这一条 `user_identities` 记录的备份、临时删除和原样恢复；备份继续保留，等待用户在已有表单提交账号 B 进行真机冲突验收。Owner 保持 codex，状态 ACTIVE。
 
 ## Goal
+
+2026-10-19 M12：用户确认测试通过，并明确授权将当前微信从 `linktest` 恢复绑定到 `link`。已在本地开发库 `basketball_gm` 将唯一对应身份行原样恢复为 M12 前的备份内容，两个账号的数据保留。原绑定备份继续保留；手机已有会话须退出后重新微信登录，才能进入 `link`。
+
+本次目标：修正 R01 的凭证消费原因解析，以真实 HTTP 与 PostgreSQL 固定两个锁顺序并验证响应与持久结果；完成当前增量的验证、提交与推送，提供固定提交版本的独立复核依据。
 
 本轮目标：用户在原表单完成错误修改与重试，两端账号密码输入使用统一交互控件；验证正确密码、错误密码、凭证到期、次数耗尽、网络失败、重复提交与可见性切换。此前 M06 解绑准备、第八轮复核与 Codex 接手证据保留。
 
 按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+### 当前交付与平台验收（2026-10-19）
+
+- [x] M01–M12、W01–W06：用户确认真机验收通过，按用户提供的编号记录。
+- [ ] S01–S07：BLOCKED，等待用户注册普通小程序账号后继续验收。
+- [ ] 当前变更的独立复核：由用户安排 Kimi Round 02；R01 保持 FIXED_PENDING_REVIEW。
+
+### R01 修复（2026-10-18）
+
+- [x] 修复前通过真实 HTTP 并发测试复现错误请求先取得锁时正确请求误报 409。
+- [x] 无实际身份绑定且凭证耗尽时返回 CREDENTIAL_ATTEMPTS_EXCEEDED；真实双向身份冲突保持 IDENTITY_CONFLICT。
+- [x] 固定并验证两个请求锁顺序的 HTTP 状态、错误码、失败次数、身份表及消费状态；普通错误后正确重试、成功重试保留。
+- [x] WechatAuthApiTest 17 项、后端完整测试复跑 83 项、四包 typecheck 通过；首次完整运行的非本轮 LLM 测试错误保留记录。
+- [ ] R01 独立复核；当前仅 FIXED_PENDING_REVIEW。
 
 ### 密码输入与绑定错误处理（2026-10-17）
 
@@ -55,7 +87,7 @@ ACTIVE
 - [x] 核验本地 Docker 数据库、服务连接、小程序构建地址及身份表约束。
 - [x] 确认当前唯一微信绑定对应的账号与用户期望一致。
 - [x] 备份原绑定，精确删除一条记录并核验业务数据保留。
-- [ ] 用户执行真机密码错误及正确输入验证；恢复原绑定另按用户指令执行。
+- [x] 用户于 2026-10-19 确认 M01–M12 真机验收通过；原微信与 link 的绑定已按授权恢复，备份保留。
 
 ### Codex 接手核验（2026-10-16）
 
@@ -147,6 +179,14 @@ ACTIVE
 
 ## Plan
 
+### M11 对战失败提示（2026-10-18）
+
+已完成：检查错误来源与 Taro 网络类型契约 → 失败后读取网络状态并映射用户确认文案 → 执行纯函数提示测试、比赛与阵容规则回归、四包 typecheck 和小程序构建。网络状态为 `none` 时显示网络文案，其余状态及状态查询失败时显示原因未明确的文案。
+
+### R01 修复（2026-10-18）
+
+核验报告与当前代码 → 通过真实 HTTP 和 PostgreSQL 行锁等待队列固定两种请求顺序，先复现错误 → 修复事务失败后的凭证状态解析 → 执行 WechatAuthApiTest、完整后端测试、typecheck 与差异检查 → 记录 R01 为 FIXED_PENDING_REVIEW，等待独立复核。测试数据库计划为 `password_form_r01_20261018` 与 `password_form_r01_full_20261018`，不连接用户开发库。
+
 ### 当前密码表单任务
 
 本轮实施顺序：拆分认证失败与登录后失败 → 新增两端 PasswordInput → 原表单保留输入与错误提示 → 原位置重新验证微信 → 原子记录失败次数并返回明确错误码 → 真实 API、控件与构建验证。实现已完成；平台验证限制见 Validation。正式交出工作时执行 `.agents/skills/handoff/SKILL.md`，刷新交接索引并释放 Owner。
@@ -188,6 +228,8 @@ ACTIVE
 实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
+
+2026-10-18：R01 仅修改 WechatAuthService 与 WechatAuthApiTest。事务失败后的绑定解析先核验实际身份关系；没有绑定时重新读取凭证，按耗尽或无效状态返回错误。真实 PostgreSQL 行锁与等待队列固定两个并发顺序，新增双向真实 HTTP 冲突回归，并补充普通错误后成功重试断言。HEAD 仍为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`，修复未提交，源码快照 `wechat-password-form-r01-fix-20261018` 保存在 `.cache/password-form-r01/snapshot/`。Owner codex / ACTIVE；I001（来源 R01）为 FIXED_PENDING_REVIEW。
 
 2026-10-17，密码表单修复：Web 登录和注册复用 Web PasswordInput，小程序绑定使用 Taro PasswordInput；默认隐藏、显示切换、禁用和错误提示由控件负责。小程序认证请求移到 `services/account-auth.ts`，普通失败保留输入，编辑清除普通错误；凭证失效或次数耗尽提供原位置重新验证，重新验证成功后等待用户再次提交。认证成功后的加载失败使用独立提示。后端第五次错误立即返回 `CREDENTIAL_ATTEMPTS_EXCEEDED`，更新次数与消费凭证在同一条条件 SQL 中完成。具体证据与未验证范围见本轮 Validation；没有执行独立审查，合并前仍须按 canonical code-review Skill 进行。
 
@@ -336,6 +378,14 @@ mvn test
 
 ## Progress
 
+2026-10-19：记录用户 M01–M12、W01–W06 验收通过和 S01–S07 受阻；开始提交前验证，新增隔离测试库 `wechat_form_delivery_20261019`，不连接用户开发库。当前授权包括提交与推送分支 `mini-app-20261004`，R01 待独立复核。
+
+2026-10-19，M12 用户验收通过：用户明确反馈“M12 测试通过了”；按其指令完成 `linktest` → `link` 微信绑定恢复，原始绑定内容和业务数据校验通过。此结论记录为用户验收结果，R01 待独立复核及其他验收状态保持不变。
+
+2026-10-18，M11 implementation complete / automated validation complete：对战页失败提示按用户确认的两条文案处理，17 项定向测试、四包 typecheck、小程序构建、格式和差异检查通过。产物保留当前 API 地址；真机断网及恢复网络后的交互验证尚未执行，Owner 保持 codex / ACTIVE。
+
+2026-10-18，R01 implementation complete / validation complete：修复前两种锁顺序测试中 1 项复现 409；修复后 WechatAuthApiTest 17 项全部通过。完整后端首次运行有 1 项 LLM HTTP 404，相关代码没有改动；单独复跑及保持代码不变的完整复跑通过，完整复跑为 83 项。四包 typecheck 通过。按协议记录为 FIXED_PENDING_REVIEW，等待独立复核。
+
 2026-10-17，本轮实现与自动化验证完成：前端 132 项、后端 80 项、真实 API 小程序服务 2 项、Web 真实浏览器交互通过。小程序开发者工具在独立项目中出现连接超时和 `page node not found`，未获得完整页面交互证据；不将服务测试或构建结果作为真机验收结论。
 
 2026-10-17，本地开发服务更新完成：Docker Web/API 镜像已重建并启动，三个服务 healthy；小程序最终产物指向现有局域网地址。开发库数量仍为 5 个用户、27 套阵容、47 场战报、0 条微信绑定，原备份保留。独立开发者工具项目和测试运行进程已关闭；测试数据库与忽略目录保留验证材料。当前状态为 ACTIVE，Owner 为 codex，继续由上述实例负责。
@@ -413,7 +463,9 @@ mvn test
 
 ## Open Questions
 
-- M06 真机结果待用户反馈；目标账号已获用户确认，解绑准备完成。测试后是否恢复原绑定及恢复时机等待用户指令，具体微信标识和原始绑定仅保存在本地忽略的受限备份文件中。
+- 2026-10-18 完整后端测试首次运行的 LlmSimulationClientRequestBodyTest 收到 HTTP 404；单独复跑和完整复跑均通过，原因未确定。相关代码无差异，未扩展修复范围；日志保留在 `.cache/password-form-r01/`。
+
+- S01–S07 等待用户注册普通小程序账号后验收；M01–M12、W01–W06 已按用户反馈通过，微信与 link 的绑定已按授权恢复。具体微信标识和原始绑定仅保存在本地忽略的受限备份文件中。
 
 - 第八轮输入中的 current plan 顶部仍为第五轮，AI_HANDOFF 仍引用第四轮及旧 HEAD；第七轮新增 Progress 已读取。本轮以实际 Git 和固定快照建立复核状态，历史交接不作为当前事实；I017 不重新审查。
 - 第八轮输入 issues.md 顶部为待复核状态，但状态计数仍为第五轮的 20 项；本轮收尾按全部 23 项核对当前入口和计数，历史逐项结论保留。
@@ -439,6 +491,87 @@ mvn test
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### 提交前完整验证与用户验收记录（2026-10-19）
+
+本次增量基线为 `6c1d1ba1e2f3841964f9458c5c4be9ed773552b7`；日志位于 Git 忽略目录 `.cache/delivery-20261019/`。修改文件为小程序 `constants/text.ts`、`constants/text.test.ts`、`platform/battle-error.ts`、`pages/battle/index.tsx`，后端 `WechatAuthService.java`、`WechatAuthApiTest.java`，以及本计划、审查入口、本任务问题清单。
+
+- `docker exec basketball-gm-test-pg createdb -U zhulin wechat_form_delivery_20261019`：PASS；新建本轮独立 PostgreSQL 数据库，端口 5432，未连接用户开发库。
+- 在 `backend` 执行 `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/wechat_form_delivery_20261019 mvn -Djava.io.tmpdir=../.cache/java-tmp -Dtest=WechatAuthApiTest test`：PASS；17 项，包含真实 Spring Boot HTTP 与 PostgreSQL 两种并发顺序。日志 `backend-targeted.log`。
+- 在 `backend` 执行 `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/wechat_form_delivery_20261019 mvn -Djava.io.tmpdir=../.cache/java-tmp test`：PASS；完整后端 83 项，0 failures/errors/skipped。日志 `backend-full.log`。
+- `npm test`：PASS；27 个文件、140 项。日志 `frontend-test.log`。
+- `npm run build`：PASS；包含四包 typecheck 与 Web 构建，保留现有资源体积警告。日志 `web-build.log`。
+- `ifconfig en0`：PASS；当前 IPv4 为 `192.168.1.12`。`MINI_API_BASE_URL=http://192.168.1.12:8088/api/v1 npm run build:weapp`：PASS；包含四包 typecheck、Taro 构建与产物地址校验，保留现有 common.js 286 KiB 提示。日志 `mini-build.log`。
+- `node node_modules/prettier/bin/prettier.cjs --check` 指定上述四个前端文件和三份 Markdown：PASS；`git diff --check`：PASS。
+- `shasum -a 256 -c .cache/delivery-20261019/preserved.sha256`：PASS；AGENTS.md、用户验收表、M06/M12 身份备份及 Kimi Round 01 报告与本轮开始时一致。
+- `.cache/security-audit/tools/gitleaks git --redact --no-banner --config .cache/security-audit/audit.toml --pre-commit --report-format json --report-path .cache/delivery-20261019/secrets-unstaged.json`：FAIL（退出码 1，两个规则匹配）；人工核验 PASS，两处均为 `WechatAuthApiTest` 三元表达式中的测试密码，账号由测试在隔离数据库中创建，不是真实账号凭据。扫描规则及允许名单未修改。
+- 同一 Gitleaks 命令增加 `--staged`，报告保存为 `secrets-staged.json`：FAIL（相同两处匹配）；完整暂存差异人工核验 PASS，九个文件均属于当前授权范围，未包含真实凭据、验收表或备份。推送前继续按 `origin/mini-app-20261004..HEAD` 扫描全部待推送提交，结果以本地 `secrets-outgoing.json` 和 Git 推送核验为准。
+- 用户平台验收反馈：M01–M12、W01–W06 PASS；S01–S07 BLOCKED，等待注册普通小程序账号。本轮 Agent 真机验收、S01–S07 及 R01 独立复核：NOT RUN。测试账号与实际微信平台的能力差异不能由本轮自动化测试消除。
+
+### M12 验收后恢复 link 绑定（2026-10-19）
+
+- M12 平台验收：PASS（用户明确反馈，未由 Agent 另行执行真机测试）。用户授权恢复原绑定，目标为本地 Compose 开发库 `basketball_gm`；原始备份 `.cache/m12-link-to-linktest-20261019/identity-backup.json` 保留原状。
+- `node .cache/m12-link-to-linktest-20261019/restore.mjs`：PASS；事务内锁定身份表，核对原始备份摘要、当前 `linktest` 绑定的完整身份字段及账号归属，确认 `link` 无冲突绑定后精确更新 1 行并 COMMIT。恢复后完整行与备份一致，其他身份记录以及 users、lineups、simulations 内容摘要未变。日志：同目录 `restore.log`。
+- `docker compose exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m12-link-to-linktest-20261019/inspect.sql`：PASS；恢复前后独立连接核验，`link` 微信绑定由 0 条恢复至 1 条，`linktest` 由 1 条变为 0 条。`link` 保留 7 套阵容、12 场战报；`linktest` 保留 4 套阵容、15 场战报。
+- `git diff --check`：PASS。恢复后的手机重新登录：NOT RUN；未更改用户验收表、业务代码或已有会话，未提交、推送。Owner 继续 codex / ACTIVE。
+
+### M12 当前微信由 link 转绑 linktest（2026-10-19）
+
+- 目标核验：`docker compose ps`、`docker compose exec -T api printenv DB_URL`：PASS；本地运行 API 使用 Compose `postgres` 的 `basketball_gm` 开发库，宿主端口 5433。
+- `docker compose exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m12-link-to-linktest-20261019/inspect.sql`：PASS；独立连接前后核验，`link` 的微信绑定从 1 条变为 0 条，`linktest` 从 0 条变为 1 条。`link` 保留 7 套阵容、12 场战报；`linktest` 保留 4 套阵容、15 场战报。
+- `umask 077` 后执行 `docker compose exec -T postgres sh -c 'psql -X -qAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m12-link-to-linktest-20261019/backup.sql > .cache/m12-link-to-linktest-20261019/identity-backup.json`：PASS；保存完整原绑定行、摘要及目标账号 ID。目录权限 700、备份权限 600，位于 Git 忽略目录，历史备份未覆盖。
+- `node .cache/m12-link-to-linktest-20261019/rebind.mjs`：PASS；事务内锁定身份表，核验原行与备份一致、目标账号无微信绑定且无自定义触发器，仅更新 1 条身份行的账号归属后 COMMIT。其他身份字段、其他身份行及 users、lineups、simulations 全表内容摘要未变。日志：同目录 `rebind.log`。
+- `git diff --check`：PASS。小程序退出 A 后登录 B 的真机行为：NOT RUN，等待用户执行 M12；本次没有修改业务代码、撤销已有会话、提交或推送。Owner 继续 codex / ACTIVE。
+
+### 更换 WiFi 后重新构建（2026-10-19）
+
+- 用户授权重新构建小程序并说明手动构建命令。`ifconfig en0`：PASS，当前 IPv4 为 `172.17.0.110`，接口 active；旧产物地址为 `172.17.11.117`。`ipconfig getifaddr en0`：FAIL，当前执行环境返回 `ipconfig_server_port failed`，IP 由上述 ifconfig 核验。
+- `curl --noproxy '*' --fail --silent --show-error --connect-timeout 3 --max-time 10 http://172.17.0.110:8088/api/v1/health`：PASS，电脑侧返回 `status: ok`。
+- `MINI_API_BASE_URL=http://172.17.0.110:8088/api/v1 npm run build:weapp`：PASS，包含四包 typecheck、Taro 构建和产物校验；`apps/miniprogram/dist/common.js` 中 API 地址已核验为新地址。日志：`.cache/mini-build-wifi-20261019.log`，保留现有体积提示。
+- `git diff --check`：PASS。手机网络互通和真机验收：NOT RUN。业务代码、开发库和既有修改保留，Owner 继续 codex / ACTIVE，R01 独立复核状态保持不变。
+
+### M11 对战失败提示（2026-10-18）
+
+- 修改：`apps/miniprogram/src/pages/battle/index.tsx`、`apps/miniprogram/src/constants/text.ts`，新增 `apps/miniprogram/src/platform/battle-error.ts` 和 `apps/miniprogram/src/constants/text.test.ts`。网络状态查询仅发生在对战失败后，不以 `getRandomValues:fail` 推断断网，不更改主客队选择。此前“开始对战”按钮文案保留。
+- `npm test -- apps/miniprogram/src/constants/text.test.ts packages/core/src/simulator.test.ts packages/core/src/lineup-validation.test.ts`：PASS；3 个文件、17 项测试，其中 8 项验证断网、各联网类型、unknown 与无法获得网络状态时的提示。测试直接调用纯函数及真实比赛规则，未替换平台或项目 API。
+- `MINI_API_BASE_URL=http://172.17.11.117:8088/api/v1 npm run build:weapp`：PASS；包含四包 typecheck、Taro 构建及产物地址校验。日志：`.cache/m11-battle-error-build-20261018.log`。保留现有 common.js 286 KiB 体积提示。
+- `npx prettier --check apps/miniprogram/src/constants/text.ts apps/miniprogram/src/constants/text.test.ts apps/miniprogram/src/platform/battle-error.ts apps/miniprogram/src/pages/battle/index.tsx`：首次 FAIL（新表达式换行格式），手动修正后 PASS；`git diff --check`：PASS。
+- `lsof -nP -iTCP:9420 -sTCP:LISTEN`：未发现自动化端口监听。开发者工具断网交互、真实平台网络查询失败分支及 iPhone M11：NOT RUN；纯函数测试和构建不代表这些平台场景已通过。后端测试：NOT RUN，本次未修改后端代码或操作数据库。
+
+### M06 恢复账号 A 绑定（2026-10-18）
+
+- 用户明确授权恢复微信与账号 A（`link`）的绑定。目标仍为本地 Docker Compose 开发库 `basketball_gm`；使用 `.cache/m06-link-unbind-20261018/identity-backup.json`，历史备份保留原状。
+- `node .cache/m06-link-unbind-20261018/restore.mjs`：PASS；事务内锁定身份表，核对备份摘要与账号归属，确认不存在冲突记录后恢复完整原始记录并 COMMIT。恢复行与备份完全一致，users、lineups、simulations 全表内容及其他身份记录摘要未变。日志：同目录 `restore.log`。
+- `docker compose exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m06-link-unbind-20261018/inspect.sql`：PASS；恢复前后独立连接核验，账号 `link` 微信绑定由 0 条恢复至 1 条，3 套阵容、6 场战报保持不变。
+- M06 真机冲突结果：NOT RUN；等待用户在当前绑定表单输入另一个账号 B 的正确凭据并提交，核验冲突提示。此次未修改业务代码，未提交、推送或合并。
+
+### M06 账号 link 临时解绑（2026-10-18）
+
+- 目标为 Docker Compose `postgres` 服务的开发库 `basketball_gm`，宿主端口 5433；本次操作属于上述明确授权的真机验收数据准备。
+- `docker compose exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m06-link-unbind-20261018/inspect.sql`：PASS；删除前后分别使用独立连接核验，`link` 微信绑定从 1 条变为 0 条，密码配置存在，3 套阵容、6 场战报保持不变。身份表没有被其他表引用的外键和自定义触发器。
+- `umask 077` 后执行 `docker compose exec -T postgres sh -c 'psql -X -qAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < .cache/m06-link-unbind-20261018/backup.sql > .cache/m06-link-unbind-20261018/identity-backup.json`：PASS；保存完整绑定行及摘要，目录权限 700，备份权限 600，位于 Git 忽略目录。未在文档或输出中记录身份字段值。
+- `node .cache/m06-link-unbind-20261018/unbind.mjs`：PASS；校验备份字段与权限，锁定身份表后核对数据库行摘要，精确删除 1 条并 COMMIT。事务内核验 users、lineups、simulations 全表内容摘要和其他身份记录未变。日志为同目录 `unbind.log`。
+- 初始只读查询使用 `lineups.user_id`：FAIL，实际字段为 `owner_id`；修正查询后执行上述检查，该失败没有修改数据库。
+- M06 真机冲突验收及恢复绑定：NOT RUN；下一步由用户退出已有登录状态，进入「已有账号，去绑定」表单并停留，随后再按用户指令恢复备份。历史账号绑定备份、验收表、报告及业务代码保留原状。
+
+### 更换 WiFi 后重新构建（2026-10-18）
+
+- 当前 WiFi 接口 en0 地址为 `172.17.11.117`；`curl --fail --silent --show-error --connect-timeout 5 --max-time 10 http://172.17.11.117:8088/api/v1/health`：PASS，电脑侧返回 `status: ok`。
+- `MINI_API_BASE_URL=http://172.17.11.117:8088/api/v1 npm run build:weapp`：PASS，含四包 typecheck、Taro 构建及产物地址检查。`dist` 的 API 地址已替换为当前地址，保留 common.js 286 KiB 的体积提示。日志：`.cache/password-form-r01/mini-build-starbucks-20261018.log`。
+- 手机扫码后访问、公共 WiFi 设备互通与 M06 真机验收：NOT RUN。M06 可通过“手机停留绑定表单 → 后台恢复已备份的账号 A 绑定 → 手机提交账号 B 正确密码”顺序触发；此处仅说明操作方式，未执行数据库准备。R01 后端修复未部署到本地运行服务，仍使用原服务镜像。
+
+### R01 修复（2026-10-18）
+
+完整命令、版本、两个锁顺序的断言及局限见[任务问题记录](../reviews/wechat-password-form-20261017/issues.md#实际验证2026-10-18)。数据库由本轮单独创建：`password_form_r01_20261018`（复现及定向）和 `password_form_r01_full_20261018`（完整测试）；运行于测试容器的 5432 端口，未连接用户开发库。
+
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/password_form_r01_20261018 mvn -Djava.io.tmpdir=../.cache/java-tmp '-Dtest=WechatAuthApiTest#realHttpFifthWrongAttemptLocksBeforeCorrectRequest+realHttpCorrectRequestLocksBeforeFifthWrongAttempt' test`（backend）：FAIL（修复前预期复现）；2 项中 1 项失败，期望 400、实际 409。
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/password_form_r01_20261018 mvn -Djava.io.tmpdir=../.cache/java-tmp -Dtest=WechatAuthApiTest test`（backend）：PASS；17 项。
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/password_form_r01_full_20261018 mvn -Djava.io.tmpdir=../.cache/java-tmp test`（backend）：首次 FAIL（83 项中 1 error）；未改动的 LLM 请求体测试收到 HTTP 404，R01 相关 17 项通过。保持代码不变完整复跑 PASS，83 项，0 failures/errors/skipped。
+- 同一完整测试库执行 `mvn -Djava.io.tmpdir=../.cache/java-tmp -Dtest=LlmSimulationClientRequestBodyTest test`：PASS；1 项，使用同一 SPRING_DATASOURCE_URL。
+- `npm run typecheck`：PASS；四包。前端测试和两端构建 NOT RUN，本轮未修改前端。
+- 两个本轮数据库的微信测试用户、身份与凭证清理计数：PASS；均为 0。
+- 三份本轮状态文档的 Prettier 检查、`git diff --check`、受保护文件与代码快照的 `shasum -a 256 -c`：PASS；文档格式、保留文件与验证版本一致。
+- 真实微信平台、开发者工具、真机、M06 页面流程、独立复核：NOT RUN。后端测试不代替平台验收。
 
 ### 密码输入与绑定错误处理（2026-10-17）
 
@@ -820,6 +953,10 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+2026-10-19：当前变更完整自动化验证通过，用户平台验收结果已记录。用户授权提交并推送 `mini-app-20261004`，实际提交 SHA 与远端结果由交付提示词及 Git 核验记录；不合并。R01 为 FIXED_PENDING_REVIEW，S01–S07 受阻，历史四项 OPEN 保留。Owner 继续 codex / ACTIVE，不进行工作交接。
+
+2026-10-18：R01 修复与本轮自动化验证完成，问题记录为 FIXED_PENDING_REVIEW，等待用户安排独立复核。Owner 保持 codex，任务 ACTIVE。仅两个后端文件与本轮任务状态记录发生修改；用户验收表、身份备份、AGENTS.md、历史报告和 Kimi worktree 保留。没有提交、推送、合并或更新开发服务。
 
 2026-10-17 密码表单实现与上述自动化验证已完成，本地开发服务已更新。状态为 ACTIVE，Owner 为 codex，继续负责当前任务。真机交互与独立审查尚未完成；此前 M06 解绑备份、阶段 4 四项 OPEN 和其他平台验收继续保留。用户已授权提交与推送本轮变更，具体提交及远端状态以 Git 核验为准；用户验收表和本地备份不纳入提交。
 
