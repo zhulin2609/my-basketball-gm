@@ -33,6 +33,7 @@ import { communityWriteError } from '@/lib/errors';
 import { guestImportFailureMessage } from '@/lib/guest-import-errors';
 import { makeClassicLineup, makeStarterLineup } from '@/lib/presets';
 import { useHashRoute, type RouteView } from '@/lib/hash-route';
+import { isForumEnabled } from '@/lib/features';
 import { createIdentifier } from '@/lib/identifier';
 import { usePagination } from '@/lib/use-pagination';
 import type {
@@ -268,7 +269,8 @@ interface AiSettingsProps {
 export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const { t } = useTranslation();
-  const [route, navigate] = useHashRoute();
+  const isCommunityEnabled = isApiEnabled && isForumEnabled;
+  const [route, navigate] = useHashRoute(isCommunityEnabled);
   const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
   const [lineups, setLineups] = useState<Lineup[]>(() =>
     isApiEnabled && authSession
@@ -286,12 +288,8 @@ export function App() {
   );
   const [game, setGame] = useState<Simulation | null>(() => games[0] ?? null);
   const isAuthenticatedApi = isApiEnabled && authSession !== null;
-  // 未满足条件的受限视图回退到球员库，URL 中的 hash 保持不变。
-  const view: View =
-    (route.view === 'ai-settings' && !isAuthenticatedApi) ||
-    (route.view === 'community' && !isApiEnabled)
-      ? 'players'
-      : route.view;
+  // 未登录时不能进入账号的 AI 设置。
+  const view: View = route.view === 'ai-settings' && !isAuthenticatedApi ? 'players' : route.view;
   const communityPostId = route.view === 'community' ? route.postId : null;
   // 阵容的唯一写入口：离线模式写本地工作区；API 模式乐观更新并经保存队列串行写入 PostgreSQL。
   // 返回的 Promise 在数据真正写入完成后才 resolve，供保存按钮展示反馈。
@@ -481,13 +479,16 @@ export function App() {
 
   if (view === 'auth') {
     return (
-      <AuthScreen
-        onAuthenticated={(session) => {
-          setAuthSession(session);
-          navigate({ view: 'players' });
-        }}
-        onCancel={() => navigate({ view: 'players' })}
-      />
+      <div className="auth-page">
+        <AuthScreen
+          onAuthenticated={(session) => {
+            setAuthSession(session);
+            navigate({ view: 'players' });
+          }}
+          onCancel={() => navigate({ view: 'players' })}
+        />
+        <SiteFooter />
+      </div>
     );
   }
 
@@ -506,8 +507,7 @@ export function App() {
               ['players', t('nav.players'), t('navCompact.players')],
               ['lineups', t('nav.lineups'), t('navCompact.lineups')],
               ['battle', t('nav.battle'), t('navCompact.battle')],
-              // 社区数据完全来自服务端，离线演示模式没有可访问的社区后端。
-              ...(isApiEnabled
+              ...(isCommunityEnabled
                 ? [
                     ['community', t('nav.community'), t('navCompact.community')] as [
                       View,
@@ -614,7 +614,7 @@ export function App() {
           onSave={persist}
           onNew={newLineup}
           onPlay={play}
-          canShare={isAuthenticatedApi}
+          canShare={isAuthenticatedApi && isCommunityEnabled}
           onShare={shareLineupToCommunity}
           onOpenSharedPost={openSharedPost}
           syncError={lineupSyncError}
@@ -634,7 +634,7 @@ export function App() {
           isCloudMode={isAuthenticatedApi}
         />
       )}
-      {view === 'community' && isApiEnabled && (
+      {view === 'community' && isCommunityEnabled && (
         <CommunityHub
           isAdmin={authSession?.user.admin ?? false}
           isAuthenticated={isAuthenticatedApi}
@@ -649,8 +649,20 @@ export function App() {
       {view === 'ai-settings' && isAuthenticatedApi && (
         <AiSettings onBack={() => navigate({ view: 'battle' })} />
       )}
-      <footer>{t('footer')}</footer>
+      <SiteFooter />
     </main>
+  );
+}
+
+function SiteFooter() {
+  const { t } = useTranslation();
+  return (
+    <footer>
+      <span>{t('footer')}</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+        沪ICP备2026051556号-1
+      </a>
+    </footer>
   );
 }
 

@@ -6,6 +6,7 @@ services:
       context: .
       args:
         VITE_API_BASE_URL: /api/v1
+        VITE_FORUM_ENABLED: ${FORUM_ENABLED:-false}
     ports:
       - '${WEB_HTTP_PORT:-8088}:80'
     depends_on:
@@ -30,7 +31,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       LLM_CREDENTIAL_ENCRYPTION_KEY: ${LLM_CREDENTIAL_ENCRYPTION_KEY}
-      FORUM_ENABLED: ${FORUM_ENABLED:-true}
+      FORUM_ENABLED: ${FORUM_ENABLED:-false}
       FORUM_ADMIN_USERNAMES: ${FORUM_ADMIN_USERNAMES:-}
       TENCENT_SECRET_ID: ${TENCENT_SECRET_ID:-}
       TENCENT_SECRET_KEY: ${TENCENT_SECRET_KEY:-}

@@ -6,7 +6,15 @@
 
 ## Task
 
-当前任务：`develop-main-local-validation-20261020`。用户授权提交当前三份文档并推送 develop，随后将 develop 合并到本地 main，保持本地 main，重新构建小程序、Web、后端并完整运行全部测试。起始 HEAD 为 `96219f24fef340d5533e6481cefcf9adf5577005`，三份未提交文档均来自上一轮汇总。Owner 继续 codex / ACTIVE。本轮推送目标为 develop；合并后的 main 用于本地验证。提交前更新本计划，合并后只生成忽略的构建产物与 `.cache/develop-main-local-20261020/` 验证记录，不直接修改 main 上的代码。
+当前任务：`icp-community-disable-20261020`。用户批准在 develop 添加公共页脚备案链接（沪ICP备2026051556号-1，https://beian.miit.gov.cn/），通过统一配置关闭 Web 社区入口、阵容公开操作、社区路由及后端接口。保留全部社区数据及个人阵容、对战功能。更新相关文档、完整测试。
+
+2026-10-20 最新授权：用户确认本地验收通过，授权提交当前变更，并提供绑定本次提交的 Kimi Code Round 01 独立审查提示词。仅提交本地 develop；不推送、不合并、不部署服务器。Owner 继续 codex，独立审查完成前保持 VALIDATING。
+
+2026-10-20 本地验证补充授权：重新构建并启动本机 Web/API 服务。核验本地 Docker Desktop 与 develop / b01c453 后，将忽略文件 `.env` 中 `FORUM_ENABLED=true` 改为 false；备份当前开发数据库，仅重新构建及创建 web/api 容器，保留 PostgreSQL 容器与数据卷。完成后核验首页、静态资源、API 健康及社区接口关闭。用户自行进行本地产品验收；不提交、不推送、不部署远端服务器。
+
+本地验证服务已于本轮重建完成：入口 `http://127.0.0.1:8088/`，Web/API 均 healthy，备案页脚与社区关闭已生效；具体命令见 Validation 的本地服务记录。下方实施阶段“开发容器未更新”描述补充授权之前的状态。
+
+前一任务：`develop-main-local-validation-20261020`。用户授权提交当前三份文档并推送 develop，随后将 develop 合并到本地 main，保持本地 main，重新构建小程序、Web、后端并完整运行全部测试。起始 HEAD 为 `96219f24fef340d5533e6481cefcf9adf5577005`，三份未提交文档均来自上一轮汇总。Owner 继续 codex / ACTIVE。本轮推送目标为 develop；合并后的 main 用于本地验证。提交前更新本计划，合并后只生成忽略的构建产物与 `.cache/develop-main-local-20261020/` 验证记录，不直接修改 main 上的代码。
 
 本轮执行结果索引：`.cache/develop-main-local-20261020/receipt.md`，记录实际提交、推送、合并、测试、构建、服务验证及未验证范围。该文件在命令执行后更新；未完成的命令不得预记 PASS。测试使用独立 PostgreSQL 数据库，用户开发库不用于自动化测试；本地 Web/API 服务使用现有 Compose 环境重新构建并启动。
 
@@ -42,9 +50,9 @@
 
 ## Status
 
-ACTIVE
+VALIDATING
 
-当前状态：执行文档交付、develop → 本地 main 合并及本地完整验证。R05 VERIFIED，阶段 4 为 24 VERIFIED、0 OPEN、0 FIXED_PENDING_REVIEW；代码审查维度 PASS，平台验收未全部完成。实际操作结果以 Git 和本轮回执为准。M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。下面均为历史 checkpoint。
+当前状态：备案页脚及社区关闭的实施、完整测试、构建和真实浏览器验证已完成，用户确认本地验收 PASS，进入本地提交及独立审查准备。起始工作区干净，基线为 b01c45316643dfd2688736ea2187e89ab8cf4452。历史阶段 4 为 24 VERIFIED；M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。本次业务变更的独立审查尚未执行。下面均为历史 checkpoint。
 
 2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
 
@@ -60,16 +68,18 @@ ACTIVE
 - Instance: codex-stage4-takeover-20261016-01a1421b
 - Last Writing Agent: codex，codex-stage4-takeover-20261016-01a1421b；继续持有当前工作区写入归属。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
-- Branch: develop（提交与推送阶段）；用户授权完成后切换并保持 main，实际状态以 Git 和本轮回执为准。
-- Base Commit: 96219f24fef340d5533e6481cefcf9adf5577005
+- Branch: develop
+- Base Commit: b01c45316643dfd2688736ea2187e89ab8cf4452
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: 在 develop 提交并推送三份状态文档；快进合并到本地 main；生成三端构建产物、独立测试库和忽略目录内验证记录，更新本地 Web/API 服务。业务实现、测试、原始报告、身份备份、验收表、AGENTS.md 和 Kimi worktree 保留。
+- Write Scope: Web 页脚、社区开关及路由，后端社区默认配置，Compose/Dockerfile/配置模板，相关测试与文档；独立测试数据库和忽略目录 .cache/icp-community-20261020。用户授权提交当前变更到本地 develop；保留用户开发库、原始报告、身份备份、验收表、AGENTS.md 和 Kimi worktree，不推送、不合并、不部署。
 
 2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
 
 2026-10-18 M06 数据准备授权：用户明确要求备份并临时解除当前微信与账号 `link` 的绑定，随后明确授权恢复账号 A 的绑定。已在本地开发库 `basketball_gm` 完成这一条 `user_identities` 记录的备份、临时删除和原样恢复；备份继续保留，等待用户在已有表单提交账号 B 进行真机冲突验收。Owner 保持 codex，状态 ACTIVE。
 
 ## Goal
+
+当前目标：备案号在全部 Web 视图可见；社区关闭时没有入口、公开操作、可访问页面或接口；已有数据不变，个人功能正常。以下为历史目标。
 
 当前目标：完成 develop 文档交付，在本地 main 提供重新构建的三端产物及可访问的 Web/API 服务，完整运行小程序、Web、共享包与后端测试，保留真实运行证据。以下为历史目标，未完成的平台验收继续保留。
 
@@ -82,6 +92,8 @@ ACTIVE
 按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+本次验收：备案文字与链接准确，中英文及移动端可读；游客和已登录用户均无社区入口，未公开和已公开阵容均无社区区域；旧社区地址替换为球员库地址；真实 HTTP 验证接口关闭、数据库记录保留及个人功能；前后端完整测试、四包 typecheck 和 Web 构建通过。恢复开放需用户明确批准。
 
 ### develop 合并与本地验证（2026-10-20）
 
@@ -253,6 +265,8 @@ ACTIVE
 
 ## Plan
 
+本轮计划：核验 develop 与所有权 → 页脚及统一关闭配置 → 覆盖旧地址、游客与登录用户及已有公开数据 → 真实 HTTP / 独立 PostgreSQL 验证 → 完整测试、类型检查、构建、浏览器交互与文档检查 → 保留未提交变更，等待独立审查。
+
 本轮计划：检查三份文档与远端基线 → 检查格式及敏感信息 → 提交并推送 develop → 快进到本地 main → 完整测试与三端构建 → 更新本地服务并验证 HTTP → 将实际结果写入忽略目录回执，确认最终 Git 状态。以下计划仅为历史记录。
 
 Round 10 汇总计划已执行：核对恢复与快照证据 → 汇总四项结论 → 仅格式化 R05 十个文件 → 比较格式器输出并执行格式与类型检查 → 同步当前状态文档。
@@ -308,6 +322,8 @@ Round 10 汇总计划已执行：核对恢复与快照证据 → 汇总四项结
 实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
+
+2026-10-20 备案与社区关闭：页脚覆盖全部视图及独立登录页面；前端隐藏社区导航与阵容公开区域，旧地址替换为球员库；后端默认不注册社区控制器。新增关闭状态测试，既有社区开启测试显式配置 true。完整前后端测试、四包 typecheck、Web 构建及 Compose 配置验证通过。基线 b01c453，独立后端测试库 `icp_community_backend_20261020`，前端完整测试库 `stage4_frontend_1792487561717`；用户开发库未用于测试。变更保留未提交状态，开发容器及服务器未更新。
 
 当前状态：develop 与 origin/develop 为 `96219f24fef340d5533e6481cefcf9adf5577005`，main 与 origin/main 为 `787c2729a98abac1d555cebb230442cdf188f632`；main 是 develop 的祖先，`main...develop` 为 0 / 32，可以快进。已记录的代码审查阻碍已解除，本轮三份文档尚未提交；正式合并若需包含本轮记录，需先提交这些文档。main 推送前必须完整运行前后端测试并扫描全部待推送提交，本轮未执行该门禁。S01–S07 是未完成的平台验收，仓库未将其单独定义为 Git 合并硬性门禁；不得据此宣称产品验收全部通过。以下均为历史 checkpoint。
 
@@ -472,6 +488,8 @@ mvn test
 
 ## Progress
 
+2026-10-20：核验当前 develop 干净；按批准方案完成实现、真实接口验证、前后端完整测试及构建。新增测试发现登录页提前返回导致缺少页脚，已修复并重跑通过。真实浏览器在 375/390/1280px 与中英文页面完成页脚、旧地址、个人阵容保存及规则对战验证；没有社区请求或页面脚本错误。Owner 继续 codex，进入独立审查前的 VALIDATING 状态。
+
 2026-10-20 Round 11 汇总：核对 Kimi 原始报告、日志和 Reviewed Commit，重算十个文件的格式化输出及输入摘要，确认 I024 / R05 VERIFIED。24 项均 VERIFIED，代码审查维度 PASS；历史报告格式例外已获用户接受。Git 可快进合并，文档提交与 main 推送门禁尚待执行，平台验收 S01–S07 保持 BLOCKED。
 
 2026-10-20 Round 10 汇总：核验四项独立复核证据并确认为 VERIFIED；R05 十个文件完成纯格式修复，四包类型检查通过。全仓格式检查仅剩历史归档报告失败，独立复核仍待安排，汇总 CHANGES_REQUIRED。
@@ -569,6 +587,10 @@ mvn test
 
 ## Open Questions
 
+本轮上下文差异：`AI_HANDOFF.md` 仍指向历史 mini-app 分支和密码控件任务，原 current plan 顶部仍为 main 合并任务。已按实际 Git（develop / b01c453）及用户当前授权更新当前栏目，历史记录保留；本次没有切换 Owner 或正式交接。
+
+本轮未完成事项：业务变更合并前须独立审查；服务器部署尚未授权，实际环境如有 `FORUM_ENABLED=true`，须明确改为 false 并重新构建 Web、重新创建后端容器。下方授权与未完成事项属于对应历史任务。
+
 当前授权边界：提交推送当前 develop 文档、合并到本地 main、构建三端与完整测试；本轮不直接修改 main 代码。验证记录写入 `.cache/develop-main-local-20261020/`，以保留干净检出。历史阶段的禁止合并约束不适用于本次明确授权。
 
 当前未完成事项：本轮文档未提交；main 推送前完整测试和全部待推送提交扫描未执行；S01–S07 等待普通小程序账号，保持 BLOCKED；微信登录网络恢复未验证。历史 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md` 格式问题已获用户明确接受，不阻塞本轮复核及合并条件检查，原文保留、全仓检查仍记 FAIL。导入内容与历史 NULL 记录的行为边界见[实施记录](../reviews/wechat-login-stage4/fixes-20261020-codex.md)。
@@ -605,6 +627,38 @@ Round 11 报告计数说明：实际输出为 `total=347 match=334 mismatched=13
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### 本地验收与提交准备（2026-10-20）
+
+- 用户反馈本地验收：PASS。依据为用户本次明确确认；与下方 Agent 执行的自动化测试和浏览器验证分别记录。
+- 提交前核验：develop / b01c45316643dfd2688736ea2187e89ab8cf4452；18 个已跟踪修改及 4 个新增文件均属于本任务。忽略的 `.env`、数据库备份和 `.cache/` 不纳入提交。
+- 本次提交阶段完整测试：NOT RUN；业务代码与下方前端 165 项、后端 84 项 PASS 的版本一致，本次仅补充验收和授权记录。独立审查：NOT RUN，待 Kimi Code 对提交版本执行 Round 01。
+- 提交检查和实际提交结果记录于忽略目录 `.cache/icp-community-20261020/commit-receipt.md`，按实际执行结果填写；审查基线保持 b01c45316643dfd2688736ea2187e89ab8cf4452。
+
+### 备案与社区关闭：本地服务重建（2026-10-20）
+
+- `git status --short --branch`、`git rev-parse HEAD`：PASS，develop / b01c453，保留上一轮 18 个已跟踪修改与 4 个新增文件；没有源码增量。
+- Docker context 为 `desktop-linux`，连接本机 Unix socket。忽略文件 `.env` 中 `FORUM_ENABLED` 已改为 false。
+- `docker compose exec --no-TTY postgres sh -c 'pg_dump --username="$POSTGRES_USER" --format=custom "$POSTGRES_DB"' > .cache/icp-community-local-20261020/before-rebuild.backup`：PASS；通过 `docker compose exec --no-TTY postgres pg_restore --list < .cache/icp-community-local-20261020/before-rebuild.backup` 验证备份目录可读取。备份和目录清单均位于忽略目录，未输出用户数据。
+- `docker compose build web api`：首次 FAIL，沙箱阻止 Buildx 写入本机状态目录；允许该构建进程写入后重跑 PASS。Web 构建包含四包 typecheck；后端按既有 Dockerfile 使用 `mvn package -DskipTests`。日志为 `build.log` 与 `build-retry.log`。
+- `docker compose up --detach --no-deps --wait --wait-timeout 120 web api`：PASS，仅重新创建 Web/API，两个服务 healthy；PostgreSQL 容器 ID 与创建时间保持不变。Flyway 确认 schema version 17，无需迁移。后端实际 `FORUM_ENABLED=false`。
+- `TMPDIR="$PWD/.cache/java-tmp" node .cache/icp-community-local-20261020/verify-local.mjs`：PASS，只读检查实际 8088 服务；首页、JS、CSS、健康接口均 200，社区列表接口 404。真实 Chrome 验证备案链接、导航隐藏、旧社区地址跳转和登录页页脚，页面脚本错误为空。证据为同目录 `verification.json`。
+- 本轮完整测试：NOT RUN；业务代码与上轮完整前端 165 项、后端 84 项 PASS 的版本相同，本轮仅更新本地配置、构建产物、服务与本计划。未操作远端服务器，未提交或推送。独立审查仍待安排。
+
+### 备案页脚与社区关闭（2026-10-20）
+
+- `git status --short --branch`、`git rev-parse HEAD`：PASS；起始 develop / b01c453，工作区干净。
+- 首次 `npm run typecheck`：FAIL；新增测试误用 core 的预设函数名称。改用现有 Web presets 后重跑：PASS，四包通过。
+- `TMPDIR="$PWD/.cache/java-tmp" npm test -- apps/web/src/community-disabled.test.tsx apps/web/src/lib/features.test.ts apps/web/src/App.test.tsx`：首次 FAIL，发现独立登录页缺少页脚及测试选择了另一条阵容；修复后重跑 PASS，3 个文件 31 项。最终数据库 `stage4_frontend_1792487416074`，日志 `targeted-web.log`、`targeted-web-retry.log`。
+- `TMPDIR="$PWD/.cache/java-tmp" npm test`：PASS，31 个文件 165 项，包含 Web、小程序、core、client。真实 Spring Boot 配合独立 PostgreSQL `stage4_frontend_1792487561717`，日志 `npm-test.log`。
+- 后端命令在 `backend/` 执行：`env -u FORUM_ENABLED SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/icp_community_backend_20261020 SPRING_DATASOURCE_USERNAME=zhulin SPRING_DATASOURCE_PASSWORD= TMPDIR=/Users/zhulin/Workspace/my-basketball-gm/.cache/java-tmp mvn --batch-mode --no-transfer-progress -Djava.io.tmpdir=/Users/zhulin/Workspace/my-basketball-gm/.cache/java-tmp test`：PASS，84 项，0 failures/errors/skipped，日志 `backend-full.log`。此前同一环境增加 `-Dtest=ForumDisabledHttpTest,ForumDisabledTest,ForumApiTest,ForumModerationTest` 的定向测试 PASS，18 项，日志 `targeted-backend.log`。
+- 独立后端数据库通过 `docker exec basketball-gm-test-pg createdb -U zhulin icp_community_backend_20261020` 创建。默认关闭的真实 HTTP 用例覆盖全部社区 GET/POST/DELETE、匿名和已登录状态、原有帖子及评论记录不变、注册登录、个人阵容修改与规则对战。
+- `VITE_API_BASE_URL=/api/v1 VITE_FORUM_ENABLED=false npm run build`：PASS，包含四包 typecheck；Vite 保留超过 500 kB 的既有产物体积警告，日志 `build-web.log`。构建流程生成后端测试 JAR，未重建或重启用户开发容器。
+- `node .cache/icp-community-20261020/verify-compose.mjs`：PASS，通过 `docker compose --env-file /dev/null config --format json` 核验未设置、false、true 时前端构建参数与后端运行值一致，并核对示例配置；结果 `compose-result.json`。没有启动 Compose 服务。
+- 本次变更文件的 `npm exec -- prettier --check`：PASS；`npm run format:check`：FAIL，仅用户已接受的历史报告 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md`，原文保留。日志 `format-changed.log`、`format-all.log`。
+- `TMPDIR="$PWD/.cache/java-tmp" node .cache/icp-community-20261020/verify-browser.mjs`：最终 PASS；使用实际构建产物、真实 Spring Boot 与独立数据库 `icp_community_browser_1792488043350`。375/390/1280px、中英文球员库/阵容/对战/登录页的备案文字、链接、字号、键盘焦点和社区隐藏通过；旧社区列表及详情地址替换为球员库；已登录用户保存个人阵容、完成规则对战、进入 AI 设置页通过。`pageErrors=[]`、`communityRequests=[]`，证据 `browser-result.json`、`browser-verified.log`。首次 Chrome 启动受沙箱限制，扩大进程权限后执行；中间检查因脚本使用程序焦点、写入真实会话后未刷新及使用未列入现有 CORS 允许列表的端口失败，修正脚本并改用已允许的 5175 端口后通过。未修改应用 CORS 配置，未生成截图。
+- `git diff --check`：PASS；HEAD 保持 b01c453，暂存区为空。
+- 本轮日志和辅助脚本位于 `.cache/icp-community-20261020/`；数据库均位于测试容器 `basketball-gm-test-pg`（5432）。独立审查、服务器部署、DNS/HTTPS 配置、小程序平台验收：NOT RUN；S01–S07 保持 BLOCKED。本轮未修改小程序实现，未重新构建小程序产物。
 
 ### develop 合并与本地验证（2026-10-20）
 
@@ -1184,6 +1238,12 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+2026-10-20 用户确认本地验收通过，授权提交当前 22 个变更文件并安排 Kimi Code Round 01 独立审查。Owner 保持 codex，Status 保持 VALIDATING；本次审查结论待独立报告，不根据本地验收提前标记审查通过。下面为此前实施与本地重建记录。
+
+2026-10-20 本地重建补充任务完成：Web/API 已在 `http://127.0.0.1:8088/` 提供当前 develop 未提交版本，健康检查及浏览器只读验证通过。开发数据库已备份，数据库容器保持原样，无新增迁移；本地社区开关为 false。Owner 继续 codex，业务变更仍待独立审查。下方为本轮本地重建之前的完成记录。
+
+2026-10-20 `icp-community-disable-20261020` 实施与验证完成：公共备案页脚、社区导航及阵容操作关闭、旧地址限制、后端默认关闭、统一 Compose 开关、测试和文档均已完成。前端完整 165 项、后端完整 84 项、四包 typecheck、Web 构建、真实 HTTP/PostgreSQL、浏览器交互及变更文件格式检查 PASS。全仓格式检查仅历史报告例外 FAIL。本地保持 develop / b01c453，Owner codex，状态 VALIDATING，等待独立审查。共 18 个已跟踪文件修改及 4 个新增文件，暂存区为空；未提交、推送、合并或部署，用户开发库和现有开发容器未变更。以下为历史完成记录。
 
 Round 11 汇总及合并条件检查完成：R05 / I024 VERIFIED，阶段 4 计数为 24 VERIFIED、0 OPEN、0 FIXED_PENDING_REVIEW，代码审查维度 PASS；用户接受历史报告格式例外，S01–S07 保持 BLOCKED。三份文档更新保留未提交状态，当前仍为 develop / `96219f2`，Owner codex / ACTIVE。本轮未提交、推送或合并；Git 可快进，正式操作前需处理文档提交，main 推送前完整测试及扫描另行执行。以下均为历史完成记录。
 

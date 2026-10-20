@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/forum")
-@ConditionalOnProperty(name = "app.forum.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "app.forum.enabled", havingValue = "true")
 public class ForumController {
   private final ForumService service;
   private final CurrentUser currentUser;

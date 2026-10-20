@@ -37,8 +37,8 @@ app:
     usernames: ${FORUM_ADMIN_USERNAMES:}
   forum:
     # Master switch for the whole community feature: false unmaps every forum endpoint (404)
-    # while tables and data stay untouched, so rectification is an env change plus a restart.
-    enabled: ${FORUM_ENABLED:true}
+    # while tables and data stay untouched. Web also needs rebuilding when this flag changes.
+    enabled: ${FORUM_ENABLED:false}
     rate-limit:
       comment-per-second: ${FORUM_COMMENT_PER_SECOND:1}
       comment-per-day: ${FORUM_COMMENT_PER_DAY:50}

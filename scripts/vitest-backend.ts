@@ -77,6 +77,8 @@ export default async function setup(project: TestProject) {
         SPRING_DATASOURCE_URL: `jdbc:postgresql://127.0.0.1:5432/${database}`,
         SPRING_DATASOURCE_USERNAME: 'zhulin',
         SPRING_DATASOURCE_PASSWORD: '',
+        // 真实发布数据用于验证关闭前端入口后既有公开阵容仍可编辑。
+        FORUM_ENABLED: 'true',
         JWT_SECRET: randomBytes(32).toString('hex'),
         LLM_CREDENTIAL_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
         WECHAT_MINI_APPID: 'integration-app',

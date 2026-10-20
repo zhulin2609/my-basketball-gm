@@ -2,6 +2,35 @@
 
 记录已接受且长期有效的架构和工程决策。现有按日期命名的条目保持原文，均为 Active；新增条目使用唯一 D-XXX 标识。被替代的条目保留并标记 `Status: Superseded by D-XXX`。候选决策保存在 `docs/plans/current.md`。
 
+## D-008 — 备案页脚与社区默认关闭
+
+Status: Active
+Date: 2026-10-20
+
+### Context
+
+link9.fun 的网站备案号为沪ICP备2026051556号-1。用户批准添加公共页脚备案链接，并暂时关闭 Web 社区及后端接口，保留个人阵容和对战。
+
+### Decision
+
+全部 Web 视图显示备案原文并链接至 https://beian.miit.gov.cn/。社区默认关闭；Compose 使用 `FORUM_ENABLED` 同时提供前端构建开关和后端运行开关。前端隐藏导航与阵容社区区域，社区地址替换为球员库；后端不注册社区控制器。已有社区数据保留。恢复开放须确认主体、服务范围和所需手续，并由用户明确批准。
+
+### Alternatives
+
+只隐藏页面入口；删除社区实现和数据库记录；前后端在 Compose 中使用独立的人工配置。
+
+### Why Rejected
+
+只隐藏入口仍允许旧页面和直接接口请求访问；删除会损失数据并增加恢复成本；分别维护配置容易产生前后端状态不一致。
+
+### Consequences
+
+开关变化需要重新构建 Web 并重新创建后端容器。已有环境中的 true 必须显式改为 false；模板默认值不会覆盖环境配置。保留开启模式的回归测试，新增默认关闭的真实 HTTP 与 PostgreSQL 验证。备案号变更需要修改公共页脚。
+
+### Affected Areas
+
+Web App、hash 路由、公共页脚、社区配置、ForumController、Compose、Dockerfile、环境模板、部署文档和相关测试。
+
 ## 2026-09-24：公共球员中文名称共享单一资源
 
 公共球员的中文名称保存在 `backend/src/main/resources/player-catalog-chinese-names.json`。前端通过 Vite 别名读取该文件，Flyway V13 Java 迁移从同一资源写入 PostgreSQL。

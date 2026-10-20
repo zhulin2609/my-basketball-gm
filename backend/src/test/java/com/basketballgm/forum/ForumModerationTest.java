@@ -32,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * against the real database within a single request flow.
  */
 @SpringBootTest(properties = {
+    "app.forum.enabled=true",
     "app.forum.rate-limit.comment-per-second=1",
     "app.forum.rate-limit.comment-per-day=3",
     "app.forum.rate-limit.publish-per-hour=1",

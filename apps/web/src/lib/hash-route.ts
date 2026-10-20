@@ -35,30 +35,48 @@ function sameRoute(a: HashRoute, b: HashRoute): boolean {
   return a.view === b.view && a.postId === b.postId;
 }
 
+function availableRoute(route: HashRoute, communityEnabled: boolean): HashRoute {
+  return route.view === 'community' && !communityEnabled
+    ? { view: 'players', postId: null }
+    : route;
+}
+
 // 视图状态以 URL hash 为准：刷新后停留在当前页面，前进/后退按钮可用，帖子详情有可分享的链接。
-export function useHashRoute(): [
-  HashRoute,
-  (next: { view: RouteView; postId?: string | null }) => void,
-] {
-  const [route, setRoute] = useState<HashRoute>(() => parseHashRoute(window.location.hash));
+export function useHashRoute(
+  communityEnabled: boolean,
+): [HashRoute, (next: { view: RouteView; postId?: string | null }) => void] {
+  const [route, setRoute] = useState<HashRoute>(() =>
+    availableRoute(parseHashRoute(window.location.hash), communityEnabled),
+  );
 
   useEffect(() => {
     const onHashChange = () => {
-      setRoute((current) => {
-        const parsed = parseHashRoute(window.location.hash);
-        return sameRoute(current, parsed) ? current : parsed;
-      });
+      const parsed = parseHashRoute(window.location.hash);
+      const next = availableRoute(parsed, communityEnabled);
+      if (!sameRoute(parsed, next)) {
+        window.history.replaceState(window.history.state, '', routeToHash(next));
+      }
+      setRoute((current) => (sameRoute(current, next) ? current : next));
     };
     window.addEventListener('hashchange', onHashChange);
+    onHashChange();
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
+  }, [communityEnabled]);
 
-  const navigate = useCallback((next: { view: RouteView; postId?: string | null }) => {
-    const normalized: HashRoute = { view: next.view, postId: next.postId ?? null };
-    setRoute(normalized);
-    const hash = routeToHash(normalized);
-    if (window.location.hash !== hash) window.location.hash = hash;
-  }, []);
+  const navigate = useCallback(
+    (next: { view: RouteView; postId?: string | null }) => {
+      const requested: HashRoute = { view: next.view, postId: next.postId ?? null };
+      const normalized = availableRoute(requested, communityEnabled);
+      setRoute(normalized);
+      const hash = routeToHash(normalized);
+      if (!sameRoute(requested, normalized)) {
+        window.history.replaceState(window.history.state, '', hash);
+      } else if (window.location.hash !== hash) {
+        window.location.hash = hash;
+      }
+    },
+    [communityEnabled],
+  );
 
   return [route, navigate];
 }

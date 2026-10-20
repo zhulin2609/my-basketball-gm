@@ -22,7 +22,9 @@ My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 P
 
 `apps/web/src/App.tsx` 管理当前页面、认证会话、球员、阵容和战报的共享状态。主要页面包括球员库、我的阵容、梦幻对战、社区、AI 设置和登录或注册。
 
-页面状态以 URL hash 为准（`apps/web/src/lib/hash-route.ts` 的 `useHashRoute`）：格式为 `#/players`、`#/lineups`、`#/battle`、`#/community`、`#/community/<帖子id>`、`#/ai-settings`、`#/auth`。挂载时从 hash 恢复当前页面，`navigate` 同步更新状态并写 hash，`hashchange` 监听支持浏览器前进/后退。无法识别的 hash 回退到球员库；`ai-settings` 要求登录、`community` 要求 API 启用，条件不满足时回退到球员库且 URL 保持不变。
+页面状态以 URL hash 为准（`apps/web/src/lib/hash-route.ts` 的 `useHashRoute`）：格式为 `#/players`、`#/lineups`、`#/battle`、`#/community`、`#/community/<帖子id>`、`#/ai-settings`、`#/auth`。挂载时从 hash 恢复当前页面，`navigate` 同步更新状态并写 hash，`hashchange` 监听支持浏览器前进/后退。无法识别的 hash 回退到球员库；`ai-settings` 要求登录，条件不满足时回退到球员库且 URL 保持不变。社区要求 API 启用且 `VITE_FORUM_ENABLED=true`；否则首次打开、导航及 hash 变化均限制为球员库，并使用 `replaceState` 将社区地址替换为 `#/players`，不加载社区组件或请求社区数据。
+
+公共页脚在所有 Web 视图展示 link9.fun 的备案号 `沪ICP备2026051556号-1`，链接到工信部备案首页，中英文模式均使用同一备案原文。页脚随内容排列并支持窄屏换行。
 
 球员库网格（每页 12 名）与我的阵容候选列表（每页 9 名）通过 `apps/web/src/lib/use-pagination.ts` 分页；搜索、过滤或排序条件变化时回到第 1 页。社区帖子列表（每页 10 帖）与评论（每页 20 条）由服务端分页，前端复用同一个分页组件。
 
@@ -84,6 +86,8 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 
 ### 社区内容治理
 
+社区默认关闭（D-008）。Compose 的 `FORUM_ENABLED` 同时控制 Web 构建参数 `VITE_FORUM_ENABLED` 和后端 `app.forum.enabled`，缺省均为 false。前端只接受 true / false 字符串，其他值抛出配置错误。关闭时不展示社区导航或阵容公开区域；后端不注册 `ForumController`，原匿名读取接口及带有效认证的读写请求返回 404，未认证写请求仍由安全规则返回 401。数据表与个人功能保持原样。配置改变需要重新构建 Web 和重新创建后端容器。
+
 公开阵容（名称与描述）和发表评论这两条写路径在写入前依次经过三层检查：
 
 1. `ModerationService.check` 在 Controller 层、数据库事务之外执行：先过本地 DFA 词表（`moderation-words.txt`），配置腾讯云密钥后再同步调用 TMS `TextModeration`（3 秒超时）。词表命中返回 422，云服务失败或超时返回 503，未审内容不会写入数据库。
@@ -120,6 +124,7 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - `GuestImportApiTest` 使用真实 PostgreSQL 与 MockMvc 验证导入事务、新 client key 和数据约束；小程序 `guest-import.test.ts` 通过真实 TCP HTTP 验证内容冲突、幂等、并发与本地清理。执行后端测试时通过 `SPRING_DATASOURCE_URL` 指定本轮独立数据库。
 - `AuthApiTest` 使用同一测试库验证注册规则与数据库用户名约束；`WechatAuthApiTest` 与 `WebLoginTicketApiTest` 通过真实本地 HTTP 服务器替代微信接口，验证免密码注册、绑定、冲突、凭证消费与票据生命周期。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
+- `ForumApiTest` / `ForumModerationTest` 显式启用社区以保留开放模式回归；`ForumDisabledHttpTest` 验证应用默认关闭，使用真实 Spring Boot HTTP 与 PostgreSQL 检查全部社区路由拒绝访问、既有记录不变及个人阵容/对战可用。前端集成测试服务器显式启用社区以通过真实 API 准备已有公开阵容，关闭模式的前端测试验证没有社区请求；后端关闭由上述 HTTP 测试独立覆盖。
 - `ForumModerationTest` 使用同一测试库，用收紧的限频配置真实触发词表拦截、秒级与天级限频、新账号链接限制、管理员删除与错误码响应体。
 
 当前任务的执行命令和验证状态见 `docs/plans/current.md`。

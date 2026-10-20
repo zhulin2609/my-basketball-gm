@@ -205,6 +205,7 @@ describe('community rosters', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    vi.stubEnv('VITE_FORUM_ENABLED', 'true');
     window.location.hash = '';
     // 指向不可达地址：社区数据只来自服务端，测试必须验证服务不可用时的界面行为。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
@@ -364,6 +365,7 @@ describe('hash routing', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    vi.stubEnv('VITE_FORUM_ENABLED', 'true');
     window.location.hash = '';
     // 指向不可达地址：hash 路由只决定渲染哪个视图，不依赖服务端响应。
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
@@ -447,6 +449,7 @@ describe('mobile navigation labels', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    vi.stubEnv('VITE_FORUM_ENABLED', 'true');
     window.location.hash = '';
     vi.stubEnv('VITE_API_BASE_URL', 'http://127.0.0.1:9/api/v1');
   });

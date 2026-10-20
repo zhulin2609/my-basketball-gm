@@ -2,7 +2,7 @@
 
 [English README](docs/README.en.md)
 
-一个面向 PC 浏览器的历史篮球球星资料库、阵容编辑与梦幻对战模拟器，带社区分享功能。前端为 React + TypeScript + Vite，后端为 Java 21 + Spring Boot + MyBatis，数据由 PostgreSQL 持久化。
+一个面向 PC 浏览器的历史篮球球星资料库、阵容编辑与梦幻对战模拟器。社区分享功能当前默认关闭。前端为 React + TypeScript + Vite，后端为 Java 21 + Spring Boot + MyBatis，数据由 PostgreSQL 持久化。
 
 ## 游戏玩法
 
@@ -11,7 +11,8 @@
 - **我的阵容**：阵容为 5–15 人，最多 13 人激活；首发必须各有一位 PG / SG / SF / PF / C。
 - **梦幻对战**：所有人都可以使用本地规则引擎对战；登录用户额外可以选择 AI 模拟（在 AI 设置中配置 OpenAI 兼容接口的 API Key，Key 在服务端加密保存）。战报自动评选本场最佳球员，创建 30 天后过期，每天北京时间 03:00 物理清理。
 - **游客模式**：无需注册即可浏览球员库、创建球员与阵容、进行本地对战，数据保存在浏览器 localStorage。注册后自动导入游客数据；登录已有账号时由用户选择导入或暂不导入。
-- **社区**：登录用户可以把符合条件的阵容公开到社区（公开即快照），其他用户浏览、评论（支持一级回复）、一键复制到自己的阵容。含自定义球员或覆盖过公共球员的阵容不能公开。写路径经过本地敏感词过滤与可选的腾讯云 CMS 审核，并有服务端限频、新账号链接限制与管理员删除通道。
+- **社区（当前关闭）**：前端隐藏社区导航、阵容公开区域及社区页面，后端关闭社区接口，已有数据保留。开放模式支持阵容快照分享、评论、复制和内容治理；恢复须明确批准，配置方法见[部署说明](docs/deployment.md#社区关闭与备案页脚)。
+- **网站备案**：公共页脚展示 `沪ICP备2026051556号-1` 并链接到工信部备案首页，中英文界面均保留备案原文。
 - 界面支持简体中文和英文。
 
 ## 架构
@@ -54,6 +55,7 @@ npm run dev
 
 - `JWT_SECRET`：JWT 签名密钥，生产环境必须设置。
 - `FORUM_ADMIN_USERNAMES`：社区管理员用户名，逗号分隔，管理员可删除任何帖子与评论。
+- `FORUM_ENABLED`：社区总开关，默认 `false`。Compose 同时将其传入 Web 构建参数 `VITE_FORUM_ENABLED` 和后端运行配置；独立运行 Vite 时设置 `VITE_FORUM_ENABLED`。更改配置后须重新构建 Web 并重启后端。
 - `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`：配置后激活腾讯云 CMS 文本审核；不配置时本地敏感词过滤仍然生效。
 - `MODERATION_WORD_LIST`：敏感词表位置，默认 `classpath:moderation-words.txt`，可用 `file:` 前缀指向外置文件。
 - `FORUM_COMMENT_PER_SECOND` / `FORUM_COMMENT_PER_DAY` / `FORUM_PUBLISH_PER_HOUR` / `FORUM_NEW_ACCOUNT_LINK_HOURS`：社区限频与新账号链接限制的额度。

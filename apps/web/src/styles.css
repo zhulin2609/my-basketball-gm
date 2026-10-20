@@ -1497,12 +1497,37 @@ nav button.active:after {
 .stat-table td b {
   color: #c3ec8b;
 }
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.auth-page .auth-shell {
+  min-height: 0;
+  flex: 1;
+}
 footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
   border-top: 1px solid #29352f;
-  color: #75847a;
+  color: #a6b5ab;
   text-align: center;
   padding: 22px;
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+footer a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+footer a:hover {
+  color: #c3ec8b;
+}
+footer a:focus-visible {
+  outline: 2px solid #c3ec8b;
+  outline-offset: 4px;
 }
 .community-list {
   display: grid;

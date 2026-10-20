@@ -28,7 +28,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.forum.enabled=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ForumApiTest {
