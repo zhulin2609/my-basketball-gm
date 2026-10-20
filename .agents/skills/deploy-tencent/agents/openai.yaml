@@ -1,0 +1,4 @@
+interface:
+  display_name: '腾讯云部署'
+  short_description: '检查腾讯云连接与发布版本，备份数据库、重建应用并验证服务状态'
+  default_prompt: '使用 $deploy-tencent 将远端 main 部署到腾讯云，备份数据库并验证服务状态。'

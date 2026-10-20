@@ -6,6 +6,32 @@
 
 ## Task
 
+当前任务：`deploy-tencent-skill-20261020`。用户授权创建仓库内项目 Skill，将腾讯云连接检查、main 更新、数据库备份、Web/API 重建启动及验证保存为可重复执行的流程。2026-10-20 最新授权：检查当前变更后提交并推送 `codex/deploy-tencent-skill` 分支。本次不连接云端执行变更。此前 main 合并与推送已完成，实际结果见 `.cache/icp-main-push-20261020/receipt.md`；以下历史任务记录保留。
+
+### 腾讯云部署 Skill 当前记录
+
+- Status：DONE。
+- Owner：codex；Instance：codex-stage4-takeover-20261016-01a1421b。
+- Worktree：/Users/zhulin/Workspace/my-basketball-gm。
+- Branch：codex/deploy-tencent-skill。
+- Base Commit：efe729d45acf1ea4ea23eae309525d5f6c1941be。
+- 写入范围：新增 `.agents/skills/deploy-tencent/`、部署文档中的入口、本计划。
+- Goal / Acceptance Criteria：形成可直接使用的项目 Skill；区分只读检查与部署授权；核验固定发布版本和独立测试证据；备份失败停止，保留生产 PostgreSQL 容器与数据卷；包含社区配置、服务及公网验证和失败处理；文档结构、格式与引用检查通过。
+- Plan：检查现有部署配置与 Skill 约定 → 编写流程及发现入口 → 执行结构、格式与引用检查 → 更新结果。
+- Current State / Progress：已核验 main 工作区干净并创建工作分支；已阅读 Compose 和部署文档，已完成 Skill、界面元数据和部署文档入口。结构、格式、引用与凭据扫描通过。此前只读 SSH 检查成功，服务状态仅代表当时状态。
+- Open Questions / Decision Candidates：无。本次不改变产品行为或 accepted decisions。
+- Validation：
+  - `python3 /Users/zhulin/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/deploy-tencent`：FAIL，系统 Python 缺少 PyYAML；随后在忽略目录 `.cache/deploy-skill-validation/venv` 安装 PyYAML 6.0.3，不修改项目依赖。
+  - `.cache/deploy-skill-validation/venv/bin/python /Users/zhulin/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/deploy-tencent`：PASS；名称、frontmatter 和占位内容检查。
+  - 同一 Python 使用 `yaml.safe_load` 读取 `agents/openai.yaml`：PASS；描述长度与 `$deploy-tencent` 提示词检查。
+  - `npm exec prettier -- --check .agents/skills/deploy-tencent/SKILL.md .agents/skills/deploy-tencent/agents/openai.yaml docs/deployment.md docs/plans/current.md`：PASS；首次发现 YAML 引号格式后已手动修正并复查。
+  - `git diff --check`、相关引用目标存在性检查：PASS。
+  - `.cache/security-audit/tools/gitleaks dir .agents/skills/deploy-tencent --redact --no-banner`：PASS，无发现。
+  - 云端部署、备份恢复演练与新会话自动发现：NOT RUN；本次创建 Skill 不授权部署。业务测试及 typecheck：NOT RUN，仅修改 Skill 与文档。S01–S07 平台验收保持 BLOCKED。
+- Completion：项目 Skill 创建完成；本记录为提交前状态，提交与推送结果以 Git 和执行回执为准。没有部署或重启服务。
+
+以下为历史任务状态：
+
 当前任务：`icp-community-disable-20261020`。用户批准在 develop 添加公共页脚备案链接（沪ICP备2026051556号-1，https://beian.miit.gov.cn/），通过统一配置关闭 Web 社区入口、阵容公开操作、社区路由及后端接口。保留全部社区数据及个人阵容、对战功能。更新相关文档、完整测试。
 
 2026-10-20 最新授权：将 develop 合并到 main，本地保持 main，完整运行前后端全部测试；全部通过且待推送提交扫描通过后推送 main。合并前在 develop 提交本轮计划记录；合并后只生成忽略的测试产物和 `.cache/icp-main-push-20261020/receipt.md`，记录实际命令、版本、独立数据库名称、验证结果及推送结果。Owner 继续 codex。此执行记录为合并前 checkpoint，最终结果以回执和 Git 为准；不部署服务器。

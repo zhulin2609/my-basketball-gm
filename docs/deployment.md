@@ -137,6 +137,8 @@ docker compose start api
 
 ## 腾讯云轻量应用服务器
 
+通过 Agent 检查连接或执行已授权部署时，使用仓库 [deploy-tencent Skill](../.agents/skills/deploy-tencent/SKILL.md)。该流程通过本机 SSH Host `mybasketball` 访问 `/opt/my-basketball-gm`，核验实际配置后依次拉取 main、备份数据库、构建并更新 Web/API、检查服务状态。检查请求保持只读；创建 Skill 不代表已执行部署。
+
 服务器使用 Docker CE 应用镜像。上传仓库代码与服务器 `.env` 后，设置 `WEB_HTTP_PORT=80`，执行：
 
 ```bash
