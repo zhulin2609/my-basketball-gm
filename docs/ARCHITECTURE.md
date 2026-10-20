@@ -57,6 +57,10 @@ My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 P
 
 `src/services/guest-runtime.ts` 管理加载、失败和已就绪状态；初始化失败后允许重新读取，初始化进行中复用同一个请求，成功后复用游客服务。`runtime.ts` 连接平台实现与 React 订阅，并在初始化时校验 `MINI_API_BASE_URL`。`src/platform/storage.ts` 使用 Taro 同步存储并传播错误；`identifier.ts` 通过平台密码学随机数据与 uuid 提前准备 UUID；`http.ts` 实现公共 HttpPort。游客流程不调用后端。
 
+client 的请求层按发起请求的 accessToken 处理 401，通知宿主后仅清除仍属于该请求的会话。小程序 `session-recovery.ts` 同步移除账号视图并恢复游客数据源；直接身份、详情请求和账号专属客户端共用这一流程。旧会话的迟到响应不能清除新会话；比对会话身份时不进行到期清理，确保在途请求跨过本地到期时间后仍会通知运行时。
+
+小程序 `guest-import.ts` 在发送前拒绝未保存草稿；成功响应后比较完整工作区、草稿原文和会话，任何变化都保留本地数据。Web 导入同样核对会话与完整工作区。服务端拒绝内容不匹配的幂等重试时，客户端保留工作区并显示错误。已导入工作区继续编辑后不能覆盖此前导入内容，新增编辑保留在游客模式。
+
 编辑页进入球员选择页时，只有存在未保存编辑才写入草稿。编辑页与选择页读取草稿失败后停止编辑、显示错误并提供重新读取入口；原始草稿和正式工作区数据保留。正式保存先读取草稿存储，通过读取与校验后再写入阵容。
 
 小程序单独安装 React 18，并在 TypeScript 与 Webpack 中指向该版本；`react-dom` 由 Taro 框架插件解析为 `@tarojs/react` 小程序渲染器。共享源码进入 Taro 的编译范围，Web 使用自身的 React、ReactDOM 和 Vite 配置。仓库维护 `apps/miniprogram/project.config.example.json`，真实 `project.config.json` 与开发者工具私有配置保存在本地，并由 Git 和 Docker 忽略；Taro 构建读取本地真实配置。
@@ -100,7 +104,7 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - 阵容成员引用公共球员或当前用户的自定义球员。
 - 战报保存阵容名称和球员显示快照，后续修改球员不会改写历史战报。
 - 战报创建 30 天后失效，每天北京时间 03:00 清理。
-- `guest_imports` 以游客工作区 UUID 为主键，保证同一账号重试安全，并阻止同一游客工作区进入两个账号；首次导入为每套阵容生成新的 client key，同事务重映射战报与自定义球员引用。
+- `guest_imports` 以游客工作区 UUID 为主键，阻止同一游客工作区进入两个账号；首次导入为每套阵容生成新的 client key，同事务重映射战报与自定义球员引用。V17 新增 `request_payload`，保存实际提交内容；同一账号仅在 JSONB 内容相等时获得幂等成功，不同内容或历史记录缺少内容时返回 409 `GUEST_IMPORT_CONTENT_CONFLICT`。历史记录保持 null，不根据现有业务表猜测原始输入。
 - `user_identities` 保存微信身份绑定：`(provider, appid, openid)` 全局唯一，`(user_id, provider, appid)` 每账号最多一条。
 - `wechat_auth_credentials` 保存微信身份确认凭证的摘要、过期时间、失败次数与消费状态；凭证明文只返回一次，不落库。
 - `web_login_tickets` 保存 Web 扫码登录票据：票据与浏览器绑定值均只存摘要，状态机为 pending → approved/rejected → consumed，过期在读取时判定。
@@ -109,10 +113,11 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 
 ## 测试边界
 
-- Vitest 覆盖共享包的规则、保存队列、对战编排、游客存储与导入转换（含真实本地 HTTP 服务器的契约测试），以及 Web 的入口交互、分页、社区界面与社区错误码映射。
+- Vitest 覆盖共享包规则、保存队列、对战编排、游客存储与导入转换，以及 Web 入口交互、分页、社区界面与错误码映射。`scripts/vitest-backend.ts` 为每次运行创建独立 `stage4_frontend_<timestamp>` PostgreSQL 数据库，构建并启动真实 Spring Boot；测试代理仅转发或延迟真实响应，禁止注册预设项目 API 响应。微信外部接口依 D-006 使用本地契约服务。
+- 前端集成测试要求 Docker 测试容器 `basketball-gm-test-pg` 在 127.0.0.1:5432 提供 PostgreSQL，用户名 zhulin，以及本机 Java 21、Maven。测试进程结束后关闭服务，数据库及 `.cache/integration-tests/<database>/` 日志保留，不能连接用户开发库。数据库故障触发器限定到测试账号或票据，并在 finally 中删除。
 - 小程序游客服务测试把工作区和草稿真实写入 `.cache/miniprogram-tests`，通过新服务实例验证恢复、阵容约束、模拟、快照、容量与到期清理；该测试不代替微信平台运行验收。
 - 后端 JUnit 覆盖比赛引擎、LLM 响应处理与加密、本地敏感词过滤。
-- `GuestImportApiTest` 使用真实本地 PostgreSQL 数据库 `basketball_gm_test`，通过 HTTP 层验证游客导入事务与新 client key 分配。
+- `GuestImportApiTest` 使用真实 PostgreSQL 与 MockMvc 验证导入事务、新 client key 和数据约束；小程序 `guest-import.test.ts` 通过真实 TCP HTTP 验证内容冲突、幂等、并发与本地清理。执行后端测试时通过 `SPRING_DATASOURCE_URL` 指定本轮独立数据库。
 - `AuthApiTest` 使用同一测试库验证注册规则与数据库用户名约束；`WechatAuthApiTest` 与 `WebLoginTicketApiTest` 通过真实本地 HTTP 服务器替代微信接口，验证免密码注册、绑定、冲突、凭证消费与票据生命周期。
 - `ForumApiTest` 使用同一测试库，通过 HTTP 层验证社区公开、评论、复制、权限与分页。
 - `ForumModerationTest` 使用同一测试库，用收紧的限频配置真实触发词表拦截、秒级与天级限频、新账号链接限制、管理员删除与错误码响应体。

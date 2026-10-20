@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { players } from '@dream-court/core/catalog';
 import { createApiClient, createFetchHttpPort } from '@dream-court/client';
-import { startTestApiServer } from '@dream-court/client/testing/local-api-server';
+import { startTestApiServer, register } from '@dream-court/client/testing/local-api-server';
 import { createGuestRuntime, toDataStore } from './guest-runtime';
 import { createAccountStore } from './account-store';
 import {
@@ -146,7 +146,7 @@ describe('游客初始化', () => {
   });
 
   it('数据源切换失败后，重新读取按当前数据源重试', async () => {
-    const { storage } = createDiskStorage();
+    const { storage, file } = createDiskStorage();
     const deps = {
       storage,
       catalog: players,
@@ -158,44 +158,36 @@ describe('游客初始化', () => {
     await runtime.initialize();
     expect(runtime.getSnapshot().status).toBe('ready');
 
-    let attempts = 0;
-    const flaky = async () => {
-      attempts += 1;
-      if (attempts === 1) throw new Error('首次加载失败');
-      return toDataStore(createGuestStore(deps));
-    };
-    await expect(runtime.swap(flaky)).rejects.toThrow('首次加载失败');
+    const saved = readFileSync(file, 'utf8');
+    writeFileSync(file, '{');
+    const reload = async () => toDataStore(createGuestStore(deps));
+    await expect(runtime.swap(reload)).rejects.toBeInstanceOf(SyntaxError);
     expect(runtime.getSnapshot().status).toBe('failed');
 
+    writeFileSync(file, saved);
     await runtime.initialize();
     const recovered = runtime.getSnapshot();
     expect(recovered.status).toBe('ready');
-    expect(attempts).toBe(2);
+    expect(readFileSync(file, 'utf8')).toBe(saved);
   });
 
   it('refreshAsync 等待数据源刷新并拿到服务器上的新数据', async () => {
     const { storage } = createDiskStorage();
     const server = await startTestApiServer();
     try {
-      let lineups: unknown[] = [];
-      server.respond('GET', '/api/v1/players', async () => ({ status: 200, body: players }));
-      server.respond('GET', '/api/v1/lineups', async () => ({ status: 200, body: lineups }));
-      server.respond('GET', '/api/v1/simulations?limit=30&offset=0', async () => ({
-        status: 200,
-        body: [],
-      }));
       const api = createApiClient({
         baseUrl: server.baseUrl,
         http: createFetchHttpPort(),
         storage,
         clock: () => new Date(),
       });
+      const session = await register(api);
       const store = await createAccountStore({
         api,
         storage,
         id: randomUUID,
         clock: () => new Date(),
-        user: { id: 'user-1', username: '球员甲', displayName: '球员甲', admin: false },
+        user: session.user,
         onUnauthorized: () => {},
       });
       const runtime = createGuestRuntime(async () => store);
@@ -204,16 +196,14 @@ describe('游客初始化', () => {
       if (before.status !== 'ready') throw new Error('账号数据源初始化未完成');
       expect(before.data.lineups).toHaveLength(0);
 
-      lineups = [
-        {
-          id: 'lineup-imported',
-          name: '导入的阵容',
-          description: '',
-          members: [],
-          createdAt: '2026-10-14T00:00:00.000Z',
-          updatedAt: '2026-10-14T00:00:00.000Z',
-        },
-      ];
+      await api.saveLineup({
+        id: 'lineup-imported',
+        name: '导入的阵容',
+        description: '',
+        members: [],
+        createdAt: '2026-10-14T00:00:00.000Z',
+        updatedAt: '2026-10-14T00:00:00.000Z',
+      });
       await runtime.refreshAsync();
       const after = runtime.getSnapshot();
       if (after.status !== 'ready') throw new Error('账号数据源状态错误');

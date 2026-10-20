@@ -6,9 +6,11 @@ export const SESSION_STORAGE_KEY = 'dream-court.auth-session.v1';
 export interface SessionStoreDeps {
   storage: StoragePort;
   clock: Clock;
+  onInvalidSession?: (accessToken: string) => void;
 }
 
 export interface SessionStore {
+  isCurrent(accessToken: string): boolean;
   read(): AuthSession | null;
   save(session: AuthSession): void;
   clear(): void;
@@ -33,6 +35,7 @@ export function createSessionStore(deps: SessionStoreDeps): SessionStore {
         Number.isFinite(expiresAt) &&
         expiresAt > deps.clock().getTime();
       if (!isUsable) {
+        if (typeof session.accessToken === 'string') deps.onInvalidSession?.(session.accessToken);
         clear();
         return null;
       }
@@ -51,5 +54,11 @@ export function createSessionStore(deps: SessionStoreDeps): SessionStore {
     deps.storage.removeItem(SESSION_STORAGE_KEY);
   };
 
-  return { read, save, clear };
+  const isCurrent = (accessToken: string): boolean => {
+    const raw = deps.storage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return false;
+    return (JSON.parse(raw) as AuthSession).accessToken === accessToken;
+  };
+
+  return { read, save, clear, isCurrent };
 }

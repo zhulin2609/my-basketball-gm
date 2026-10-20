@@ -1,27 +1,17 @@
 // @vitest-environment jsdom
-
+import { createHash } from 'node:crypto';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   startTestApiServer,
+  testApi,
+  register,
+  sql,
+  testName,
   type TestApiServer,
 } from '@dream-court/client/testing/local-api-server';
-
-/**
- * 扫码登录面板的运行验证：真实 App、真实本地 HTTP 服务器、真实定时器。
- * 覆盖领取失败后的重试、过期终态与重新发起。
- */
-
-const session = {
-  accessToken: 'scan-token-1',
-  tokenType: 'Bearer',
-  expiresAt: '2099-10-14T12:00:00.000Z',
-  user: { id: 'user-1', username: '球员甲', displayName: '球员甲', admin: false },
-};
-
 let server: TestApiServer;
-
 beforeEach(async () => {
   localStorage.clear();
   vi.resetModules();
@@ -29,13 +19,11 @@ beforeEach(async () => {
   server = await startTestApiServer();
   vi.stubEnv('VITE_API_BASE_URL', server.baseUrl);
 });
-
 afterEach(async () => {
   cleanup();
   vi.unstubAllEnvs();
   await server.close();
 });
-
 async function openScanPanel() {
   const user = userEvent.setup();
   const { App } = await import('@/App');
@@ -44,70 +32,78 @@ async function openScanPanel() {
   await user.click(
     screen.getByRole('button', { name: /小程序扫码登录|Sign in with the mini program/i }),
   );
-  return user;
 }
-
-describe('scan login panel', () => {
-  it('领取失败后保持轮询并在下一次领取成功', async () => {
-    let claimAttempts = 0;
-    server.respond('POST', '/api/v1/auth/web-login-tickets', async () => ({
-      status: 201,
-      body: { ticket: 'ticket-1', expiresAt: '2099-10-14T12:05:00.000Z' },
-    }));
-    server.respond('GET', '/api/v1/auth/web-login-tickets/ticket-1', async () => ({
-      status: 200,
-      body: { status: 'approved', expiresAt: '2099-10-14T12:05:00.000Z' },
-    }));
-    server.respond('POST', '/api/v1/auth/web-login-tickets/ticket-1/claim', async () => {
-      claimAttempts += 1;
-      if (claimAttempts === 1) return { status: 500, body: { message: 'upstream error' } };
-      return { status: 200, body: session };
-    });
-    // 认证成功后的账号数据读取
-    server.respond('GET', '/api/v1/players', async () => ({ status: 200, body: [] }));
-    server.respond('GET', '/api/v1/lineups', async () => ({ status: 200, body: [] }));
-    server.respond('GET', '/api/v1/simulations?limit=30&offset=0', async () => ({
-      status: 200,
-      body: [],
-    }));
-
+function createdTicket() {
+  const result = server.requests.find(
+    (r) => r.method === 'POST' && r.path === '/api/v1/auth/web-login-tickets',
+  )?.response as { ticket?: string } | undefined;
+  if (!result?.ticket) throw new Error('未取得真实票据');
+  return result.ticket;
+}
+describe('scan login panel → Spring Boot + PostgreSQL', () => {
+  it('真实数据库领取失败后保持轮询，下次领取成功', async () => {
+    const gate = server.pauseResponse('POST', '/api/v1/auth/web-login-tickets');
     await openScanPanel();
-
-    // 轮询间隔 2 秒：第一次领取失败后保持等待，下一次轮询重试并登录成功。
-    await screen.findByRole(
-      'heading',
-      { name: /巅峰球员库|Peak player archive/i },
-      { timeout: 20000 },
+    await gate.arrived;
+    const ticket = createdTicket();
+    const digest = createHash('sha256').update(ticket).digest('hex');
+    const suffix = testName();
+    // sequence 的增长不随失败事务撤销，因此仅第一次消费发生真实数据库异常。
+    sql(
+      `CREATE SEQUENCE ${suffix}; CREATE FUNCTION ${suffix}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.ticket_digest = '${digest}' AND NEW.status = 'consumed' AND nextval('${suffix}') = 1 THEN RAISE EXCEPTION 'integration claim failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER ${suffix} BEFORE UPDATE ON web_login_tickets FOR EACH ROW EXECUTE FUNCTION ${suffix}();`,
     );
-    expect(claimAttempts).toBeGreaterThanOrEqual(2);
-  }, 30000);
-
-  it('票据过期后显示明确结束状态，并可重新发起新的登录请求', async () => {
-    let created = 0;
-    server.respond('POST', '/api/v1/auth/web-login-tickets', async () => {
-      created += 1;
-      return {
-        status: 201,
-        body: { ticket: `ticket-${created}`, expiresAt: '2099-10-14T12:05:00.000Z' },
-      };
-    });
-    server.respond('GET', '/api/v1/auth/web-login-tickets/ticket-1', async () => ({
-      status: 200,
-      body: { status: 'expired', expiresAt: '2026-10-14T12:05:00.000Z' },
-    }));
-    server.respond('GET', '/api/v1/auth/web-login-tickets/ticket-2', async () => ({
-      status: 200,
-      body: { status: 'pending', expiresAt: '2099-10-14T12:05:00.000Z' },
-    }));
-
+    try {
+      const accountStorage = new Map<string, string>();
+      const api = testApi(server.baseUrl, {
+        getItem: (k) => accountStorage.get(k) ?? null,
+        setItem: (k, v) => {
+          accountStorage.set(k, v);
+        },
+        removeItem: (k) => {
+          accountStorage.delete(k);
+        },
+      });
+      await register(api);
+      await api.confirmWebLoginTicket(ticket);
+      gate.release();
+      await vi.waitFor(
+        () => {
+          const claims = server.requests.filter((r) => r.path.endsWith('/claim'));
+          expect(claims.map((r) => r.status)).toEqual([500, 200]);
+        },
+        { timeout: 20000 },
+      );
+      await screen.findByRole('heading', { name: /巅峰球员库|Peak player archive/i });
+      expect(JSON.parse(localStorage.getItem('dream-court.auth-session.v1')!).user.id).toBe(
+        api.readSession()?.user.id,
+      );
+    } finally {
+      gate.release();
+      sql(
+        `DROP TRIGGER ${suffix} ON web_login_tickets; DROP FUNCTION ${suffix}(); DROP SEQUENCE ${suffix};`,
+      );
+    }
+  });
+  it('真实票据过期后显示结束状态，并可重新获取', async () => {
+    const gate = server.pauseResponse('POST', '/api/v1/auth/web-login-tickets');
     await openScanPanel();
-
+    await gate.arrived;
+    const digest = createHash('sha256').update(createdTicket()).digest('hex');
+    sql(
+      `UPDATE web_login_tickets SET expires_at = now() - interval '1 second' WHERE ticket_digest = '${digest}'`,
+    );
+    gate.release();
     await screen.findByText(/二维码已过期|The QR code expired/i, undefined, { timeout: 20000 });
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /重新获取二维码|Request a new QR code/i }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /重新获取二维码|Request a new QR code/i }));
     await screen.findByText(/等待小程序确认|Waiting for confirmation/i, undefined, {
       timeout: 20000,
     });
-    expect(created).toBe(2);
-  }, 30000);
+    expect(
+      server.requests.filter(
+        (r) => r.method === 'POST' && r.path === '/api/v1/auth/web-login-tickets',
+      ),
+    ).toHaveLength(2);
+  });
 });

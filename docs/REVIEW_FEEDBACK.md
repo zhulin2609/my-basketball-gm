@@ -1,13 +1,15 @@
 # 当前代码审查
 
-- Task：`wechat-login-stage4-round09-recheck-20261019`；更新日期 2026-10-19（Asia/Shanghai）。
-- 当前结论：`CHANGES_REQUIRED`。I004、I007、I016 在当前代码中仍存在；I017 的当前状态文档已整理，等待独立复核。
-- Reviewed Commit：`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；文档整理随其后的 develop 文档交付提交保存，业务代码与既有测试未修改。
+- Task：`wechat-login-stage4`；当前实施任务 `wechat-login-stage4-fixes-20261020`，更新日期 2026-10-20（Asia/Shanghai）。
+- 当前结论：`CHANGES_REQUIRED`。I004、I007、I016、I017 经 Kimi Round 10 独立复核确认 VERIFIED；I024（Round 10 R05）已完成格式修复，保持 FIXED_PENDING_REVIEW，独立复核关闭前保持本结论。
+- Base Commit / HEAD：`494c9ca5c7a45821dab2098964f5621c71b1cb53`；Reviewed Commit：N/A；四项复核 Snapshot ID：`wechat-stage4-fixes-20261020-final`，复核者 `kimi-code-round-10-20261020`。未提交快照位置、清单及验证见[实施记录](reviews/wechat-login-stage4/fixes-20261020-codex.md)。R05 修复为该快照上的十个文件格式化，前后摘要见 `.cache/stage4-round10-summary/format-hashes.json`。
 - 汇总负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`；Owner codex / ACTIVE。
-- [第九轮核验报告](reviews/wechat-login-stage4/round-09-codex.md)；[阶段 4 问题清单](reviews/wechat-login-stage4/issues.md)：VERIFIED 19、OPEN 3、FIXED_PENDING_REVIEW 1，其他状态为 0。
-- 本轮实际验证：独立 PostgreSQL 数据库 `stage4_recheck_20261019`；真实 Spring Boot HTTP 复现 I004、I007；AuthApiTest 7 项、GuestImportApiTest 5 项通过。代码与文档检查支持 I016、I017 的结论。完整前后端测试、typecheck、构建及真机流程本轮 NOT RUN，具体边界见报告。
+- 报告列表追加：[第九轮历史核验报告](reviews/wechat-login-stage4/round-09-codex.md)、[round-10-kimi.md](../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。Round 10 物理位置在 Kimi 复核 worktree，原文保持只读，本次未复制归档；SHA-256 为 `021b4c53929c5225fd603334d1effc8d051ebb69aad94f67a269d479e11e1bcd`。
+- [阶段 4 问题清单](reviews/wechat-login-stage4/issues.md)：VERIFIED 23、OPEN 0、FIXED_PENDING_REVIEW 1（I024 / R05），其他状态为 0。
+- Round 10 独立验证：前端第二次完整运行 158 项、后端 83 项、四包 typecheck、Web 和小程序构建通过，第一次前端 worker 超时保留。项目 API 使用真实 Spring Boot 与独立 PostgreSQL；详见 Round 10 原始报告及原仓库 `.cache/stage4-round10-kimi/` 日志。本轮汇总未重跑完整测试。
+- R05 修复验证：十个文件精确等于原快照的 Prettier 输出；四包 `npm run typecheck` PASS。全仓 `npm run format:check` FAIL，仅剩要求原样保留的历史 `wechat-password-form-20261017/round-02-kimi.md`。检查命令与限定范围结果见[当前计划](plans/current.md)。
 - 平台验收：用户于 2026-10-19 确认 M01–M12、W01–W06 PASS；S01–S07 BLOCKED，等待注册普通小程序账号。本轮没有由 Agent 执行真机验收。
-- 下一步：按报告建议处理三项 OPEN，并对修复与 I017 文档整理安排独立复核。当前未获风险接受或延期批准。第九轮核验未修改业务代码；之后用户授权本地合并到 develop，并提交、推送文档。交付阶段完整测试结果见 [current plan](plans/current.md)，不改变本轮审查结论。
+- 下一步：独立复核 I024 / R05 格式修复；全仓格式门禁的既有归档问题仍待处理决定，未获风险接受或延期批准。S01–S07 保持 BLOCKED。本轮没有提交、推送或合并。Owner 继续 codex / ACTIVE。
 
 ## 密码表单任务：wechat-password-form-20261017
 

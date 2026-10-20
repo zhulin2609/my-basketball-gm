@@ -1,24 +1,21 @@
 import { useSyncExternalStore } from 'react';
 import { players as catalogPlayers } from '@dream-court/core/catalog';
-import { mergePlayerCatalog } from '@dream-court/core';
 import {
   ApiError,
   createApiClient,
-  createGuestImportRequest,
   createGuestRepositories,
-  SESSION_STORAGE_KEY,
-  type ApiClient,
   type AuthSession,
-  type StoragePort,
 } from '@dream-court/client';
 import { miniStorage } from '@/platform/storage';
 import { miniHttp } from '@/platform/http';
 import { createIdentifier, prepareIdentifiers } from '@/platform/identifier';
-import { clearGuestDrafts, createGuestStore } from '@/services/guest-store';
+import { createGuestStore } from '@/services/guest-store';
 import { createAccountStore } from '@/services/account-store';
 import { createGuestRuntime, toDataStore, type RuntimeSnapshot } from '@/services/guest-runtime';
 import type { DataStore } from '@/services/data-store';
 import { getApiBaseUrl } from '@/config/env';
+import { recoverUnauthorizedSession, createSessionScopedApi } from '@/services/session-recovery';
+import { importGuestSnapshot } from '@/services/guest-import';
 
 const clock = () => new Date();
 
@@ -28,34 +25,8 @@ export const api = createApiClient({
   http: miniHttp,
   storage: miniStorage,
   clock,
+  onUnauthorized: (token) => recoverUnauthorizedSession(token, api, runtime, loadGuestStore),
 });
-
-/**
- * 绑定到单个会话的 API 客户端：请求始终携带创建时的会话；
- * 401 清理只在全局会话仍是该会话时生效，旧会话的失败不会影响新会话。
- */
-function createSessionScopedApi(session: AuthSession): ApiClient {
-  const sessionJson = JSON.stringify(session);
-  const scopedStorage: StoragePort = {
-    getItem: (key) => (key === SESSION_STORAGE_KEY ? sessionJson : miniStorage.getItem(key)),
-    setItem: (key, value) => {
-      if (key !== SESSION_STORAGE_KEY) miniStorage.setItem(key, value);
-    },
-    removeItem: (key) => {
-      if (key === SESSION_STORAGE_KEY) {
-        if (api.readSession()?.accessToken === session.accessToken) api.clearSession();
-        return;
-      }
-      miniStorage.removeItem(key);
-    },
-  };
-  return createApiClient({
-    baseUrl: getApiBaseUrl(),
-    http: miniHttp,
-    storage: scopedStorage,
-    clock,
-  });
-}
 
 const loadGuestStore = async (): Promise<DataStore> => {
   await prepareIdentifiers();
@@ -74,18 +45,20 @@ const loadAccountStore = async (): Promise<DataStore> => {
   const session = api.readSession();
   if (!session) return loadGuestStore();
   return createAccountStore({
-    api: createSessionScopedApi(session),
+    api: createSessionScopedApi(session, {
+      baseUrl: getApiBaseUrl(),
+      http: miniHttp,
+      storage: miniStorage,
+      clock,
+      onUnauthorized: (token) => recoverUnauthorizedSession(token, api, runtime, loadGuestStore),
+    }),
     storage: miniStorage,
     id: createIdentifier,
     clock,
     user: session.user,
     onUnauthorized: () => {
       // 仅当全局会话没有切换到其他账号时才恢复游客工作区；旧会话的迟到 401 在此丢弃。
-      const current = api.readSession();
-      if (current === null || current.accessToken === session.accessToken) {
-        api.clearSession();
-        void runtime.swap(loadGuestStore).catch((error: unknown) => console.error(error));
-      }
+      recoverUnauthorizedSession(session.accessToken, api, runtime, loadGuestStore);
     },
   });
 };
@@ -114,7 +87,6 @@ export const refreshRuntimeAsync = async (): Promise<void> => {
     await runtime.refreshAsync();
   } catch (error: unknown) {
     if (error instanceof ApiError && error.status === 401) {
-      await runtime.swap(loadGuestStore);
       return;
     }
     runtime.fail(error);
@@ -148,27 +120,15 @@ export function hasGuestProgress(): boolean {
 }
 
 /**
- * 导入本机游客工作区；成功后清空游客存档与对应的本地草稿。没有游客进度时直接返回。
- * 请求等待期间会话或游客工作区发生变化时保留本地数据：未导入的新内容不得被清除。
+ * 导入已保存的游客工作区；服务端确认内容一致，且本地快照、草稿、会话均未变化时清理。
+ * 未保存的草稿阻止导入；请求等待期间出现的新内容保留在本机。
  */
 export async function importGuestProgress(): Promise<'empty' | 'imported'> {
-  const repositories = createGuestRepositories({
+  return importGuestSnapshot({
+    api,
     storage: miniStorage,
     id: createIdentifier,
     clock,
+    catalog: catalogPlayers,
   });
-  const workspace = repositories.workspace.peek();
-  if (!workspace || !workspace.hasUserProgress) return 'empty';
-  const sessionToken = api.readSession()?.accessToken;
-  const players = mergePlayerCatalog(catalogPlayers, repositories.players.list());
-  await api.importGuestWorkspace(createGuestImportRequest(workspace, players));
-
-  const sessionUnchanged = api.readSession()?.accessToken === sessionToken;
-  const current = repositories.workspace.peek();
-  const workspaceUnchanged =
-    current?.id === workspace.id && current?.updatedAt === workspace.updatedAt;
-  if (!sessionUnchanged || !workspaceUnchanged) return 'imported';
-  repositories.workspace.clear();
-  clearGuestDrafts(miniStorage);
-  return 'imported';
 }

@@ -3,13 +3,14 @@
 ## 当前任务
 
 - Task：`wechat-login-stage4`。
-- 当前任务汇总结论：`CHANGES_REQUIRED`；第九轮确认 I004、I007、I016 仍为 OPEN；I017 当前文档整理为 FIXED_PENDING_REVIEW。未获风险接受或延期批准。第八轮 I021–I023 的 VERIFIED 保留。
-- Reviewed Commit：`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`；I017 文档整理随其后的 develop 文档交付提交保存，不属于已独立复核的版本。
-- 汇总负责人：Codex，任务标识 `codex-stage4-takeover-20261016-01a1421b`；当前任务 `wechat-login-stage4-round09-recheck-20261019`。
-- 最新报告：[第九轮当前版本核验](round-09-codex.md)。
+- 当前任务汇总结论：`CHANGES_REQUIRED`；I004、I007、I016、I017 经 Round 10 独立复核确认 VERIFIED；新增 I024（Round 10 R05）格式修复为 FIXED_PENDING_REVIEW，独立复核关闭前保持本结论。历史 VERIFIED 保留。
+- Base Commit / HEAD：`494c9ca5c7a45821dab2098964f5621c71b1cb53`；Reviewed Commit：N/A。四项复核 Snapshot ID：`wechat-stage4-fixes-20261020-final`，保存位置与文件清单见[实施记录](fixes-20261020-codex.md)。R05 修复为该快照上的十个文件格式化，前后摘要见 `.cache/stage4-round10-summary/format-hashes.json`。
+- 汇总负责人及实施者：Codex，`codex-stage4-takeover-20261016-01a1421b`；当前任务 `wechat-login-stage4-fixes-20261020`。
+- 最新报告：[round-10-kimi.md](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。物理位置在 Kimi 复核 worktree，原文只读保留；SHA-256：`021b4c53929c5225fd603334d1effc8d051ebb69aad94f67a269d479e11e1bcd`。本次未另行复制归档。
 - 报告列表：[第一轮 Codex 历史报告](round-01-codex.md)、[第二轮 Kimi 核验与修复报告](round-02-kimi.md)、[第三轮 Codex 复核报告](round-03-codex.md)、[第四轮 Kimi 核验与修复报告](round-04-kimi.md)、[第五轮 Codex 最终定向复核](round-05-codex.md)、[第六轮 Codex 审查](round-06-codex.md)、[第七轮 Kimi 修复记录](round-07-kimi.md)、[第八轮 Codex 最终定向复核](round-08-codex.md)。
 - 当前入口：[REVIEW_FEEDBACK.md](../../REVIEW_FEEDBACK.md)。
-- 后续处置：三项 OPEN 的业务与测试修复、I017 文档独立复核及 S01–S07 平台验收待安排；本轮不修改业务代码、既有测试或执行合并。
+- 报告列表续：[第九轮当前版本核验](round-09-codex.md)、[第十轮 Kimi 独立复核](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)（物理位置同上）。
+- 后续处置：独立复核 I024 / R05 格式修复；全仓格式检查的既有归档报告问题保留，详见 I024。S01–S07 平台验收保持 BLOCKED。本轮没有提交、推送或合并。
 
 ## 历史报告导入说明
 
@@ -31,14 +32,14 @@
 
 ## 状态与字段约定
 
-历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED；第五轮核验后为 16 VERIFIED、4 OPEN。第六轮新增三项，第七轮标记待复核，第八轮全部验证通过。当前总计 23 项，历史报告原文保留。
+历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED；第五轮核验后为 16 VERIFIED、4 OPEN。第六轮新增三项，第七轮标记待复核，第八轮全部验证通过。第十轮确认四项修复，新增 I024 / R05。当前总计 24 项，历史报告原文保留。
 
-- `OPEN`：3。
-- `VERIFIED`：19。
-- `FIXED_PENDING_REVIEW`：1（I017）。
+- `OPEN`：0。
+- `VERIFIED`：23。
+- `FIXED_PENDING_REVIEW`：1（I024 / R05）。
 - `NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED`：均为 0。
 
-第九轮适用版本为上述 Reviewed Commit；I004、I007、I016、I017 的最新证据见各项第九轮记录。其余项目保留原独立复核版本及证据，不声称本轮重跑。I017 由 Codex 整理当前文档，其他修复尚未分配；独立复核者待用户安排。
+第九轮适用版本为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`，其证据作为修复前历史记录保留。I004、I007、I016、I017 的复核版本为 `wechat-stage4-fixes-20261020-final`，复核者为 `kimi-code-round-10-20261020`，报告为上述 `round-10-kimi.md`；其余 VERIFIED 保留原独立复核依据。汇总负责人核对原工作区与 Kimi worktree 的 347 个输入摘要均一致，确认报告的恢复证据；本轮仅读取 Kimi 日志，未重跑完整测试。
 
 以下通用字段适用于 I001–I020；各项的状态、来源和具体证据见对应条目：
 
@@ -80,7 +81,9 @@
 
 ### I004 · major · 运行期间的 401 和刷新失败没有同步到页面状态
 
-- 状态：`OPEN`。
+- 状态：`VERIFIED`。
+- 第十轮复核：`kimi-code-round-10-20261020`，快照 `wechat-stage4-fixes-20261020-final`，[round-10-kimi.md · R01](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。汇总确认当前请求层、runtime 恢复及 token 归属检查与报告一致，Kimi 第二轮完整运行日志中 session-recovery 8 项通过；包含直接请求、并发、到期与旧响应隔离。完整 Taro 页面仍未执行。以下为历史记录。
+- 2026-10-20 实施者回复：client 请求层新增当前会话 401 通知，小程序直接身份、战报及账号数据源使用同一恢复函数；按 token 隔离迟到响应，包含请求期间跨过本地到期时间的情况。真实 HTTP 回归及修复版本见[实施记录](fixes-20261020-codex.md)。独立复核未执行。
 - 第九轮来源：[round-09-codex.md · R01](round-09-codex.md)。真实 Spring Boot 返回 identities 与 report-detail 的 401 后，会话为空、onUnauthorized 调用次数为 0，真实 runtime 模块仍为 ready/account；保存请求的对照回调为 1。页面直接请求绕过账号数据源 guarded，尚未修复。数据库 `stage4_recheck_20261019`，未运行完整真机页面流程。
 - 第五轮来源与证据：[round-05-codex.md · R01](round-05-codex.md)；保存 401 回调已生效；实际直接 identities 请求的 401 仍仅清会话，runtime 保留 ready/account。详情直接请求亦绕过 guarded。
 - 第三轮来源与证据：[round-03-codex.md · R02](round-03-codex.md)；保存、对战等路径未经过刷新包装，401 清除会话后 runtime 仍可保留账号数据。未伪造 401 运行结果。
@@ -107,7 +110,9 @@
 
 ### I007 · major · 导入成功后账号快照未刷新，游客草稿也未清理
 
-- 状态：`OPEN`。
+- 状态：`VERIFIED`。
+- 第十轮复核：`kimi-code-round-10-20261020`，快照 `wechat-stage4-fixes-20261020-final`，[round-10-kimi.md · R02](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。汇总确认 V17、JSONB 内容比较、完整工作区/草稿/会话清理条件与页面刷新调用；Kimi 日志含 GuestImportApiTest 5 项、小程序 guest-import 10 项通过。覆盖相同内容、不同内容、并发、历史 NULL、跨账号与等待期间编辑；真机导入未执行。以下为历史记录。
+- 2026-10-20 实施者回复：V17 保存实际导入请求，只有内容相等时返回幂等成功；不同内容或历史缺少原始内容返回 409，跨账号冲突保留。小程序阻止导入未保存草稿，清理前核对完整工作区、草稿及会话；Web 同步核对完整工作区和会话。真实 HTTP、并发、数据库与磁盘证据见[实施记录](fixes-20261020-codex.md)。独立复核未执行。
 - 第九轮来源：[round-09-codex.md · R02](round-09-codex.md)。真实首次导入 alreadyImported=false，同 ID 新编辑后的重试 alreadyImported=true；数据库只有旧内容，客户端当前清理条件仍成立。草稿保存不改变 workspace.updatedAt，实际清理操作会删除新编辑与草稿；完整 Taro 调用关系通过源码核验，未声称真机复现。尚未修复。
 - 第五轮来源与证据：[round-05-codex.md · R02](round-05-codex.md)；真实 API 确认首次成功后保留工作区并继续编辑，再次导入返回幂等成功但不上传新内容，客户端仍允许清理；草稿变化也未进入工作区版本检查。
 - 第三轮来源与证据：[round-03-codex.md · R03](round-03-codex.md)；新增刷新与清理，但 await 后未校验会话、工作区及内容版本，迟到成功会清除未导入的新游客内容。
@@ -191,7 +196,9 @@
 
 ### I016 · major · 新测试使用伪造微信及业务响应，违反仓库验证规则
 
-- 状态：`OPEN`。
+- 状态：`VERIFIED`。
+- 第十轮复核：`kimi-code-round-10-20261020`，快照 `wechat-stage4-fixes-20261020-final`，[round-10-kimi.md · R03](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。汇总确认 helper 透明转发、真实 Spring Boot 启动及独立库保护，外部微信替代限于 D-006；Kimi 第二次完整前端运行 29 文件 158 项、后端 83 项通过，第一次 worker 超时记录保留。日志实际位于原仓库 `.cache/stage4-round10-kimi/`；本轮未连接任何数据库。以下为历史记录。
+- 2026-10-20 实施者回复：移除 helper 的 respond 接口和预设项目 API 返回值，六个使用该 helper 的测试文件全部接入真实 Spring Boot 与每轮独立 PostgreSQL。测试仅延迟真实响应、限定测试对象注入数据库故障；外部微信按 D-006 替代。保留原测试覆盖，新增 I004/I007 回归；详见[实施记录](fixes-20261020-codex.md)。独立复核未执行。
 - 第九轮来源：[round-09-codex.md · R03](round-09-codex.md)。当前 scan-login、account-store、guest-runtime、api-wechat 测试仍预设本项目票据、身份、会话及业务 API 返回值；本地 HTTP 服务直接输出 handler 的响应，未调用真实 Spring Boot。D-006 只允许替代外部微信上游。未运行这些测试来证明系统有效，既有测试原样保留，尚未修复。
 - 第五轮来源与证据：[round-05-codex.md · R03](round-05-codex.md)。用户本轮明确“仅允许替代微信等外部平台，不包含本项目 API”；第四轮 DISMISSED 撤销。本项目票据、会话及业务 API 仍被前端测试服务器预设，未获许可；微信外部上游替代可以保留。
 - 第三轮来源与证据：[round-03-codex.md · R08](round-03-codex.md)；预设微信及业务响应仍存在，增加说明没有消除规则冲突；本轮未运行这些替代响应测试。
@@ -202,7 +209,9 @@
 
 ### I017 · minor · 当前计划的目标和完成状态相互矛盾
 
-- 状态：`FIXED_PENDING_REVIEW`。
+- 状态：`VERIFIED`。
+- 第十轮复核：`kimi-code-round-10-20261020`，快照 `wechat-stage4-fixes-20261020-final`，[round-10-kimi.md · R04](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。汇总确认快照内当前任务、HEAD、Owner、计数和历史边界与报告一致；本轮同步更新三份当前状态文档，保留历史段落。以下为历史记录。
+- 2026-10-20：当前计划更新本轮目标、基线、写入范围、状态和验证；历史完成记录显式保留在历史段落，前次 develop 提交与推送按 Git 及回执确认完成。本轮与前三项一并交给 Kimi 独立复核；没有自行标记 VERIFIED。
 - 第九轮来源：[round-09-codex.md · R04](round-09-codex.md)。在 Reviewed Commit 中，Task 仍称 M06 绑定恢复待指令，Goal 已记录恢复；Current State/Completion 仍使用旧提交和待复核状态，缺少当前统一摘要。本轮按用户授权更新当前任务、基线、R01 独立复核与四项状态，在各当前栏目明确历史记录边界。历史报告和交接文件不改写；当前 Owner codex / ACTIVE。
 - 实施者 / 修复版本：Codex；`86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9` 之后的 develop 文档交付提交，文件清单、验证命令见第九轮报告与 current plan。独立复核尚未执行，不能标记 VERIFIED。
 - 第五轮来源与证据：[round-05-codex.md · R04](round-05-codex.md)。第四轮输入的计划仍为第三轮、交接与计划 Owner/Status 不符、问题计数和逐项状态不同。本轮更新审查状态不改变对该输入修复声明的核验结果。
@@ -262,6 +271,16 @@
 - 来源：[round-06-codex.md · R03](round-06-codex.md)。
 - 证据：`docs/ARCHITECTURE.md` 第 68 行保留旧下限；已更新为 2–32 并引用 D-007，历史迁移与历史报告保持原文。
 - 修复记录：见 [round-07-kimi.md](round-07-kimi.md) R03 条目。
+
+### I024 · minor · Round 10 R05：十个变更文件未通过格式检查
+
+- 状态：`FIXED_PENDING_REVIEW`（2026-10-20）；修复负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`；独立复核待安排。
+- 来源与适用版本：[round-10-kimi.md · R05](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)，`wechat-stage4-fixes-20261020-final`。
+- 位置：`apps/miniprogram/src/services/{account-store,guest-import,guest-runtime,session-recovery}.test.ts`、`apps/web/src/scan-login.test.tsx`、`packages/client/src/{api-wechat,battle-service,lineup-service}.test.ts`、`packages/client/src/testing/local-api-server.ts`、`scripts/vitest-backend.ts`。
+- 触发与影响：Prettier 对上述十个文件报错，违反仓库格式检查要求；影响限于代码风格。归档报告的既有格式问题不计入本项。
+- 实施者回复：仅对十个文件执行 `npm exec -- prettier --write <上述十个路径>`，等价于格式化脚本的限定范围执行；根脚本固定扫描 `.`，未直接运行以免修改历史报告。没有行为修改。
+- 修复版本与证据：HEAD 保持 `494c9ca5c7a45821dab2098964f5621c71b1cb53`，未提交；`.cache/stage4-round10-summary/format-hashes.json` 保存十个文件前后 SHA-256。`node .cache/stage4-round10-summary/verify-format.mjs`：PASS，十个文件逐字节等于原快照的 Prettier 输出，其余 337 个输入文件保持原样（文档更新前）。
+- 验证：完整命令及 PASS/FAIL 见 current plan 本轮 Validation。全仓 `npm run format:check` 的历史归档文件失败须单独保留，不能记为全仓通过；完整测试按本轮授权不重跑。不得在实施者修复后直接标为 VERIFIED。
 
 ## 第三轮验证
 

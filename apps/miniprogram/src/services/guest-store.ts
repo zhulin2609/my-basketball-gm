@@ -17,7 +17,7 @@ import {
 } from '@dream-court/client';
 import type { DataSnapshot } from './data-store';
 
-const DRAFTS_KEY = 'dream-court.lineup-drafts.v1';
+export const DRAFTS_KEY = 'dream-court.lineup-drafts.v1';
 
 /** 游客草稿与游客工作区同属一份本地数据：成功导入后一并清理。 */
 export function clearGuestDrafts(storage: { removeItem(key: string): void }): void {

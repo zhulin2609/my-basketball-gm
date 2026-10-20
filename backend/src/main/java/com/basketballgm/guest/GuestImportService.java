@@ -1,6 +1,8 @@
 package com.basketballgm.guest;
 
 import com.basketballgm.lineup.LineupMapper;
+import com.basketballgm.config.ApiException;
+import tools.jackson.databind.json.JsonMapper;
 import com.basketballgm.lineup.LineupMemberPayload;
 import com.basketballgm.lineup.LineupMemberWrite;
 import com.basketballgm.lineup.LineupPayload;
@@ -22,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class GuestImportService {
+  private final JsonMapper jsonMapper = JsonMapper.builder().build();
   private final GuestImportMapper guestImportMapper;
   private final LineupMapper lineupMapper;
   private final PlayerMapper playerMapper;
@@ -41,11 +44,16 @@ public class GuestImportService {
 
   @Transactional
   public GuestImportResponse importWorkspace(UUID ownerId, GuestImportRequest request) {
-    if (guestImportMapper.reserve(request.guestWorkspaceId(), ownerId) == 0) {
+    String payload = jsonMapper.writeValueAsString(request);
+    if (guestImportMapper.reserve(request.guestWorkspaceId(), ownerId, payload) == 0) {
       GuestImportRow existing = guestImportMapper.find(request.guestWorkspaceId());
       if (existing == null) throw new IllegalStateException("游客存档导入状态读取失败。");
       if (!existing.ownerId().equals(ownerId)) {
         throw new ResponseStatusException(HttpStatus.CONFLICT, "这份游客存档已经导入到另一个账号。");
+      }
+      if (!guestImportMapper.matchesContent(request.guestWorkspaceId(), payload)) {
+        throw new ApiException(HttpStatus.CONFLICT, "GUEST_IMPORT_CONTENT_CONFLICT",
+            "这份游客存档已有导入记录，当前修改尚未导入，本地数据已保留。");
       }
       return response(existing, true);
     }

@@ -978,7 +978,10 @@ function AuthScreen({ onAuthenticated, onCancel }: AuthScreenProps) {
 
     const request = createGuestImportRequest(workspace, listPlayers());
     await api.importGuestWorkspace(request);
-    repositories.workspace.clear();
+    if (api.readSession()?.accessToken !== session.accessToken) return;
+    if (JSON.stringify(repositories.workspace.peek()) === JSON.stringify(workspace)) {
+      repositories.workspace.clear();
+    }
     onAuthenticated(session);
   };
 

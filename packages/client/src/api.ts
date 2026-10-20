@@ -23,6 +23,8 @@ export interface ApiTransport {
   http: HttpPort;
   storage: StoragePort;
   clock: Clock;
+  /** 当前请求的会话收到 401；在清除前同步通知宿主，便于立即隔离账号视图。 */
+  onUnauthorized?: (accessToken: string) => void;
 }
 
 export interface RequestOptions {
@@ -39,7 +41,11 @@ export type RequestSender = <T>(path: string, init?: RequestOptions) => Promise<
  * 底层传输由应用的 HttpPort 决定，协议逻辑在所有客户端保持一致。
  */
 export function createRequestSender(transport: ApiTransport): RequestSender {
-  const sessions = createSessionStore({ storage: transport.storage, clock: transport.clock });
+  const sessions = createSessionStore({
+    storage: transport.storage,
+    clock: transport.clock,
+    onInvalidSession: transport.onUnauthorized,
+  });
 
   const request = async <T>(path: string, init?: RequestOptions): Promise<T> => {
     if (!transport.baseUrl) throw new Error('API 地址未配置');
@@ -55,7 +61,10 @@ export function createRequestSender(transport: ApiTransport): RequestSender {
       ...(init?.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     });
     if (response.status < 200 || response.status >= 300) {
-      if (response.status === 401) sessions.clear();
+      if (response.status === 401 && token && sessions.isCurrent(token)) {
+        transport.onUnauthorized?.(token);
+        if (sessions.isCurrent(token)) sessions.clear();
+      }
       let body: { message?: string; code?: string } | null = null;
       try {
         body = JSON.parse(response.bodyText) as { message?: string; code?: string };
@@ -76,6 +85,7 @@ export function createRequestSender(transport: ApiTransport): RequestSender {
 }
 
 export interface ApiClient {
+  isCurrentSession: SessionStore['isCurrent'];
   readSession: SessionStore['read'];
   saveSession: SessionStore['save'];
   clearSession: SessionStore['clear'];
@@ -108,10 +118,15 @@ export interface ApiClient {
 }
 
 export function createApiClient(transport: ApiTransport): ApiClient {
-  const sessions = createSessionStore({ storage: transport.storage, clock: transport.clock });
+  const sessions = createSessionStore({
+    storage: transport.storage,
+    clock: transport.clock,
+    onInvalidSession: transport.onUnauthorized,
+  });
   const request = createRequestSender(transport);
 
   return {
+    isCurrentSession: sessions.isCurrent,
     readSession: sessions.read,
     saveSession: sessions.save,
     clearSession: sessions.clear,

@@ -10,6 +10,8 @@ export default defineConfig({
     },
   },
   test: {
+    globalSetup: ['./scripts/vitest-backend.ts'],
+    testTimeout: 30000,
     include: [
       'apps/web/src/**/*.test.{ts,tsx}',
       'apps/miniprogram/src/**/*.test.ts',
