@@ -8,7 +8,9 @@
 
 当前任务：`icp-community-disable-20261020`。用户批准在 develop 添加公共页脚备案链接（沪ICP备2026051556号-1，https://beian.miit.gov.cn/），通过统一配置关闭 Web 社区入口、阵容公开操作、社区路由及后端接口。保留全部社区数据及个人阵容、对战功能。更新相关文档、完整测试。
 
-2026-10-20 最新授权：提交当前三份汇总文档到 develop 并推送远端，随后检查 develop 合并到 main 的条件；不执行合并或部署。Kimi worktree 和证据目录只读，Owner 继续 codex。功能与审查任务保持 DONE，文档交付及合并条件检查的实际结果记录于忽略文件 `.cache/icp-community-20261020/delivery-receipt.md`。
+2026-10-20 最新授权：将 develop 合并到 main，本地保持 main，完整运行前后端全部测试；全部通过且待推送提交扫描通过后推送 main。合并前在 develop 提交本轮计划记录；合并后只生成忽略的测试产物和 `.cache/icp-main-push-20261020/receipt.md`，记录实际命令、版本、独立数据库名称、验证结果及推送结果。Owner 继续 codex。此执行记录为合并前 checkpoint，最终结果以回执和 Git 为准；不部署服务器。
+
+2026-10-20 文档交付完成：三份汇总文档已提交为 4ddade06dfebaf7e68ce4ec036347af2115ddb87 并推送 develop。合并条件检查通过，main / origin/main 为 b01c45316643dfd2688736ea2187e89ab8cf4452，可快进到 develop；业务代码与 Kimi 已审提交 d5b240802bbb3d8e5457ae58d97882b398f2947a 一致。证据见 `.cache/icp-community-20261020/delivery-receipt.md`。
 
 2026-10-20 汇总阶段授权与结果：仅更新本任务 issues.md、REVIEW_FEEDBACK.md 与本计划，已核验 Kimi Round 01 的 PASS；该阶段没有提交或推送。
 
@@ -54,9 +56,9 @@
 
 ## Status
 
-DONE
+ACTIVE
 
-当前状态：备案页脚与社区关闭的实施、本地验收及 Round 01 独立审查汇总完成，结论 PASS。Reviewed Commit 为 d5b240802bbb3d8e5457ae58d97882b398f2947a，基线为 b01c45316643dfd2688736ea2187e89ab8cf4452；本任务六类问题状态计数均为 0，无分歧。当前仅三份汇总文档待提交，业务代码与已审版本一致。历史阶段 4 为 24 VERIFIED；M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。本任务 DONE 不代表平台验收或服务器部署完成。下面均为历史 checkpoint。
+当前状态：功能与独立审查汇总已完成，本轮执行 main 合并、完整测试与推送。备案页脚与社区关闭的 Round 01 结论 PASS；Reviewed Commit 为 d5b240802bbb3d8e5457ae58d97882b398f2947a，基线为 b01c45316643dfd2688736ea2187e89ab8cf4452；本任务六类问题状态计数均为 0，无分歧。三份汇总文档已提交推送，业务代码与已审版本一致。历史阶段 4 为 24 VERIFIED；M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。下面均为历史 checkpoint。
 
 2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
 
@@ -72,10 +74,10 @@ DONE
 - Instance: codex-stage4-takeover-20261016-01a1421b
 - Last Writing Agent: codex，codex-stage4-takeover-20261016-01a1421b；继续持有当前工作区写入归属。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
-- Branch: develop
+- Branch: develop（计划提交后合并到 main，并保持本地 main；实际结果见本轮回执）
 - Base Commit: b01c45316643dfd2688736ea2187e89ab8cf4452
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: 三份汇总文档的提交与 develop 推送、忽略目录中的交付回执。Kimi worktree、报告及证据目录只读；保留用户开发库、身份备份、验收表与 AGENTS.md，不修改业务代码或测试，不合并、不部署。
+- Write Scope: develop 上的本轮计划记录提交、合并到 main、完整测试、待推送提交扫描及 main 推送；忽略目录中的执行回执。Kimi worktree、报告及证据目录只读；保留用户开发库、身份备份、验收表与 AGENTS.md，不修改业务代码或测试，不部署。
 
 2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
 
@@ -96,6 +98,8 @@ DONE
 按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+本轮交付验收：本地 main 包含 develop；合并后的版本通过根目录 `npm test`（Web、小程序、core、client）与后端完整 `mvn test`，测试使用独立 PostgreSQL 数据库和真实 Spring Boot；全部待推送提交扫描通过；推送后 main 与 origin/main 一致、工作区干净。当前 checkpoint 的测试和推送均为 NOT RUN，执行后在 `.cache/icp-main-push-20261020/receipt.md` 写入实际结果；既有 S01–S07 BLOCKED 保持不变。
 
 本次验收：备案文字与链接准确，中英文及移动端可读；游客和已登录用户均无社区入口，未公开和已公开阵容均无社区区域；旧社区地址替换为球员库地址；真实 HTTP 验证接口关闭、数据库记录保留及个人功能；前后端完整测试、四包 typecheck 和 Web 构建通过。恢复开放需用户明确批准。
 
