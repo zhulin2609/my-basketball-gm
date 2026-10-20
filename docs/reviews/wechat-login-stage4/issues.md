@@ -3,14 +3,15 @@
 ## 当前任务
 
 - Task：`wechat-login-stage4`。
-- 当前任务汇总结论：`CHANGES_REQUIRED`；I004、I007、I016、I017 经 Round 10 独立复核确认 VERIFIED；新增 I024（Round 10 R05）格式修复为 FIXED_PENDING_REVIEW，独立复核关闭前保持本结论。历史 VERIFIED 保留。
-- Base Commit / HEAD：`494c9ca5c7a45821dab2098964f5621c71b1cb53`；Reviewed Commit：N/A。四项复核 Snapshot ID：`wechat-stage4-fixes-20261020-final`，保存位置与文件清单见[实施记录](fixes-20261020-codex.md)。R05 修复为该快照上的十个文件格式化，前后摘要见 `.cache/stage4-round10-summary/format-hashes.json`。
-- 汇总负责人及实施者：Codex，`codex-stage4-takeover-20261016-01a1421b`；当前任务 `wechat-login-stage4-fixes-20261020`。
-- 最新报告：[round-10-kimi.md](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)。物理位置在 Kimi 复核 worktree，原文只读保留；SHA-256：`021b4c53929c5225fd603334d1effc8d051ebb69aad94f67a269d479e11e1bcd`。本次未另行复制归档。
+- 代码审查维度汇总结论：`PASS`，覆盖已记录的审查范围并采用下述历史格式例外；I004、I007、I016、I017 保留 Round 10 VERIFIED，I024（Round 10 R05）经 Round 11 独立复核为 VERIFIED。平台验收未全部完成。
+- Round 11 Base Commit：`494c9ca5c7a45821dab2098964f5621c71b1cb53`；Reviewed Commit / 当前 HEAD：`96219f24fef340d5533e6481cefcf9adf5577005`。比较基准为四项业务修复已审快照 `wechat-stage4-fixes-20261020-final`，保存位置与文件清单见[实施记录](fixes-20261020-codex.md)。
+- 汇总负责人及实施者：Codex，`codex-stage4-takeover-20261016-01a1421b`；当前任务 `wechat-stage4-round11-consolidation-20261020`。
+- 最新报告：[round-11-kimi.md](../../../.cache/review-worktrees/wechat-stage4-round-11-kimi/docs/reviews/wechat-login-stage4/round-11-kimi.md)。物理位置在 Kimi Round 11 worktree，原文只读保留；SHA-256：`70501c5b7cece6e8554c4a2b22bc685bbc7623087f1d8a16ba302c9e48fa7f7f`。本次未另行复制归档。
 - 报告列表：[第一轮 Codex 历史报告](round-01-codex.md)、[第二轮 Kimi 核验与修复报告](round-02-kimi.md)、[第三轮 Codex 复核报告](round-03-codex.md)、[第四轮 Kimi 核验与修复报告](round-04-kimi.md)、[第五轮 Codex 最终定向复核](round-05-codex.md)、[第六轮 Codex 审查](round-06-codex.md)、[第七轮 Kimi 修复记录](round-07-kimi.md)、[第八轮 Codex 最终定向复核](round-08-codex.md)。
 - 当前入口：[REVIEW_FEEDBACK.md](../../REVIEW_FEEDBACK.md)。
-- 报告列表续：[第九轮当前版本核验](round-09-codex.md)、[第十轮 Kimi 独立复核](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)（物理位置同上）。
-- 后续处置：独立复核 I024 / R05 格式修复；全仓格式检查的既有归档报告问题保留，详见 I024。S01–S07 平台验收保持 BLOCKED。本轮没有提交、推送或合并。
+- 报告列表续：[第九轮当前版本核验](round-09-codex.md)、[第十轮 Kimi 独立复核](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)、[第十一轮 Kimi 独立复核](../../../.cache/review-worktrees/wechat-stage4-round-11-kimi/docs/reviews/wechat-login-stage4/round-11-kimi.md)。两份 Kimi 报告各保留在对应 worktree。
+- 用户接受的例外：历史 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md` 格式问题不阻塞本轮复核及合并条件检查，原文保留，全仓格式检查如实记录 FAIL。S01–S07 平台验收保持 BLOCKED。
+- 后续处置：本轮状态文档尚未提交；main 推送前完整测试与全部待推送提交扫描另行执行。本轮没有提交、推送或合并。
 
 ## 历史报告导入说明
 
@@ -35,11 +36,13 @@
 历史状态：17 项迁移时均为 NEEDS_CONFIRMATION；第二轮声明修复后待复核；第三轮新增三项并验证七项；第四轮声明修复并将 I016 记为 DISMISSED；第五轮核验后为 16 VERIFIED、4 OPEN。第六轮新增三项，第七轮标记待复核，第八轮全部验证通过。第十轮确认四项修复，新增 I024 / R05。当前总计 24 项，历史报告原文保留。
 
 - `OPEN`：0。
-- `VERIFIED`：23。
-- `FIXED_PENDING_REVIEW`：1（I024 / R05）。
+- `VERIFIED`：24。
+- `FIXED_PENDING_REVIEW`：0。
 - `NEEDS_CONFIRMATION`、`DISMISSED`、`DEFERRED`：均为 0。
 
 第九轮适用版本为 `86b6ddafb5fdfab0873eaa83bb49f1b2a0b03dd9`，其证据作为修复前历史记录保留。I004、I007、I016、I017 的复核版本为 `wechat-stage4-fixes-20261020-final`，复核者为 `kimi-code-round-10-20261020`，报告为上述 `round-10-kimi.md`；其余 VERIFIED 保留原独立复核依据。汇总负责人核对原工作区与 Kimi worktree 的 347 个输入摘要均一致，确认报告的恢复证据；本轮仅读取 Kimi 日志，未重跑完整测试。
+
+第十一轮复核版本为 `96219f24fef340d5533e6481cefcf9adf5577005`，复核者 `kimi-code-round-11-20261020`，仅关闭 I024 / R05。汇总时重新核验快照与当前工作区：334 个输入逐字节相同，13 个差异为十个纯格式文件及三份状态文档；报告正文的“其余 337 个……逐字节一致”计数笔误以其原始输出及本次重算结果为准，不影响 R05 结论。没有重新执行历史全部审查或平台验收。
 
 以下通用字段适用于 I001–I020；各项的状态、来源和具体证据见对应条目：
 
@@ -274,13 +277,14 @@
 
 ### I024 · minor · Round 10 R05：十个变更文件未通过格式检查
 
-- 状态：`FIXED_PENDING_REVIEW`（2026-10-20）；修复负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`；独立复核待安排。
+- 状态：`VERIFIED`（2026-10-20）；修复负责人：Codex，`codex-stage4-takeover-20261016-01a1421b`；复核者：`kimi-code-round-11-20261020`。
+- 复核版本与结果：`96219f24fef340d5533e6481cefcf9adf5577005`，[round-11-kimi.md](../../../.cache/review-worktrees/wechat-stage4-round-11-kimi/docs/reviews/wechat-login-stage4/round-11-kimi.md) 为 PASS。十个文件精确等于已审快照经锁定版本 Prettier 3.9.6 的格式化输出，限定范围格式检查与四包 typecheck 通过，没有行为变化、测试删除或覆盖削弱。汇总负责人复算确认，完整测试本轮 NOT RUN。
 - 来源与适用版本：[round-10-kimi.md · R05](../../../.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md)，`wechat-stage4-fixes-20261020-final`。
 - 位置：`apps/miniprogram/src/services/{account-store,guest-import,guest-runtime,session-recovery}.test.ts`、`apps/web/src/scan-login.test.tsx`、`packages/client/src/{api-wechat,battle-service,lineup-service}.test.ts`、`packages/client/src/testing/local-api-server.ts`、`scripts/vitest-backend.ts`。
 - 触发与影响：Prettier 对上述十个文件报错，违反仓库格式检查要求；影响限于代码风格。归档报告的既有格式问题不计入本项。
 - 实施者回复：仅对十个文件执行 `npm exec -- prettier --write <上述十个路径>`，等价于格式化脚本的限定范围执行；根脚本固定扫描 `.`，未直接运行以免修改历史报告。没有行为修改。
-- 修复版本与证据：HEAD 保持 `494c9ca5c7a45821dab2098964f5621c71b1cb53`，未提交；`.cache/stage4-round10-summary/format-hashes.json` 保存十个文件前后 SHA-256。`node .cache/stage4-round10-summary/verify-format.mjs`：PASS，十个文件逐字节等于原快照的 Prettier 输出，其余 337 个输入文件保持原样（文档更新前）。
-- 验证：完整命令及 PASS/FAIL 见 current plan 本轮 Validation。全仓 `npm run format:check` 的历史归档文件失败须单独保留，不能记为全仓通过；完整测试按本轮授权不重跑。不得在实施者修复后直接标为 VERIFIED。
+- 修复历史证据：格式化时 HEAD 为 `494c9ca5c7a45821dab2098964f5621c71b1cb53`，修复当时未提交，随后收录于上述 Reviewed Commit；`.cache/stage4-round10-summary/format-hashes.json` 保存十个文件前后 SHA-256。`node .cache/stage4-round10-summary/verify-format.mjs` 当时 PASS，十个文件逐字节等于原快照的 Prettier 输出，其余 337 个输入文件保持原样（文档更新前）。
+- 验证与例外：完整命令及 PASS/FAIL 见 current plan Validation。全仓 `npm run format:check` 的历史归档文件失败如实保留，用户已明确接受该格式例外；此例外不属于 I024，未修改格式规则或允许名单。VERIFIED 依据 Round 11 独立复核，Round 10 的完整测试结果仅作为历史证据。
 
 ## 第三轮验证
 

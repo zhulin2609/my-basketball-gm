@@ -6,7 +6,13 @@
 
 ## Task
 
-当前交付任务：`develop-stage4-delivery-20261020`。用户授权将当前 26 个文件的阶段 4 修复、测试和文档提交并推送到 origin/develop。基线为 `494c9ca5c7a45821dab2098964f5621c71b1cb53`；Owner 保持 codex / ACTIVE，工作区保持 develop。本次核验完整暂存内容、格式、四包类型检查、审查快照一致性及全部待推送提交的敏感信息，交付结果保存于 `.cache/develop-stage4-delivery-20261020/receipt.md`。R05 待独立复核、S01–S07 BLOCKED 和微信登录网络诊断未恢复的状态保留；本次没有合并 main 的授权。
+当前任务：`develop-main-local-validation-20261020`。用户授权提交当前三份文档并推送 develop，随后将 develop 合并到本地 main，保持本地 main，重新构建小程序、Web、后端并完整运行全部测试。起始 HEAD 为 `96219f24fef340d5533e6481cefcf9adf5577005`，三份未提交文档均来自上一轮汇总。Owner 继续 codex / ACTIVE。本轮推送目标为 develop；合并后的 main 用于本地验证。提交前更新本计划，合并后只生成忽略的构建产物与 `.cache/develop-main-local-20261020/` 验证记录，不直接修改 main 上的代码。
+
+本轮执行结果索引：`.cache/develop-main-local-20261020/receipt.md`，记录实际提交、推送、合并、测试、构建、服务验证及未验证范围。该文件在命令执行后更新；未完成的命令不得预记 PASS。测试使用独立 PostgreSQL 数据库，用户开发库不用于自动化测试；本地 Web/API 服务使用现有 Compose 环境重新构建并启动。
+
+前一任务：`wechat-stage4-round11-consolidation-20261020`。已核验 Kimi Round 11 并关闭 R05，三份状态文档待本轮提交。用户已接受历史报告格式问题，不再将其作为本次复核及合并条件检查的阻碍，原文与检查规则保持不变。
+
+前一交付任务：`develop-stage4-delivery-20261020`。26 个文件的阶段 4 修复、测试和文档已提交并推送 origin/develop，提交为上述 HEAD，回执为 `.cache/develop-stage4-delivery-20261020/receipt.md`。该轮结束时 R05 待独立复核；本轮结果见下文。S01–S07 BLOCKED 和微信登录网络诊断未恢复的状态继续保留。
 
 前一任务：`wechat-login-stage4-fixes-20261020`，处理 `wechat-login-stage4` Round 10 汇总与 R05 格式修复。核验 I004、I007、I016、I017 的独立复核结论，仅格式化报告列出的十个文件，更新三份当前状态文档并执行格式与类型检查。基线为 `494c9ca5c7a45821dab2098964f5621c71b1cb53`。该阶段没有提交、推送或合并；历史报告、用户验收表、身份备份和 Kimi worktree 保留。以下历史任务的授权范围仅适用于对应任务。
 
@@ -38,7 +44,7 @@
 
 ACTIVE
 
-当前状态：I004、I007、I016、I017 按 Kimi Round 10 独立复核确认为 VERIFIED；I024（Round 10 R05）已完成纯格式修复，状态 FIXED_PENDING_REVIEW。汇总为 23 VERIFIED、0 OPEN、1 FIXED_PENDING_REVIEW，R05 独立复核关闭前结论保持 CHANGES_REQUIRED。交付基线为 `494c9ca`，四项复核版本为 `wechat-stage4-fixes-20261020-final`，复核者 `kimi-code-round-10-20261020`，Owner codex / ACTIVE。当前执行 develop 提交与推送，最终提交以 Git 和交付回执为准。本轮四包 typecheck PASS；全仓 format:check 的历史归档报告问题保留，详见 Validation。用户验收 M01–M12、W01–W06 PASS，S01–S07 BLOCKED。下面均为历史 checkpoint。
+当前状态：执行文档交付、develop → 本地 main 合并及本地完整验证。R05 VERIFIED，阶段 4 为 24 VERIFIED、0 OPEN、0 FIXED_PENDING_REVIEW；代码审查维度 PASS，平台验收未全部完成。实际操作结果以 Git 和本轮回执为准。M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。下面均为历史 checkpoint。
 
 2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
 
@@ -54,10 +60,10 @@ ACTIVE
 - Instance: codex-stage4-takeover-20261016-01a1421b
 - Last Writing Agent: codex，codex-stage4-takeover-20261016-01a1421b；继续持有当前工作区写入归属。
 - Worktree: /Users/zhulin/Workspace/my-basketball-gm
-- Branch: develop
-- Base Commit: 494c9ca5c7a45821dab2098964f5621c71b1cb53
+- Branch: develop（提交与推送阶段）；用户授权完成后切换并保持 main，实际状态以 Git 和本轮回执为准。
+- Base Commit: 96219f24fef340d5533e6481cefcf9adf5577005
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: 将已核验的 26 个待提交文件提交并推送到 origin/develop；更新 current plan 与忽略目录内的交付记录。业务实现不再修改；原始报告、身份备份、验收表、AGENTS.md 和 Kimi worktree 保留。
+- Write Scope: 在 develop 提交并推送三份状态文档；快进合并到本地 main；生成三端构建产物、独立测试库和忽略目录内验证记录，更新本地 Web/API 服务。业务实现、测试、原始报告、身份备份、验收表、AGENTS.md 和 Kimi worktree 保留。
 
 2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
 
@@ -65,7 +71,7 @@ ACTIVE
 
 ## Goal
 
-当前目标：交付阶段 4 修复、R05 格式修复及相关文档到 origin/develop，提交前核验完整暂存内容，推送前扫描全部待推送提交，完成后确认远端提交与本地一致、工作区干净。前一任务已汇总四项复核结果并完成 R05 格式修复，R05 等待独立复核。全仓格式检查与历史归档原文保护之间的限制保留。以下为历史目标，未完成的平台验收继续保留。
+当前目标：完成 develop 文档交付，在本地 main 提供重新构建的三端产物及可访问的 Web/API 服务，完整运行小程序、Web、共享包与后端测试，保留真实运行证据。以下为历史目标，未完成的平台验收继续保留。
 
 2026-10-19 M12：用户确认测试通过，并明确授权将当前微信从 `linktest` 恢复绑定到 `link`。已在本地开发库 `basketball_gm` 将唯一对应身份行原样恢复为 M12 前的备份内容，两个账号的数据保留。原绑定备份继续保留；手机已有会话须退出后重新微信登录，才能进入 `link`。
 
@@ -76,6 +82,21 @@ ACTIVE
 按已确认产品要求完成阶段 4 实现并通过验收：微信免密码账号、Web 小程序扫码确认登录与既有密码登录兼容、中文用户名、唯一身份绑定、安全游客导入与本人历史 AI 战报。2026-10-13 用户授权实施；第三轮审查仍有未解决缺陷，真实微信平台与真机验收未完成。阶段 3 未完成验收及历史证据持续保留。
 
 ## Acceptance Criteria
+
+### develop 合并与本地验证（2026-10-20）
+
+- develop 文档提交和远端引用一致，提交前检查完整暂存内容，推送前扫描全部待推送提交。
+- 本地 main 合并 develop 后内容一致，最终保持 main，工作区无未提交的源码变更。
+- 完整 `npm test`、后端 `mvn test` 使用独立真实 PostgreSQL，记录数据库及 PASS/FAIL；不使用用户开发库运行测试。
+- 小程序采用当前局域网 API 地址重新构建；Web、后端 JAR 与本地 Compose Web/API 构建及健康检查完成。
+- 逐项结果记录到本轮回执；S01–S07 仍 BLOCKED，自动化与服务健康不替代平台验收。
+
+### Round 11 汇总与合并条件检查（2026-10-20）
+
+- [x] 报告 Reviewed Commit、复核 worktree HEAD、原工作区 HEAD 和远端 develop 一致；报告及快照 SHA-256 已核验。
+- [x] 核对 Kimi 日志，重算 347 个输入摘要与十个文件的格式化输出；R05 更新为 VERIFIED，当前计数为 24 VERIFIED。
+- [x] 用户接受的历史报告格式例外明确记录，格式检查的 FAIL 不改记 PASS；S01–S07 保持 BLOCKED。
+- [x] 更新三份状态文档；不修改业务、测试、原始报告或 Kimi worktree，不提交、推送或合并。
 
 ### Round 10 汇总与 R05 修复（2026-10-20）
 
@@ -232,7 +253,7 @@ ACTIVE
 
 ## Plan
 
-本轮计划：核验完整变更、远端基线与审查快照 → 类型与暂存文件格式检查 → 检查完整暂存内容及敏感信息 → 提交 → 扫描全部待推送提交 → 推送 develop 并确认本地与远端一致。以下计划仅为历史记录。
+本轮计划：检查三份文档与远端基线 → 检查格式及敏感信息 → 提交并推送 develop → 快进到本地 main → 完整测试与三端构建 → 更新本地服务并验证 HTTP → 将实际结果写入忽略目录回执，确认最终 Git 状态。以下计划仅为历史记录。
 
 Round 10 汇总计划已执行：核对恢复与快照证据 → 汇总四项结论 → 仅格式化 R05 十个文件 → 比较格式器输出并执行格式与类型检查 → 同步当前状态文档。
 
@@ -288,7 +309,7 @@ Round 10 汇总计划已执行：核对恢复与快照证据 → 汇总四项结
 
 ## Current State
 
-当前交付：已核验 26 个待提交文件，四包类型检查与审查快照比较通过；本次没有修改业务实现。提交与推送结果记录于 `.cache/develop-stage4-delivery-20261020/receipt.md`。以下均为历史 checkpoint。
+当前状态：develop 与 origin/develop 为 `96219f24fef340d5533e6481cefcf9adf5577005`，main 与 origin/main 为 `787c2729a98abac1d555cebb230442cdf188f632`；main 是 develop 的祖先，`main...develop` 为 0 / 32，可以快进。已记录的代码审查阻碍已解除，本轮三份文档尚未提交；正式合并若需包含本轮记录，需先提交这些文档。main 推送前必须完整运行前后端测试并扫描全部待推送提交，本轮未执行该门禁。S01–S07 是未完成的平台验收，仓库未将其单独定义为 Git 合并硬性门禁；不得据此宣称产品验收全部通过。以下均为历史 checkpoint。
 
 Round 10 汇总 checkpoint：原工作区与 Kimi worktree 的 347 个快照输入均核验一致，报告所述源码恢复得到确认；依赖目录重装只按报告记录，不据此声称逐文件一致。本轮四项 VERIFIED，R05 对应稳定编号 I024、FIXED_PENDING_REVIEW。报告物理位置为 `.cache/review-worktrees/wechat-stage4-round-10-kimi/docs/reviews/wechat-login-stage4/round-10-kimi.md`，SHA-256 为 `021b4c53929c5225fd603334d1effc8d051ebb69aad94f67a269d479e11e1bcd`，只读保留，未另行复制归档。该阶段仅十个 R05 文件格式变化及三份文档更新，没有连接数据库或更新服务。
 
@@ -451,6 +472,8 @@ mvn test
 
 ## Progress
 
+2026-10-20 Round 11 汇总：核对 Kimi 原始报告、日志和 Reviewed Commit，重算十个文件的格式化输出及输入摘要，确认 I024 / R05 VERIFIED。24 项均 VERIFIED，代码审查维度 PASS；历史报告格式例外已获用户接受。Git 可快进合并，文档提交与 main 推送门禁尚待执行，平台验收 S01–S07 保持 BLOCKED。
+
 2026-10-20 Round 10 汇总：核验四项独立复核证据并确认为 VERIFIED；R05 十个文件完成纯格式修复，四包类型检查通过。全仓格式检查仅剩历史归档报告失败，独立复核仍待安排，汇总 CHANGES_REQUIRED。
 
 2026-10-20：完成 I004/I007 实现与 I016 测试迁移，新增 18 项真实 API 回归；完整前端 158 项、后端 83 项及两端构建通过。状态更新为待独立复核，保留历史报告与用户数据。以下为历史 milestone。
@@ -546,9 +569,11 @@ mvn test
 
 ## Open Questions
 
-当前授权边界：提交当前 26 个文件并推送 origin/develop，更新交付记录；不扩展行为变更，不合并 main。此前 Round 10 汇总阶段的禁止提交、推送约束不适用于本次明确授权的交付任务。
+当前授权边界：提交推送当前 develop 文档、合并到本地 main、构建三端与完整测试；本轮不直接修改 main 代码。验证记录写入 `.cache/develop-main-local-20261020/`，以保留干净检出。历史阶段的禁止合并约束不适用于本次明确授权。
 
-当前未完成事项：I024 / R05 格式修复待独立复核；S01–S07 等待普通小程序账号，保持 BLOCKED。全仓格式检查 FAIL 的唯一剩余文件为历史 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md`，与本轮保留历史报告原文的约束冲突，不能在本轮修改或记录为 PASS。没有接受剩余风险或批准延期。导入内容与历史 NULL 记录的行为边界仍见[实施记录](../reviews/wechat-login-stage4/fixes-20261020-codex.md)。
+当前未完成事项：本轮文档未提交；main 推送前完整测试和全部待推送提交扫描未执行；S01–S07 等待普通小程序账号，保持 BLOCKED；微信登录网络恢复未验证。历史 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md` 格式问题已获用户明确接受，不阻塞本轮复核及合并条件检查，原文保留、全仓检查仍记 FAIL。导入内容与历史 NULL 记录的行为边界见[实施记录](../reviews/wechat-login-stage4/fixes-20261020-codex.md)。
+
+Round 11 报告计数说明：实际输出为 `total=347 match=334 mismatched=13 issues=0`，13 个差异是十个纯格式文件和三份状态文档；报告正文“其余 337 个输入文件……逐字节一致”存在计数笔误，本轮重算确认应为 334。原报告不修改，该笔误不影响格式化逐文件比较结果或 R05 关闭。报告与脚本仅在本地忽略目录保留，其跨机器可用性未验证。
 
 以下为历史 discrepancy 和验证限制的追溯记录。已经由本轮当前摘要纠正的旧任务、HEAD、R01 状态及计数不再是当前事实；历史缺陷处理以问题清单的最新状态为准。`docs/AI_HANDOFF.md` 是 2026-10-17 的旧交接索引，本轮未交出工作，故不刷新该文件。
 
@@ -580,6 +605,24 @@ mvn test
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### develop 合并与本地验证（2026-10-20）
+
+本轮实际命令和结果保存在 `.cache/develop-main-local-20261020/receipt.md` 及同目录日志；以下 Round 11 及更早记录仅作历史证据，不代替本轮全量测试。提交时本轮构建和全量测试尚未执行，完成后按回执核验，不在 main 上直接修改代码。
+
+### Round 11 汇总与合并条件检查（2026-10-20）
+
+- `git status --short --branch`、`git rev-parse HEAD main origin/develop origin/main`：PASS；起始工作区干净，develop / HEAD 为 `96219f24fef340d5533e6481cefcf9adf5577005`，main 为 `787c2729a98abac1d555cebb230442cdf188f632`。
+- `git ls-remote origin refs/heads/main refs/heads/develop`、`git rev-list --left-right --count main...develop`、`git merge-base main develop`：PASS；两条远端分支与本地一致，计数 0 / 32，merge-base 等于 main。
+- `shasum -a 256 .cache/review-worktrees/wechat-stage4-round-11-kimi/docs/reviews/wechat-login-stage4/round-11-kimi.md .cache/stage4-fixes-20261020-final/snapshot.json`：PASS；报告 SHA-256 为 `70501c5b7cece6e8554c4a2b22bc685bbc7623087f1d8a16ba302c9e48fa7f7f`，快照为 `068362f0b860e7fce518225b6fb99ca158006f1ad2f742a2ab1773b6ea3d70c0`。
+- `git -C .cache/review-worktrees/wechat-stage4-round-11-kimi rev-parse HEAD` 及 `status --short`：PASS；HEAD 等于 Reviewed Commit，仅报告本身未跟踪，其余被审文件无修改。
+- `node .cache/stage4-round11-kimi/compare-hashes.mjs .cache/stage4-fixes-20261020-final/snapshot.json .cache/stage4-fixes-20261020-final/input .`：PASS；在文档更新前运行，实际输出 347 / 334 / 13 / 0，逐项确认差异集合符合范围；脚本不凭退出码判定差异是否符合要求。
+- `node .cache/stage4-round11-kimi/format-compare.mjs . .cache/stage4-fixes-20261020-final/input apps/miniprogram/src/services/account-store.test.ts apps/miniprogram/src/services/guest-import.test.ts apps/miniprogram/src/services/guest-runtime.test.ts apps/miniprogram/src/services/session-recovery.test.ts apps/web/src/scan-login.test.tsx packages/client/src/api-wechat.test.ts packages/client/src/battle-service.test.ts packages/client/src/lineup-service.test.ts packages/client/src/testing/local-api-server.ts scripts/vitest-backend.ts`：PASS；Prettier 3.9.6，十个文件全部 MATCH，退出码 0。
+- `npm run typecheck`：PASS；本轮重新执行四包类型检查，退出码 0。
+- `npm exec -- prettier --check docs/plans/current.md docs/REVIEW_FEEDBACK.md docs/reviews/wechat-login-stage4/issues.md`、`git diff --check`：PASS；本轮三份文档格式及未提交差异无空白错误。
+- `npm run format:check`：FAIL，退出码 1；本轮重新执行，唯一失败文件为用户已接受例外的 `docs/reviews/wechat-password-form-20261017/round-02-kimi.md`，不阻塞本次复核与合并条件检查。
+- 读取 `.cache/stage4-round11-kimi/typecheck.log` 与 `format-check.log`：与原报告一致；Kimi 限定范围格式及 typecheck PASS、全仓 format:check FAIL，仅历史报告失败。日志为独立复核证据，非本轮命令执行结果。
+- 完整前后端测试、构建、数据库验证、真机与平台验收、全部待推送提交扫描：NOT RUN；本轮为文档汇总，未连接数据库。Round 10 前端 158 项与后端 83 项 PASS 仅作为历史证据；正式推送 main 前仍执行完整门禁。
 
 ### develop 提交与推送（2026-10-20）
 
@@ -1141,6 +1184,8 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+Round 11 汇总及合并条件检查完成：R05 / I024 VERIFIED，阶段 4 计数为 24 VERIFIED、0 OPEN、0 FIXED_PENDING_REVIEW，代码审查维度 PASS；用户接受历史报告格式例外，S01–S07 保持 BLOCKED。三份文档更新保留未提交状态，当前仍为 develop / `96219f2`，Owner codex / ACTIVE。本轮未提交、推送或合并；Git 可快进，正式操作前需处理文档提交，main 推送前完整测试及扫描另行执行。以下均为历史完成记录。
 
 Round 10 汇总及 R05 格式修复完成：I004、I007、I016、I017 VERIFIED，I024 / R05 FIXED_PENDING_REVIEW，汇总 CHANGES_REQUIRED。十个文件格式检查、纯格式比较与四包 typecheck 通过；全仓格式检查仅历史归档报告失败，原文保留。Owner codex / ACTIVE；HEAD 未变化、暂存区为空，没有提交、推送或合并。R05 待独立复核，S01–S07 保持 BLOCKED。
 
