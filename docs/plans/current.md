@@ -8,7 +8,11 @@
 
 当前任务：`icp-community-disable-20261020`。用户批准在 develop 添加公共页脚备案链接（沪ICP备2026051556号-1，https://beian.miit.gov.cn/），通过统一配置关闭 Web 社区入口、阵容公开操作、社区路由及后端接口。保留全部社区数据及个人阵容、对战功能。更新相关文档、完整测试。
 
-2026-10-20 最新授权：用户确认本地验收通过，授权提交当前变更，并提供绑定本次提交的 Kimi Code Round 01 独立审查提示词。仅提交本地 develop；不推送、不合并、不部署服务器。Owner 继续 codex，独立审查完成前保持 VALIDATING。
+2026-10-20 最新授权：提交当前三份汇总文档到 develop 并推送远端，随后检查 develop 合并到 main 的条件；不执行合并或部署。Kimi worktree 和证据目录只读，Owner 继续 codex。功能与审查任务保持 DONE，文档交付及合并条件检查的实际结果记录于忽略文件 `.cache/icp-community-20261020/delivery-receipt.md`。
+
+2026-10-20 汇总阶段授权与结果：仅更新本任务 issues.md、REVIEW_FEEDBACK.md 与本计划，已核验 Kimi Round 01 的 PASS；该阶段没有提交或推送。
+
+2026-10-20 提交阶段记录：用户确认本地验收通过，授权提交当前变更并提供独立审查提示词。已提交至本地 develop，提交为 d5b240802bbb3d8e5457ae58d97882b398f2947a；未推送。当前汇总以该提交为 Reviewed Commit，独立审查结果见下方当前状态。
 
 2026-10-20 本地验证补充授权：重新构建并启动本机 Web/API 服务。核验本地 Docker Desktop 与 develop / b01c453 后，将忽略文件 `.env` 中 `FORUM_ENABLED=true` 改为 false；备份当前开发数据库，仅重新构建及创建 web/api 容器，保留 PostgreSQL 容器与数据卷。完成后核验首页、静态资源、API 健康及社区接口关闭。用户自行进行本地产品验收；不提交、不推送、不部署远端服务器。
 
@@ -50,9 +54,9 @@
 
 ## Status
 
-VALIDATING
+DONE
 
-当前状态：备案页脚及社区关闭的实施、完整测试、构建和真实浏览器验证已完成，用户确认本地验收 PASS，进入本地提交及独立审查准备。起始工作区干净，基线为 b01c45316643dfd2688736ea2187e89ab8cf4452。历史阶段 4 为 24 VERIFIED；M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。本次业务变更的独立审查尚未执行。下面均为历史 checkpoint。
+当前状态：备案页脚与社区关闭的实施、本地验收及 Round 01 独立审查汇总完成，结论 PASS。Reviewed Commit 为 d5b240802bbb3d8e5457ae58d97882b398f2947a，基线为 b01c45316643dfd2688736ea2187e89ab8cf4452；本任务六类问题状态计数均为 0，无分歧。当前仅三份汇总文档待提交，业务代码与已审版本一致。历史阶段 4 为 24 VERIFIED；M01–M12、W01–W06 保留用户反馈 PASS，S01–S07 BLOCKED。本任务 DONE 不代表平台验收或服务器部署完成。下面均为历史 checkpoint。
 
 2026-10-19：M01–M12、W01–W06 为 PASS，依据为用户本次真机验收反馈；S01–S07 为 BLOCKED，待用户注册普通小程序账号后继续。本轮未由 Agent 重新执行真机验收。R01 独立复核及阶段 4 历史四项 OPEN 均保持待处理，以下日期段落保留其当时的验证范围。
 
@@ -71,7 +75,7 @@ VALIDATING
 - Branch: develop
 - Base Commit: b01c45316643dfd2688736ea2187e89ab8cf4452
 - Takeover HEAD: 03c11587a11c28336693d64ee6f8e5d77e1a9a10
-- Write Scope: Web 页脚、社区开关及路由，后端社区默认配置，Compose/Dockerfile/配置模板，相关测试与文档；独立测试数据库和忽略目录 .cache/icp-community-20261020。用户授权提交当前变更到本地 develop；保留用户开发库、原始报告、身份备份、验收表、AGENTS.md 和 Kimi worktree，不推送、不合并、不部署。
+- Write Scope: 三份汇总文档的提交与 develop 推送、忽略目录中的交付回执。Kimi worktree、报告及证据目录只读；保留用户开发库、身份备份、验收表与 AGENTS.md，不修改业务代码或测试，不合并、不部署。
 
 2026-10-18 后续授权：按当前 WiFi 地址重新构建小程序产物并记录验证；本次构建不修改业务代码或用户数据库，R01 仍待独立复核。
 
@@ -265,7 +269,9 @@ VALIDATING
 
 ## Plan
 
-本轮计划：核验 develop 与所有权 → 页脚及统一关闭配置 → 覆盖旧地址、游客与登录用户及已有公开数据 → 真实 HTTP / 独立 PostgreSQL 验证 → 完整测试、类型检查、构建、浏览器交互与文档检查 → 保留未提交变更，等待独立审查。
+本轮汇总计划已完成：核验两个 worktree 的版本与改动 → 阅读 Round 01 全文及抽查日志、运行探针与结果 → 核对五项需求与 Compose 三态 → 更新问题清单、当前入口与本计划 → 检查文档格式、链接及原始报告摘要。
+
+实施阶段计划已完成：核验 develop 与所有权 → 页脚及统一关闭配置 → 覆盖旧地址、游客与登录用户及已有公开数据 → 真实 HTTP / 独立 PostgreSQL 验证 → 完整测试、类型检查、构建、浏览器交互与文档检查 → 本地验收、提交与独立审查。
 
 本轮计划：检查三份文档与远端基线 → 检查格式及敏感信息 → 提交并推送 develop → 快进到本地 main → 完整测试与三端构建 → 更新本地服务并验证 HTTP → 将实际结果写入忽略目录回执，确认最终 Git 状态。以下计划仅为历史记录。
 
@@ -322,6 +328,8 @@ Round 10 汇总计划已执行：核对恢复与快照证据 → 汇总四项结
 实施后的验证：`mvn test`（127.0.0.1:5432 的真实 PostgreSQL 测试库）覆盖迁移升级与新库初始化、双向唯一约束与并发绑定、凭证与票据生命周期、导入新键映射和成功重试、无密码账号拒绝密码登录；`npm test`、四包 typecheck、两端构建；Web 回归覆盖密码注册登录、游客导入、球员编辑、阵容、规则与 AI 对战、社区与国际化；微信联调按验收清单 A01–A13、P06–P08、P10、P11 在开发者工具及 iOS、Android 真机执行，缺少凭据或设备的项目逐项注明 NOT RUN，不以产品确认代替平台验收。
 
 ## Current State
+
+2026-10-20 Round 01 汇总：develop HEAD 为 d5b240802bbb3d8e5457ae58d97882b398f2947a，与 Kimi detached worktree 相同；汇总开始时原工作区干净。Kimi 原始报告 Findings 为空，五项重点检查均有对应证据，汇总结论 PASS；详情见[问题清单](../reviews/icp-community-disable-20261020/issues.md)。以下为历史 checkpoint。
 
 2026-10-20 备案与社区关闭：页脚覆盖全部视图及独立登录页面；前端隐藏社区导航与阵容公开区域，旧地址替换为球员库；后端默认不注册社区控制器。新增关闭状态测试，既有社区开启测试显式配置 true。完整前后端测试、四包 typecheck、Web 构建及 Compose 配置验证通过。基线 b01c453，独立后端测试库 `icp_community_backend_20261020`，前端完整测试库 `stage4_frontend_1792487561717`；用户开发库未用于测试。变更保留未提交状态，开发容器及服务器未更新。
 
@@ -488,6 +496,8 @@ mvn test
 
 ## Progress
 
+2026-10-20 Round 01 consolidation complete：核验原报告全文、版本、测试日志、八类接口矩阵、数据保留和显式开启结果；重跑只读 Compose 三态检查通过。建立无新增问题的清单并更新审查入口，任务 DONE，S01–S07 继续 BLOCKED。
+
 2026-10-20：核验当前 develop 干净；按批准方案完成实现、真实接口验证、前后端完整测试及构建。新增测试发现登录页提前返回导致缺少页脚，已修复并重跑通过。真实浏览器在 375/390/1280px 与中英文页面完成页脚、旧地址、个人阵容保存及规则对战验证；没有社区请求或页面脚本错误。Owner 继续 codex，进入独立审查前的 VALIDATING 状态。
 
 2026-10-20 Round 11 汇总：核对 Kimi 原始报告、日志和 Reviewed Commit，重算十个文件的格式化输出及输入摘要，确认 I024 / R05 VERIFIED。24 项均 VERIFIED，代码审查维度 PASS；历史报告格式例外已获用户接受。Git 可快进合并，文档提交与 main 推送门禁尚待执行，平台验收 S01–S07 保持 BLOCKED。
@@ -589,7 +599,7 @@ mvn test
 
 本轮上下文差异：`AI_HANDOFF.md` 仍指向历史 mini-app 分支和密码控件任务，原 current plan 顶部仍为 main 合并任务。已按实际 Git（develop / b01c453）及用户当前授权更新当前栏目，历史记录保留；本次没有切换 Owner 或正式交接。
 
-本轮未完成事项：业务变更合并前须独立审查；服务器部署尚未授权，实际环境如有 `FORUM_ENABLED=true`，须明确改为 false 并重新构建 Web、重新创建后端容器。下方授权与未完成事项属于对应历史任务。
+本轮独立审查已完成，未发现分歧或待确认缺陷。服务器部署尚未授权，实际环境如有 `FORUM_ENABLED=true`，须明确改为 false 并重新构建 Web、重新创建后端容器。报告及证据保留在本地忽略目录，跨机器可用性未验证。S01–S07 继续 BLOCKED；下方授权与未完成事项属于对应历史任务。
 
 当前授权边界：提交推送当前 develop 文档、合并到本地 main、构建三端与完整测试；本轮不直接修改 main 代码。验证记录写入 `.cache/develop-main-local-20261020/`，以保留干净检出。历史阶段的禁止合并约束不适用于本次明确授权。
 
@@ -627,6 +637,25 @@ Round 11 报告计数说明：实际输出为 `total=347 match=334 mismatched=13
 none。阶段 4 账号及跨客户端数据规则已记录为 D-005，中文用户名规则经用户明确确认；此前球员详情页入口决定为 D-004。未确认分享选择仍保留在产品文档第 12 节。
 
 ## Validation
+
+### 汇总文档交付与合并条件预检（2026-10-20）
+
+- `git fetch origin develop main`：PASS；提交前 main、origin/main、origin/develop 均为 b01c45316643dfd2688736ea2187e89ab8cf4452，develop 为 d5b240802bbb3d8e5457ae58d97882b398f2947a。
+- `git merge-base --is-ancestor origin/main develop`：PASS；`git rev-list --left-right --count origin/main...develop` 为 0 / 1。提交三份文档后需重新检查，实际结果见交付回执。
+- GitHub `gh api repos/zhulin2609/my-basketball-gm/branches/main` 与 `gh api repos/zhulin2609/my-basketball-gm/rules/branches/main`：PASS，main protected=false，适用规则列表为空。
+- 审查与测试依据：Kimi Round 01 PASS，报告 SHA-256 未变；同日独立验证前端 165 项、后端 84 项通过。当前业务代码与 Reviewed Commit 一致，待提交增量仅为三份状态文档，本次未重跑完整测试。
+- main 合并的版本与审查条件已具备，最终工作区、远端同步和提交范围须在推送后复核；S01–S07 BLOCKED 与报告验证限制保留。向远端推送 main 之前，仍须执行仓库规定的全部测试及待推送提交扫描；本轮没有 main 推送授权。
+
+### Round 01 审查汇总（2026-10-20）
+
+- `git status --short --branch`、`git rev-parse HEAD` 及对 Kimi worktree 执行对应只读命令：PASS，均为 d5b240802bbb3d8e5457ae58d97882b398f2947a；原工作区开始时干净，Kimi 仅有未跟踪报告目录。
+- `git diff b01c45316643dfd2688736ea2187e89ab8cf4452 d5b240802bbb3d8e5457ae58d97882b398f2947a --stat`：PASS，与报告的 22 个文件、508 行新增和 52 行删除一致。
+- `shasum -a 256 .cache/review-worktrees/icp-community-round-01-kimi/docs/reviews/icp-community-disable-20261020/round-01-kimi.md`：PASS，摘要为 b0f6f499232366707acec348d2673513b556069bdf97805421a995629ad29bca；原文只读保留。
+- 已读取报告全文和 `.cache/icp-round01-kimi/` 中 npm-test.log、mvn-test.log、typecheck.log、format-changed.log、build-web.log、runtime-probe.mjs、runtime-result.json、web-requests.log，并抽查后端日志：与报告一致。Kimi 独立测试为前端 31 个文件 165 项、后端 84 项通过；独立数据库为 stage4_frontend_1792489935040、icp_r1_kimi_backend_20261020、icp_r1_kimi_runtime_20261020。本轮未连接这些数据库。
+- `node .cache/icp-round01-kimi/verify-compose.mjs`：PASS，在原工作区只读解析 Compose；unset/false/true 两端值均一致。`--env-file /dev/null` 引起未设置部署凭据的警告，未启动容器或读取真实凭据。
+- `npm exec prettier -- --check docs/reviews/icp-community-disable-20261020/issues.md docs/REVIEW_FEEDBACK.md docs/plans/current.md`：首次 FAIL，仅新问题清单的表格格式；格式化该文档后重跑 PASS。`git diff --check`：PASS。新增报告与证据链接均指向现有文件或目录；收尾核验原始报告 SHA-256 未变，Kimi worktree 仍仅有原报告目录未跟踪，业务与测试文件相对 Reviewed Commit 无差异。
+- 本轮完整测试、构建及浏览器操作：NOT RUN；本轮为文档汇总，采用上述 Kimi 同一提交的独立执行证据，未声明重新执行。
+- 审查限制保留：键盘逐键测试、UI 注册/登录点击流程未执行；外链目标站内容未核对。相关代码、API 与链接行为的覆盖见原始报告。S01–S07 仍 BLOCKED，服务器部署和 DNS/HTTPS 不属于本轮范围。
 
 ### 本地验收与提交准备（2026-10-20）
 
@@ -1238,6 +1267,8 @@ zcode 阶段 3 自动化验收（2026-10-07，四批脚本，环境：开发者�
 交接检查脚本与审计工具位于本地忽略的 `.cache`；其他机器缺少这些文件时，按 `AGENTS.md` 与 Skill 检查文档引用、Git 元数据、状态和敏感信息。接手不依赖本地辅助脚本。
 
 ## Completion
+
+2026-10-20 Round 01 汇总完成：接受 kimi-code-round-01-20261020 对 d5b240802bbb3d8e5457ae58d97882b398f2947a 的 PASS 结论，无新增问题、无分歧，六类状态计数均为 0。仅更新问题清单、审查入口和本计划，任务 DONE、Owner codex；S01–S07 保持 BLOCKED。原始报告及 Kimi worktree 保留原状，本轮不提交、不推送、不合并或部署。以下为历史记录。
 
 2026-10-20 用户确认本地验收通过，授权提交当前 22 个变更文件并安排 Kimi Code Round 01 独立审查。Owner 保持 codex，Status 保持 VALIDATING；本次审查结论待独立报告，不根据本地验收提前标记审查通过。下面为此前实施与本地重建记录。
 
