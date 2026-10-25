@@ -1,0 +1,18 @@
+# 仅供预检读取 Compose 的序列化行为，不启动服务或创建挂载。
+services:
+  creation-disabled:
+    image: nginx:1.27.5-alpine
+    volumes:
+      - type: bind
+        source: /var/empty
+        target: /policy
+        bind:
+          create_host_path: false
+  creation-enabled:
+    image: nginx:1.27.5-alpine
+    volumes:
+      - type: bind
+        source: /var/empty
+        target: /policy
+        bind:
+          create_host_path: true

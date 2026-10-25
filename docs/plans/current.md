@@ -6,6 +6,38 @@
 
 ## Task
 
+当前任务：`compose-preflight-compat-20261025`。
+
+- Status：ACTIVE（测试与独立审查通过，已获提交、合并、推送及继续部署授权）。
+- Owner：codex；Instance：codex-compose-preflight-compat-20261025；Worktree：/Users/zhulin/.codex/worktrees/compose-preflight-compat/my-basketball-gm；Branch：codex/compose-preflight-compat；Base Commit：b52f57fd5f559a6484e5c6ab79597c9f315fb950。
+- Goal：兼容 Compose 2.32.4 规范化 JSON 省略 false 字段的行为，解除部署预检误报。
+- Acceptance Criteria：真实 Compose 2.32.4 与当前本机版本均通过有效挂载预检；create_host_path=true 仍被拒绝；真实 HTTPS 测试及 typecheck 通过。
+- Write Scope：挂载预检、HTTPS 测试及负向配置、本计划与审查记录；按用户授权提交 develop、合入并推送 main，随后继续部署。
+- Plan：修复规范化字段解释 → 两个版本验证 → HTTPS 集成测试 → 独立审查。
+- Current State：生产部署已完成备份与参数设置；候选预检失败，现有容器及正式 HTTPS 配置未更改。
+- Progress：兼容修复、真实负向测试、部署说明已完成；独立审查 PASS，五个冻结文件无发现。服务器工具目录只读执行修复预检通过，生产安装文件和容器仍保持不变。
+- Open Questions：无；证书实际目录只在服务器使用，不进入 Git 或本地回执。
+- Decision Candidates：无。
+- Validation（本轮未提交快照 `compose-compat-01`，日志均在本 worktree）：
+  - `PATH="/usr/bin:$PATH" npm run test:https`：PASS，Compose 5.5.1，74 项；`.cache/https-compat-current.log`，项目 `https-origin-6ea0bfcdf6d4`。
+  - `DOCKER_CONFIG="$PWD/.cache/compose-compat/docker-config" DOCKER_HOST=unix:///Users/zhulin/.docker/run/docker.sock PATH="/usr/bin:$PATH" npm run test:https`：PASS，官方 ARM64 Compose 2.32.4，74 项；`.cache/https-compat-2.32.4.log`，项目 `https-origin-717cdce54017`。下载工具摘要与官方 checksums.txt 一致。
+  - `npm test`：PASS，31 文件、165 项；`.cache/compat-frontend.log`。
+  - `SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/compat_backend_20261025_01 SPRING_DATASOURCE_USERNAME=zhulin SPRING_DATASOURCE_PASSWORD='' mvn -f backend/pom.xml --batch-mode --no-transfer-progress -Djava.io.tmpdir="$PWD/.cache/java-tmp" test`：PASS，84 项，零失败/错误/跳过；`.cache/compat-backend.log`。测试库通过本地测试容器创建；本机 createdb 因旧架构无法执行，未创建数据库。
+  - `npm run typecheck`：PASS，四包；`.cache/compat-typecheck.log`。
+  - 两个新增 YAML、deployment.md 的 Prettier 检查、`git diff --check`：PASS。
+  - 独立审查：PASS；真实配置检查每个版本 18 项；[报告与汇总](../reviews/compose-preflight-compat-20261025/issues.md)。
+  - 生产服务器工具目录执行修复预检：PASS；原正式配置摘要和三个原容器 ID、健康状态均未变化；此项没有应用更新。
+- Completion：兼容修复及本地验证完成；发布和部署执行结果保存在主工作区 `.cache/deploy-tencent/` 的脱敏回执。S01–S07 保持 BLOCKED。
+
+### 生产部署续接状态
+
+- 云端 main 为基线 b52f57f，工作区干净；数据库与配置已备份，证书目录参数已经用户授权设置。正式 HTTPS 配置与三个原容器保持不变，均 healthy。
+- 前次备份：`/home/ubuntu/my-basketball-gm-backups/20261025T014504Z-b52f57f`；数据库 97179 字节，SHA-256 `5fc2e46969200624c06917182437bd286cde246414a889d869f3c8c21aea185a`；归档目录校验通过，未进行恢复演练。
+- 发布修复后重新固定远端版本、备份数据库与配置、验证候选配置、构建、安装配置并更新 Web/API；保持 PostgreSQL 容器及数据卷，验证两个域名的 HTTPS、Origin 请求、重定向及社区关闭行为。
+- 缺少已授权测试账号，生产真实账号登录与登录后的阵容公开区域验收记为 NOT RUN。
+
+以下保留历史任务记录。
+
 当前任务：`https-main-integration-20261025`。
 
 - Status：VALIDATING（测试与审查通过，准备合并和推送；执行完成状态见下述回执）。

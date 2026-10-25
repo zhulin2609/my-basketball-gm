@@ -107,8 +107,16 @@ class HttpsChecks:
         volumes = json.loads(configuration)["services"]["web"]["volumes"]
         for target in ("/etc/nginx/tls", "/etc/nginx/conf.d/default.conf"):
             volume = next(item for item in volumes if item["target"] == target)
-            self.check(volume["read_only"] and volume["bind"]["create_host_path"] is False,
-                       f"{target} 挂载只读且禁止自动创建目录")
+            self.check(volume["read_only"], f"{target} 配置为只读挂载")
+        unsafe_command = self.compose_command()
+        unsafe_command += ["-f", str(ROOT / "scripts/https/compose.unsafe-bind.yaml"),
+                           "config", "--format", "json"]
+        unsafe_configuration = subprocess.run(unsafe_command, env=self.env, capture_output=True,
+                                               text=True, check=True).stdout
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/https/check-config.py")],
+                                input=unsafe_configuration, capture_output=True, text=True, check=False)
+        self.check(result.returncode != 0 and "必须禁止自动创建来源目录" in result.stderr,
+                   "预检拒绝真实 Compose 配置中的 create_host_path=true")
 
     def check(self, condition, label):
         if not condition:

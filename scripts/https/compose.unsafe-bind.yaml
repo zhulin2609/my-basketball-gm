@@ -1,0 +1,10 @@
+# 仅用于负向预检，不启动容器。
+services:
+  web:
+    volumes:
+      - type: bind
+        source: ${HTTPS_TLS_DIRECTORY:?HTTPS_TLS_DIRECTORY is required}
+        target: /etc/nginx/tls
+        read_only: true
+        bind:
+          create_host_path: true
