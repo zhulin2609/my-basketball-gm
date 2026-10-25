@@ -1,0 +1,25 @@
+services:
+  api:
+    environment:
+      SERVER_FORWARD_HEADERS_STRATEGY: native
+      SERVER_TOMCAT_REDIRECT_CONTEXT_ROOT: 'false'
+
+  web:
+    ports:
+      - '443:443'
+    volumes:
+      - type: bind
+        source: ${HTTPS_TLS_DIRECTORY:?HTTPS_TLS_DIRECTORY is required}
+        target: /etc/nginx/tls
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HTTPS_NGINX_CONFIG:-/etc/my-basketball-gm/default.conf}
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'wget --quiet --output-document=/dev/null http://127.0.0.1/healthz || exit 1']

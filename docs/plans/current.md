@@ -1,10 +1,98 @@
 # Current Plan
 
-更新时间：2026-10-20（Asia/Shanghai）
+更新时间：2026-10-25（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
+
+当前任务：`https-main-integration-20261025`。
+
+- Status：ACTIVE。
+- Owner：codex；Instance：codex-https-main-integration-20261025；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：c47b99156bdc5010d2baee7d2b45778005afa233。
+- Goal：提交并推送 develop，将通过独立审查的 develop 合入 main，完整测试通过后推送 main。
+- Acceptance Criteria：暂存内容和全部待推送提交通过敏感信息扫描；独立审查通过；main 推送前前后端全部测试及 HTTPS 集成检查通过；最终本地和远端 SHA 一致。
+- Plan：提交当前变更 → 推送 develop → 独立审查与完整测试 → 汇总记录并推送 develop → 合并 main → 核验测试覆盖版本与扫描 → 推送并核对远端。
+- Current State：用户本轮明确授权提交、推送和合并；已核验 develop/main 均与各自 origin 分支一致。HTTPS 改动尚无独立审查报告，补齐后才合并。
+- Write Scope：当前 HTTPS 改动、审查报告及汇总、当前计划；本地测试产物仅写入忽略目录，不部署服务器。
+- Progress：已完成 Git 和审查门禁核验。
+- Open Questions / Decision Candidates：无。
+- Validation：待执行完整测试、独立审查、提交扫描与远端核验。
+- Completion：进行中；S01–S07 保持 BLOCKED。
+
+以下为实施及历史验证记录。
+
+当前任务：`https-config-release-20261025`。
+
+- Status：DONE（本地实现与验证完成，尚未部署）。
+- Owner：codex；Instance：codex-https-config-release-20261025；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：c47b99156bdc5010d2baee7d2b45778005afa233。
+- Goal：证书实际目录只保存在服务器；仓库管理 HTTPS 配置源文件，部署先验证候选配置再安装。
+- Acceptance Criteria：证书目录变量必填、挂载只读且不自动创建目录；预检阻止缺失文件；真实 HTTPS Origin 登录与 HTTP 回归通过；Skill 包含差异核对、备份、候选验证、安装及上线验收。
+- Write Scope：现有未提交 HTTPS 配置、测试脚本、部署 Skill、deployment.md、ARCHITECTURE.md、本计划；补充 scripts/https/check-config.py。保留既有 403 修复和测试，不提交、推送或连接服务器。
+- Plan：参数化证书目录 → 增加配置预检与真实测试 → 更新配置发布流程 → 验证并记录结果。
+- Current State：用户已批准接续当前未提交变更；本会话取得该范围写入归属。已重新读取文件，保留前一任务内容。
+- Progress：证书目录改为无默认值的必填参数，NGINX 使用容器内通用路径；新增真实文件预检和只读挂载测试。Skill 与文档统一为仓库配置源文件、服务器安装副本，包含差异核对、备份、候选验证、安装摘要及显式重新创建容器。
+- Open Questions：无。
+- Decision Candidates：无；按本轮用户批准方案实施。
+- Validation：
+  - `PATH="/usr/bin:$PATH" npm run test:https`：PASS，73 项真实检查，包含当前源码 Web/API 镜像构建、真实 NGINX TLS、独立 PostgreSQL、证书变量与文件预检、实际只读挂载、两个域名认证及 HTTP 回归；日志 `.cache/https-config-release-test.log`，详细证据在该日志标识的 `.cache/https-origin/<项目>/`。测试容器结束后停止，保留独立数据卷和日志。
+  - 初次运行因 Docker 构建器目录写入权限 FAIL；经本地 Docker 权限审批后继续。一次运行的 `test -w` 断言 FAIL，实际 Docker 挂载 `RW=false`；改为检查容器挂载状态和真实创建文件遭只读文件系统拒绝后，完整重跑通过。
+  - `npm run typecheck`：PASS，四包；日志 `.cache/https-config-release-typecheck.log`。
+  - 相关 JSON/YAML/Markdown 的 Prettier 检查、部署 Skill `quick_validate.py`、`git diff --check`：PASS；部署文档表格间距手动修正后通过。
+  - Gitleaks 检查完整 tracked diff、deploy、scripts/https 与新测试脚本：PASS；相关配置、Skill 与部署文档中的真实证书目录及个人 shell 命令引用检索无匹配。
+  - 前后端完整业务测试本轮 NOT RUN；本轮验证为配置和真实 HTTPS/HTTP 集成范围，前一任务完整测试证据保留在下文，不作为本轮执行结果。独立审查、云端安装与线上登录验收：NOT RUN。
+- Completion：本轮实现和针对性验证完成，保留 develop 未提交变更；没有提交、推送或连接服务器。独立审查与生产部署待后续安排，S01–S07 保持 BLOCKED。
+
+以下记录为历史验证，结果仅适用于对应版本。
+
+当前任务：`https-origin-fix-20261025`。
+
+- Status：DONE（仓库修复与本地验证完成；线上尚未应用）。
+- Owner：codex；Instance：codex-https-origin-20261025；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：c47b99156bdc5010d2baee7d2b45778005afa233。
+- Goal：HTTPS 代理后的后端正确识别原始协议，携带同源 Origin 的登录可用；保留 CORS 限制和本地 HTTP 行为。
+- Acceptance Criteria：真实 Nginx TLS、Spring Boot、独立 PostgreSQL 覆盖两个域名的健康、OPTIONS、注册、登录、错误密码、受保护接口和非法 Origin；检查伪造转发请求头及本地 HTTP；更新部署验收并运行前后端完整测试、typecheck 和构建。
+- Write Scope：HTTPS Compose/Nginx 配置、集成测试脚本、package.json、部署 Skill 与相关文档；本地验证产物仅写入 `.cache/https-origin/`。不提交、推送或操作云端服务。
+- Plan：核验当前实现 → 保存 HTTPS 部署配置并修复协议识别 → 真实代理集成测试 → 完整回归 → 更新验证证据。
+- Current State：develop 有上一轮 Skill、deployment.md 与本计划的未提交修改，均保留；同一 Codex 会话继续写入。旧 AI_HANDOFF.md 为 2026-10-17 历史状态，当前基线以 Git 和本记录为准。
+- Progress：新增 HTTPS Compose 与 Nginx 配置源文件；API 在 HTTPS 部署中启用 native 协议识别，边缘代理覆盖客户端转发头。新增 `npm run test:https`，完成真实 TLS 负向对照、两个域名认证和基础 HTTP 验证；部署 Skill、部署文档与架构说明已更新。既有 CORS 允许名单、应用配置和用户本地服务保持原状。
+- Open Questions / Decision Candidates：无。服务器配置采用本轮仓库配置前须备份并核验差异，应用上线另需授权。
+- Validation：
+  - `npm run test:https`：首次 FAIL（环境），PATH 中 Python 为不可执行的旧架构二进制；选择系统 Python 后首次 Docker 构建受沙箱写入限制。批准本地隔离 Docker 构建权限后，`PATH="/usr/bin:$PATH" npm run test:https`：PASS，58 项检查；项目 `https-origin-32c41a65e80e`，独立数据库 `https_origin`。测试容器已停止，日志与检查清单见 `.cache/https-origin/https-origin-32c41a65e80e/`，命令输出见 `.cache/https-origin-run.log`。
+  - `npm test`：PASS，31 个文件 / 165 项；独立数据库 `stage4_frontend_1792890106209`，日志 `.cache/https-origin-frontend.log`。
+  - `mvn --batch-mode --no-transfer-progress -Djava.io.tmpdir=<仓库>/.cache/java-tmp test`（backend；`SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/https_origin_backend_20261025_01`，用户名 zhulin，测试库无密码）：PASS，84 项，0 失败、0 错误、0 跳过；日志 `.cache/https-origin-backend.log`。
+  - `npm run build`：PASS，包含四包 typecheck 与 Web 构建；日志 `.cache/https-origin-build.log`。Web/API Docker 构建和实际 Nginx `nginx -t`：PASS，包含在 HTTPS 集成测试中。
+  - 修改的 JSON/YAML/Markdown 文件 Prettier 检查、Skill `quick_validate.py`、`git diff --check`、配置与变更 Gitleaks 扫描：PASS。
+  - 独立审查、生产配置安装、线上携带 Origin 的登录验收：NOT RUN；未授权本轮发布。S01–S07 平台验收保持 BLOCKED。
+- Completion：仓库修复与本地验证完成，待独立审查及后续发布授权。没有提交、推送、连接或部署腾讯云；现有本地 Web/API/PostgreSQL 服务继续运行。
+
+以下保留上一轮未提交工作的记录。
+
+当前任务：`deploy-tencent-https-skill-20261024`。用户授权直接在 develop 更新部署 Skill 与相关部署文档，使其保留服务器独立维护的 HTTPS 配置；允许只读核验服务器，不部署、不重启、不提交、不推送。
+
+### HTTPS 部署 Skill 当前记录
+
+- Status：DONE。
+- Owner：codex；Instance：codex-deploy-tencent-https-20261024。
+- Worktree：/Users/zhulin/Workspace/my-basketball-gm。
+- Branch：develop。
+- Base Commit：c47b99156bdc5010d2baee7d2b45778005afa233。
+- 写入范围：`.agents/skills/deploy-tencent/SKILL.md`、`docs/deployment.md`、本计划；验证产物保存在忽略目录 `.cache/deploy-tencent-https-20261024/`。
+- Goal / Acceptance Criteria：所有云端 Compose 操作使用同一组已核验的基础与 HTTPS 配置；保留证书挂载与 PostgreSQL；包含配置备份、证书及 Nginx 检查、两个域名的 HTTPS 和 HTTP 跳转验证；通过文档格式与 Skill 结构检查。
+- Plan：只读核验云端配置与运行状态 → 更新 Skill 和部署文档 → 运行结构、格式、引用与命令检查 → 记录结果。
+- Current State / Progress：起始本地 develop 干净且与 origin/develop 同步；云端 main 为 efe729d45acf1ea4ea23eae309525d5f6c1941be，工作区干净。已核实实际 `gmup` / `gmhttps`、有效 Compose、容器挂载和证书；Skill 与部署文档已统一 HTTPS 参数、配置备份、Nginx 检查及两个域名的验证流程。三个服务 healthy，Web/API 社区配置均为 false。
+- Open Questions / Decision Candidates：无；本次沿用既有 HTTPS 部署方式。
+- Validation：
+  - `bash -n .cache/deploy-tencent-https-20261024/verify-remote.sh`：PASS；只读验证脚本语法。
+  - 通过 SSH 执行上述脚本：PASS；Compose v2.32.4 合并配置检查、80/443 与只读挂载核验、现有容器 `nginx -t`、证书有效期与两个域名匹配、文件权限及回环 HTTPS 首页/API 200、HTTP 308。日志为 `.cache/deploy-tencent-https-20261024/remote-check.log`。
+  - 云端 `docker compose run --help` 与回环 `/healthz` 请求：PASS；确认临时容器命令所用选项，健康检查返回 `ok`。没有创建临时容器，日志为同目录 `compose-help-health.log`。
+  - `python3 .cache/deploy-tencent-https-20261024/verify-public.py`：PASS；正常 DNS、直接连接和系统 TLS 校验下，两个域名首页、真实 JS/CSS、API 状态及 HTTP 308/查询参数检查通过，见同目录 `public-check.log`。
+  - `.cache/deploy-skill-validation/venv/bin/python /Users/zhulin/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/deploy-tencent`：PASS。
+  - `npm exec prettier -- --check .agents/skills/deploy-tencent/SKILL.md docs/deployment.md docs/plans/current.md`：PASS；首次检查发现部署文档表格间距，手动调整后复查通过。
+  - `git diff --check` 与 Skill 目录 Gitleaks 扫描：PASS。
+  - 云端拉取、构建、临时容器、启动、配置备份与数据库恢复演练：NOT RUN；本次授权为 Skill 更新与只读验证。业务测试、typecheck：NOT RUN；仅修改 Skill 和文档。S01–S07 平台验收保持 BLOCKED。
+- Completion：HTTPS 部署流程文档更新完成，保留在 develop 未提交工作区；未提交、推送或修改云端配置，未部署、重启服务。当前记录覆盖下方历史任务状态。
+
+以下为历史任务记录，状态与授权仅适用于其对应版本及日期。
 
 当前任务：`deploy-tencent-skill-20261020`。用户授权创建仓库内项目 Skill，将腾讯云连接检查、main 更新、数据库备份、Web/API 重建启动及验证保存为可重复执行的流程。2026-10-20 最新授权：检查当前变更后提交并推送 `codex/deploy-tencent-skill` 分支。本次不连接云端执行变更。此前 main 合并与推送已完成，实际结果见 `.cache/icp-main-push-20261020/receipt.md`；以下历史任务记录保留。
 

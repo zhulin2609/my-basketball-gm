@@ -15,6 +15,7 @@
     "dev:weapp": "npm run dev --workspace @dream-court/miniprogram",
     "build:weapp": "npm run typecheck && npm run build --workspace @dream-court/miniprogram && node apps/miniprogram/scripts/verify-dist.mjs",
     "test": "vitest run",
+    "test:https": "python3 scripts/test-https.py",
     "typecheck": "cd packages/core && tsc --noEmit -p tsconfig.json && cd ../../packages/client && tsc --noEmit -p tsconfig.json && cd ../../apps/web && tsc --noEmit -p tsconfig.json && cd ../miniprogram && tsc --noEmit -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

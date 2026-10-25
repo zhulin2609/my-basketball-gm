@@ -16,6 +16,10 @@ My Basketball GM 包含浏览器前端、微信小程序、Spring Boot API 和 P
 
 单机部署使用根目录 `compose.yaml`：`web` 容器构建并通过 Nginx 提供前端，同时把 `/api` 反向代理至 `api`；`api` 运行 Spring Boot 与 Flyway；`postgres` 运行 PostgreSQL 16，数据写入命名卷。生产环境变量由服务器上的 `.env` 注入，详细操作见 `docs/deployment.md`。
 
+HTTPS 部署源配置位于 `deploy/compose.https.yaml` 与 `deploy/nginx/https.conf`，经核验安装到服务器独立配置目录。Nginx 终止 TLS 并覆盖边缘转发头，API 通过 Tomcat native 转发头处理恢复原始 HTTPS 协议；API 不发布宿主机端口，保留内部代理信任限制。基础 HTTP 配置与本地开发 CORS 允许名单保持独立，真实证书、私钥及 `.env` 不进入 Git。
+
+证书实际目录由服务器必填变量 `HTTPS_TLS_DIRECTORY` 提供，仓库只定义容器内通用路径；只读 bind 挂载禁止自动创建目录。发布前比较配置差异、备份并验证候选文件，通过后才安装服务器副本并重新创建应用容器。`scripts/https/check-config.py` 从标准输入读取 Compose JSON，检查挂载及真实文件，不记录证书来源路径。
+
 ## 前端
 
 ### 页面和共享状态
@@ -116,6 +120,8 @@ Controller 处理 HTTP 和认证边界，Service 执行业务规则与事务，M
 - `lineup_comments` 保存社区评论，`parent_id` 自引用支持一级回复，删除帖或评论时回复级联删除。
 
 ## 测试边界
+
+- `npm run test:https` 使用当前源码构建的 Web/API、真实 Nginx TLS 与独立 Compose PostgreSQL，重现修复前 HTTPS Origin 登录 403，并验证两个域名的注册/登录、OPTIONS、认证、非法 Origin、转发头覆盖与基础 HTTP 回归。测试证书仅供隔离环境，curl 保留证书和域名验证；本地通过不等于生产配置已经更新。
 
 - Vitest 覆盖共享包规则、保存队列、对战编排、游客存储与导入转换，以及 Web 入口交互、分页、社区界面与错误码映射。`scripts/vitest-backend.ts` 为每次运行创建独立 `stage4_frontend_<timestamp>` PostgreSQL 数据库，构建并启动真实 Spring Boot；测试代理仅转发或延迟真实响应，禁止注册预设项目 API 响应。微信外部接口依 D-006 使用本地契约服务。
 - 前端集成测试要求 Docker 测试容器 `basketball-gm-test-pg` 在 127.0.0.1:5432 提供 PostgreSQL，用户名 zhulin，以及本机 Java 21、Maven。测试进程结束后关闭服务，数据库及 `.cache/integration-tests/<database>/` 日志保留，不能连接用户开发库。数据库故障触发器限定到测试账号或票据，并在 finally 中删除。

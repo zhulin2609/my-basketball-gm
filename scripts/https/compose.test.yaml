@@ -1,0 +1,8 @@
+# 仅供 scripts/test-https.py 使用；隔离项目、随机回环端口与独立数据库卷。
+services:
+  web:
+    ports: !override
+      - '127.0.0.1::80'
+      - '127.0.0.1::443'
+  postgres:
+    ports: !reset []

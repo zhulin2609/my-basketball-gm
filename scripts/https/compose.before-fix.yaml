@@ -1,0 +1,5 @@
+# 负向对照：保留真实 HTTPS 代理，仅还原修复前的协议识别配置。
+services:
+  api:
+    environment:
+      SERVER_FORWARD_HEADERS_STRATEGY: none
