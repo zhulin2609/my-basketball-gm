@@ -8,17 +8,23 @@
 
 当前任务：`https-main-integration-20261025`。
 
-- Status：ACTIVE。
+- Status：VALIDATING（测试与审查通过，准备合并和推送；执行完成状态见下述回执）。
 - Owner：codex；Instance：codex-https-main-integration-20261025；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：c47b99156bdc5010d2baee7d2b45778005afa233。
 - Goal：提交并推送 develop，将通过独立审查的 develop 合入 main，完整测试通过后推送 main。
 - Acceptance Criteria：暂存内容和全部待推送提交通过敏感信息扫描；独立审查通过；main 推送前前后端全部测试及 HTTPS 集成检查通过；最终本地和远端 SHA 一致。
 - Plan：提交当前变更 → 推送 develop → 独立审查与完整测试 → 汇总记录并推送 develop → 合并 main → 核验测试覆盖版本与扫描 → 推送并核对远端。
-- Current State：用户本轮明确授权提交、推送和合并；已核验 develop/main 均与各自 origin 分支一致。HTTPS 改动尚无独立审查报告，补齐后才合并。
+- Current State：HTTPS 实现已提交为 `23614ae84e79c9e99ea38241982b788121a5b729` 并推送 origin/develop；独立审查 PASS。main 为 `efe729d45acf1ea4ea23eae309525d5f6c1941be`，是 develop 的祖先，可以快进。剩余变更仅为本轮审查与验证文档。
 - Write Scope：当前 HTTPS 改动、审查报告及汇总、当前计划；本地测试产物仅写入忽略目录，不部署服务器。
-- Progress：已完成 Git 和审查门禁核验。
+- Progress：实现提交与 develop 推送完成；完整测试、构建及独立审查通过；原始审查报告已按摘要原样归档，问题状态全部为 0。
 - Open Questions / Decision Candidates：无。
-- Validation：待执行完整测试、独立审查、提交扫描与远端核验。
-- Completion：进行中；S01–S07 保持 BLOCKED。
+- Validation（以下命令均针对 `23614ae84e79c9e99ea38241982b788121a5b729` 实际执行）：
+  - `npm test`：PASS，31 文件、165 项；独立数据库 `stage4_frontend_1792892018108`，日志 `.cache/https-main-frontend.log`。
+  - `mvn --batch-mode --no-transfer-progress -Djava.io.tmpdir=<仓库>/.cache/java-tmp test`（backend；数据源覆盖为独立 PostgreSQL 库 `https_main_backend_20261025_01`）：PASS，84 项，0 失败、0 错误、0 跳过，日志 `.cache/https-main-backend.log`。
+  - `npm run build`：PASS，四包 typecheck 与 Web 构建；日志 `.cache/https-main-build.log`。构建保留大于 500 kB 的 chunk 提示，不影响退出结果。
+  - 独立审查 worktree 执行 `PATH="/usr/bin:$PATH" npm run test:https`：PASS，73 项，真实 NGINX/TLS、Spring Boot 与独立 PostgreSQL；报告和证据见 [审查问题清单](../reviews/https-config-release-20261025/issues.md)。
+  - 完整暂存 diff、develop 待推送提交 Gitleaks 扫描：PASS；`git push origin develop`：PASS。新增审查文档提交和 main 推送前继续扫描各自完整范围。
+  - 云端部署与线上验收：NOT RUN；本次未授权。
+- Completion：测试与审查完成，最终提交、合并、推送和远端 SHA 核验记录在 `.cache/https-main-delivery-receipt.md`；本节为交付文档提交前状态，实际分支以 Git 和回执为准。S01–S07 保持 BLOCKED。
 
 以下为实施及历史验证记录。
 

@@ -1,5 +1,17 @@
 # 当前代码审查
 
+- Task：`https-config-release-20261025`；Round 01 汇总，更新日期 2026-10-25（Asia/Shanghai）。
+- Base Commit：`c47b99156bdc5010d2baee7d2b45778005afa233`；Reviewed Commit：`23614ae84e79c9e99ea38241982b788121a5b729`。
+- 汇总负责人：codex，`codex-https-main-integration-20261025`；独立审查者：Codex `/root/https_independent_review`。
+- 总体审查结论：**PASS**；11 个变更文件，无新增问题或待确认分歧。
+- [问题清单](reviews/https-config-release-20261025/issues.md)：OPEN 0、NEEDS_CONFIRMATION 0、FIXED_PENDING_REVIEW 0、VERIFIED 0、DISMISSED 0、DEFERRED 0。
+- [Round 01 原样归档报告](reviews/https-config-release-20261025/round-01-codex.md)：摘要与独立 worktree 原文一致，具体 SHA-256 见问题清单。报告披露了读取 current plan 时接触历史自评摘要的情况，结论依据独立检查与本轮实际验证。
+- 本轮验证：独立 HTTPS 集成 73 项、汇总负责人运行的前端 165 项、后端 84 项、四包 typecheck 与 Web 构建全部 PASS；证据与范围见问题清单。
+- 验证缺口：生产配置安装、线上登录、数据库恢复演练未执行；S01–S07 保持 BLOCKED。本地忽略目录中的运行证据未验证跨机器可用性。
+- 下一步：按本轮授权提交审查记录并推送 develop，核验可执行文件未变化后合并及推送 main；最终 Git 状态与推送结果见 `.cache/https-main-delivery-receipt.md`。没有生产部署授权。
+
+## 备案页脚与社区关闭历史入口
+
 - Task：`icp-community-disable-20261020`；Round 01 汇总，更新日期 2026-10-20（Asia/Shanghai）。
 - Base Commit：`b01c45316643dfd2688736ea2187e89ab8cf4452`；Reviewed Commit：`d5b240802bbb3d8e5457ae58d97882b398f2947a`。
 - 汇总负责人：codex，`codex-stage4-takeover-20261016-01a1421b`；独立审查者：`kimi-code-round-01-20261020`。
