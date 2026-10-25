@@ -6,6 +6,22 @@
 
 ## Task
 
+当前任务：`deploy-tencent-20261025-dddd698`。
+
+- Status：DONE（部署与可执行验收完成；账号及平台验收缺口保留）。
+- Owner：codex；Instance：codex-deploy-tencent-20261025；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：main；Base Commit：b52f57fd5f559a6484e5c6ab79597c9f315fb950。
+- Goal：发布兼容修复并完成腾讯云 HTTPS 配置更新及服务验证。
+- Acceptance Criteria：提交 develop、合入并推送 main；备份数据库与配置；候选检查通过后安装配置并更新 Web/API；验证两个域名；保留 PostgreSQL 和证书。
+- Plan / Progress：修复提交、develop/main 推送、云端拉取、新备份、候选预检、构建、配置安装、Web/API 更新和内外网验证均完成。
+- Current State（部署完成时核验）：本地 main、远端 develop/main 和云端代码均为 `dddd698e9d45a0f32c0599955e4a8a9496a88bc5`；三个服务 healthy。Web/API 已重新创建，PostgreSQL 容器和数据卷未变化；证书及环境参数保持核验时状态。后续部署结果文档提交不改变线上运行版本。
+- Write Scope：本轮执行脚本、脱敏回执及本计划的部署结果；实际证书目录仅在服务器使用。
+- Validation：冻结代码摘要与独立审查一致；已实际执行的前端 165 项、后端 84 项、两个 Compose 版本 HTTPS 各 74 项及 typecheck PASS；暂存与全部待推送提交扫描 PASS。生产候选/正式预检、Nginx 检查、归档校验 PASS；回环 21 项、正常 DNS 公网 20 项及两个域名实际 Chrome DOM 检查 PASS。公网请求禁用显式代理，系统解析为 Fake-IP，未断言物理直连。
+- Backup：`/home/ubuntu/my-basketball-gm-backups/20261025T020522Z-dddd698`；数据库 97179 字节，SHA-256 `3d367e7d4241e459c1cf87f38ba07a7d0fa207155f617f14aad9e30a38e5e264`；`pg_restore --list` PASS，恢复演练 NOT RUN。
+- Open Questions / Decision Candidates：无。无已授权测试账号，生产真实登录及登录后阵容公开区域验收 NOT RUN；S01–S07 保持 BLOCKED。
+- Completion：部署结果与完整摘要见 `.cache/deploy-tencent/20261025-b52f57f/receipt.md`，云端备份目录保存同名回执。本节作为部署结果归档，保留上述未执行验收项。
+
+以下为修复发布前的验证记录。
+
 当前任务：`compose-preflight-compat-20261025`。
 
 - Status：ACTIVE（测试与独立审查通过，已获提交、合并、推送及继续部署授权）。
