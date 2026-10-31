@@ -33,7 +33,7 @@ import { communityWriteError } from '@/lib/errors';
 import { guestImportFailureMessage } from '@/lib/guest-import-errors';
 import { makeClassicLineup, makeStarterLineup } from '@/lib/presets';
 import { useHashRoute, type RouteView } from '@/lib/hash-route';
-import { isForumEnabled } from '@/lib/features';
+import { isForumEnabled, isWebAuthEnabled } from '@/lib/features';
 import { createIdentifier } from '@/lib/identifier';
 import { usePagination } from '@/lib/use-pagination';
 import type {
@@ -270,7 +270,8 @@ export function App() {
   // App 只保存跨页面共享的状态；各页面组件只通过回调修改这些状态。
   const { t } = useTranslation();
   const isCommunityEnabled = isApiEnabled && isForumEnabled;
-  const [route, navigate] = useHashRoute(isCommunityEnabled);
+  const isAuthEnabled = isApiEnabled && isWebAuthEnabled;
+  const [route, navigate] = useHashRoute(isCommunityEnabled, isAuthEnabled);
   const [authSession, setAuthSession] = useState<AuthSession | null>(() => api.readSession());
   const [lineups, setLineups] = useState<Lineup[]>(() =>
     isApiEnabled && authSession
@@ -533,12 +534,14 @@ export function App() {
           {isApiEnabled && !authSession && (
             <>
               <span className="guest-label">{t('guest.status')}</span>
-              <button
-                className="secondary compact guest-auth-button"
-                onClick={() => navigate({ view: 'auth' })}
-              >
-                {t('guest.login')}
-              </button>
+              {isAuthEnabled && (
+                <button
+                  className="secondary compact guest-auth-button"
+                  onClick={() => navigate({ view: 'auth' })}
+                >
+                  {t('guest.login')}
+                </button>
+              )}
             </>
           )}
           {isApiEnabled && authSession && (
@@ -580,8 +583,8 @@ export function App() {
       {!authSession && (
         <aside className="guest-notice" role="status">
           <strong>{t('guest.noticeTitle')}</strong>
-          <span>{t('guest.noticeBody')}</span>
-          {repositories.workspace.load().hasUserProgress && (
+          <span>{t(isAuthEnabled ? 'guest.noticeBody' : 'guest.localNoticeBody')}</span>
+          {isAuthEnabled && repositories.workspace.load().hasUserProgress && (
             <button onClick={() => navigate({ view: 'auth' })} type="button">
               {t('guest.saveProgress')}
             </button>
@@ -2695,14 +2698,16 @@ function CommunityPostView({
               {t('community.withdraw')}
             </button>
           )}
-          <button
-            className="primary"
-            disabled={isSubmitting}
-            onClick={() => (isAuthenticated ? void copy() : onRequireAuth())}
-            type="button"
-          >
-            {t('community.copy')}
-          </button>
+          {(isAuthenticated || isWebAuthEnabled) && (
+            <button
+              className="primary"
+              disabled={isSubmitting}
+              onClick={() => (isAuthenticated ? void copy() : onRequireAuth())}
+              type="button"
+            >
+              {t('community.copy')}
+            </button>
+          )}
         </div>
       </div>
       {actionError && (
@@ -2814,14 +2819,14 @@ function CommunityPostView({
               {isSubmitting ? t('common.processing') : t('community.submitComment')}
             </button>
           </div>
-        ) : (
+        ) : isWebAuthEnabled ? (
           <div className="ai-setup-prompt">
             <span>{t('community.loginToInteract')}</span>
             <button className="ghost" onClick={onRequireAuth} type="button">
               {t('guest.login')}
             </button>
           </div>
-        )}
+        ) : null}
       </section>
     </section>
   );

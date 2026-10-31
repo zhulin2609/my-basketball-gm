@@ -1,10 +1,37 @@
 # Current Plan
 
-更新时间：2026-10-25（Asia/Shanghai）
+更新时间：2026-11-01（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
+
+当前任务：`web-auth-entry-disabled-20261031`。
+
+- Status：DONE。
+- Owner：codex；Instance：codex-web-auth-entry-20261031；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：b0969bd910abfbf7bce16566930606dd781e10aa。独立审查者已停止写入，实施者完成文档记录。
+- Goal：按用户已评审通过的方案关闭 Web 注册、登录入口与认证路由，保留已有有效会话。
+- Acceptance Criteria：默认关闭顶部、游客进度和社区认证引导；直接访问、刷新、hash 变化和历史导航至认证地址均替换为球员库；不挂载认证页面或发起认证请求；中英文文案一致；游客存储与已有账号功能正常；退出或无效会话不能重新进入认证页。
+- Write Scope：Web 源码、Web 测试、Web 环境模板及相关任务、架构、决策和审查文档。小程序、后端、共享包与数据库结构保持现状。2026-11-01 用户追加授权重新构建并重启本地 Web/API，随后授权提交当前变更并推送 develop；云端部署未授权。
+- Plan：功能开关与界面、路由修改 → 真实 API 集成测试和游客回归 → typecheck、全量前端测试与构建 → 浏览器 DOM、键盘及网络验证 → 独立审查。
+- Current State：develop，HEAD 为上述基线；本轮修改未提交，暂存区为空。Web 默认关闭注册和登录入口，已有登录用户继续访问账号数据；后端认证接口和已经打开的旧版页面仍可使用既有能力。
+- Progress：实现、全量前端测试、typecheck、构建、格式、实际浏览器验证及独立审查完成。
+- Open Questions：390 像素宽度的球员列表实际右边界为 431.66 像素；导航和本轮游客提示均位于视口内。球员列表与样式未在本轮修改，未扩大范围处理。原计划中的部署结果及平台验收缺口保留于下文。
+- Decision Candidates：无；本次用户批准的范围记录为 D-009。
+- Validation：`npm test` PASS（32 文件、180 项）；`npm run typecheck` PASS；`npm run build` PASS（保留大于 500 kB 的 chunk 提示）；相关文件 Prettier 检查与 `git diff --check` PASS。Chrome DOM、键盘、真实本地模拟和网络观察 PASS，覆盖 1440×900 与 390×844。详细证据及 T01–T14 映射见 [validation.md](../reviews/web-auth-entry-disabled-20261031/validation.md)。独立审查 PASS，无确认缺陷；审查者实际运行 48 项定向测试、四包 typecheck、格式与前后快照校验，见 [issues.md](../reviews/web-auth-entry-disabled-20261031/issues.md)。
+- Completion：本地实现、验证与独立审查完成。审查后仅更新任务状态、审查入口与汇总文档，代码保持 `web-auth-disabled-01` 快照。2026-11-01 本地 Web/API 已重新构建并重启，访问地址为 `http://localhost:8088/`。尚未提交、推送或部署云端。
+
+### 本地服务重建验证（2026-11-01）
+
+- `docker compose config --quiet`：PASS。
+- `docker compose build web api`：PASS；Web 执行四包 typecheck 和 Vite 构建，后端源码未变化，Docker 复用构建缓存。保留大于 500 kB 的 chunk 提示。首次执行受 Docker 构建器元数据目录权限限制，取得执行权限后成功。
+- `docker compose up --detach --no-deps --force-recreate --wait --wait-timeout 120 web api`：PASS；Web/API 新容器均为 healthy。
+- `curl --fail --silent --show-error http://localhost:8088/api/v1/health`，以及带 `Origin: http://localhost:8088` 的同一请求：PASS，均返回 `status: ok`；首页及新构建 JS 资源均返回 HTTP 200。
+- `docker compose exec --no-TTY web nginx -t`：PASS。API 启动日志确认 17 项迁移校验通过，数据库无需迁移；PostgreSQL 容器 ID 与重建前一致。
+- 本轮浏览器验收：NOT RUN；Chrome 连接不可用。此前功能验收与独立审查结果保留，未作为本轮浏览器结果。
+- 日志：`.cache/local-rebuild-20261101/`。本轮未重新运行完整业务测试。
+
+以下为历史任务记录。
 
 当前任务：`deploy-tencent-20261025-dddd698`。
 

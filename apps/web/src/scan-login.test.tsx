@@ -18,6 +18,7 @@ beforeEach(async () => {
   window.location.hash = '';
   server = await startTestApiServer();
   vi.stubEnv('VITE_API_BASE_URL', server.baseUrl);
+  vi.stubEnv('VITE_WEB_AUTH_ENABLED', 'true');
 });
 afterEach(async () => {
   cleanup();

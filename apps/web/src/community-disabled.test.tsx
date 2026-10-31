@@ -18,6 +18,7 @@ beforeEach(async () => {
   server = await startTestApiServer();
   vi.stubEnv('VITE_API_BASE_URL', server.baseUrl);
   vi.stubEnv('VITE_FORUM_ENABLED', undefined);
+  vi.stubEnv('VITE_WEB_AUTH_ENABLED', 'true');
 });
 afterEach(async () => {
   cleanup();

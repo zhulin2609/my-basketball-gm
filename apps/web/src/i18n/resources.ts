@@ -94,6 +94,7 @@ export const resources = {
         continue: '继续游客体验',
         noticeTitle: '当前是游客模式',
         noticeBody: '球员、阵容和战报仅保存在这台设备。注册或登录后可选择保存到账号。',
+        localNoticeBody: '球员修改、阵容和战报保存在当前浏览器中，清除网站数据会删除这些本地记录。',
         saveProgress: '保存当前进度',
         importTitle: '是否保存游客进度？',
         importBody: '导入成功后，当前游客存档会从这台设备清空，数据将归属于已登录账号。',
@@ -383,6 +384,8 @@ export const resources = {
         noticeTitle: 'You are playing as a guest',
         noticeBody:
           'Players, rosters, and reports are stored only on this device. Sign in or register to save them to your account.',
+        localNoticeBody:
+          'Player changes, rosters, and reports are stored in this browser. Clearing site data deletes these local records.',
         saveProgress: 'Save current progress',
         importTitle: 'Save your guest progress?',
         importBody:

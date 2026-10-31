@@ -35,8 +35,13 @@ function sameRoute(a: HashRoute, b: HashRoute): boolean {
   return a.view === b.view && a.postId === b.postId;
 }
 
-function availableRoute(route: HashRoute, communityEnabled: boolean): HashRoute {
-  return route.view === 'community' && !communityEnabled
+function availableRoute(
+  route: HashRoute,
+  communityEnabled: boolean,
+  authEnabled: boolean,
+): HashRoute {
+  return (route.view === 'community' && !communityEnabled) ||
+    (route.view === 'auth' && !authEnabled)
     ? { view: 'players', postId: null }
     : route;
 }
@@ -44,15 +49,16 @@ function availableRoute(route: HashRoute, communityEnabled: boolean): HashRoute 
 // 视图状态以 URL hash 为准：刷新后停留在当前页面，前进/后退按钮可用，帖子详情有可分享的链接。
 export function useHashRoute(
   communityEnabled: boolean,
+  authEnabled: boolean,
 ): [HashRoute, (next: { view: RouteView; postId?: string | null }) => void] {
   const [route, setRoute] = useState<HashRoute>(() =>
-    availableRoute(parseHashRoute(window.location.hash), communityEnabled),
+    availableRoute(parseHashRoute(window.location.hash), communityEnabled, authEnabled),
   );
 
   useEffect(() => {
     const onHashChange = () => {
       const parsed = parseHashRoute(window.location.hash);
-      const next = availableRoute(parsed, communityEnabled);
+      const next = availableRoute(parsed, communityEnabled, authEnabled);
       if (!sameRoute(parsed, next)) {
         window.history.replaceState(window.history.state, '', routeToHash(next));
       }
@@ -61,12 +67,12 @@ export function useHashRoute(
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, [communityEnabled]);
+  }, [communityEnabled, authEnabled]);
 
   const navigate = useCallback(
     (next: { view: RouteView; postId?: string | null }) => {
       const requested: HashRoute = { view: next.view, postId: next.postId ?? null };
-      const normalized = availableRoute(requested, communityEnabled);
+      const normalized = availableRoute(requested, communityEnabled, authEnabled);
       setRoute(normalized);
       const hash = routeToHash(normalized);
       if (!sameRoute(requested, normalized)) {
@@ -75,7 +81,7 @@ export function useHashRoute(
         window.location.hash = hash;
       }
     },
-    [communityEnabled],
+    [communityEnabled, authEnabled],
   );
 
   return [route, navigate];
