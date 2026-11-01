@@ -1,5 +1,6 @@
 export * from './types';
 export * from './lineup-validation';
+export * from './matchup-validation';
 export * from './member-display-order';
 export * from './player-of-the-game';
 export * from './player-display';

@@ -43,6 +43,7 @@ Web 认证入口默认关闭（D-009）。只有配置 API 地址且 `VITE_WEB_A
 - 公共 REST 契约与会话在 `packages/client`（`api.ts`、`session.ts`）；Web 专属的社区与 AI 接口在 `apps/web/src/lib/api.ts`。非 2xx 响应抛出携带 `status` 与 `code` 的 `ApiError`。
 - `apps/web/src/lib/errors.ts` 把社区写操作的错误码映射为本地文案；无 code 的错误保持拼接后端 message 的既有行为。
 - `packages/core` 的 `simulator.ts` 提供游客和登录用户都可以使用的本地规则引擎，seed、战报 ID 与创建时间由调用方传入。
+- `packages/core` 的 `matchup-validation.ts` 统一检查对战双方存在且不同、阵容人数与激活人数、首发位置、重复球员及球员引用完整性。Web 两个对战入口使用相同结果禁用按钮并展示本地化原因，发起对战时重新校验；`simulate()` 在计算前执行同一校验，非法输入抛出 `MatchupValidationError`，不会返回或保存战报。空阵容仍可创建和保存。
 - `packages/core` 的 `player-of-the-game.ts` 从战报统计中评选本场最佳球员，本地战报与云端战报复用同一公式。
 
 ### 游客数据

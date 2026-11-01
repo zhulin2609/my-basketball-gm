@@ -28,6 +28,19 @@ const home = createLineup('home', ['curry', 'jordan', 'lebron', 'duncan', 'shaq'
 const away = createLineup('away', ['magic', 'kobe', 'bird', 'garnett', 'olajuwon']);
 
 describe('simulate', () => {
+  it.each(['home', 'away', 'both'])('rejects empty %s before producing a report', (side) => {
+    const emptyHome = { ...home, members: [] };
+    const emptyAway = { ...away, members: [] };
+    expect(() =>
+      simulate(
+        side === 'away' ? home : emptyHome,
+        side === 'home' ? away : emptyAway,
+        players,
+        context(42),
+      ),
+    ).toThrow();
+  });
+
   it('returns the same result for the same lineups and seed', () => {
     const first = simulate(home, away, players, context(42));
     const second = simulate(home, away, players, context(42));

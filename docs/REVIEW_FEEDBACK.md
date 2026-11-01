@@ -1,5 +1,15 @@
 # 当前代码审查
 
+- Task：`local-battle-validation-20261101`；Round 01；更新日期 2026-11-01（Asia/Shanghai）。
+- Base Commit / HEAD：`fbdd5bcd83a389a04095928e6ca91c8ea5193b45`；Reviewed Commit：N/A；Snapshot：`local-battle-validation-01`。
+- 汇总负责人：codex / `codex-local-battle-validation-20261101`；独立审查者：Codex / `/root/local_battle_review`，未参与实施；串行使用同一 worktree。
+- 总体审查结论：**PASS**；[问题清单](reviews/local-battle-validation-20261101/issues.md)全部状态计数为 0。
+- [独立报告](reviews/local-battle-validation-20261101/round-01-codex.md)：完整 34 文件 / 226 项测试、四包 typecheck、格式和快照校验通过；报告披露 current plan 验证记录的上下文边界。
+- [实施验证](reviews/local-battle-validation-20261101/validation.md)：Web 与小程序构建、实际浏览器双入口拦截、正常对战和历史持久化通过；此前测试失败日志保留。
+- 验证边界：微信平台和真机验收、云端部署及后端完整测试未执行。2026-11-01 用户已授权提交本次修复并推送 origin/develop；执行回执保存于 `.cache/local-battle-validation/delivery/`。
+
+## Web 认证入口历史入口
+
 - Task：`web-auth-entry-disabled-20261031`；Round 01；更新日期 2026-11-01（Asia/Shanghai）。
 - Base Commit / HEAD：`b0969bd910abfbf7bce16566930606dd781e10aa`；Reviewed Commit：N/A；Snapshot：`web-auth-disabled-01`。
 - 汇总负责人：codex / `codex-web-auth-entry-20261031`；独立审查者：Codex / `/root/web_auth_review`，未参与实施；串行使用同一 worktree。
@@ -7,7 +17,7 @@
 - [Round 01 原始报告](reviews/web-auth-entry-disabled-20261031/round-01-codex.md)：48 项真实接口定向测试、四包 typecheck、格式与前后 20 个输入摘要校验通过；报告披露接触 current plan 验证摘要的上下文边界。
 - 实施者验证：完整前端 180 项、typecheck、Web 构建、格式和浏览器 DOM / 键盘 / 网络检查通过，见 [验证记录](reviews/web-auth-entry-disabled-20261031/validation.md)。
 - 验证边界：真实微信平台扫码、生产部署和后端完整测试未执行。390 像素球员列表横向溢出记录在本任务验证文件中，该区域未作修改；当前任务不关闭历史任务的遗留事项。
-- 当前状态：本地实现已完成；审查后仅更新任务状态与审查汇总，业务代码未变化。未提交、推送或部署，等待新的用户指令。
+- 当前状态：本地实现与审查已完成。2026-11-01 按用户指令提交为 `fbdd5bcd83a389a04095928e6ca91c8ea5193b45` 并推送 origin/develop，远端 SHA 已核验一致。未部署云端。
 
 ## Compose 兼容性历史入口
 

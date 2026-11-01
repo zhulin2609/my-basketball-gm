@@ -199,6 +199,17 @@ export const resources = {
         localPlay: '使用本地引擎对战 →',
       },
       battle: {
+        validation: {
+          selection: '{{side}}：{{reason}}',
+          lineup: '{{side}}「{{name}}」：{{reason}}',
+          missingLineup: '请选择有效阵容。',
+          sameLineup: '请选择两套不同的阵容。',
+          memberCount: '参赛阵容必须包含 5–15 名球员。',
+          activeCount: '激活球员不能超过 13 人。',
+          duplicatePlayers: '同一球员不能重复加入阵容。',
+          starterFormation: '需要五名激活首发，覆盖 PG、SG、SF、PF、C。',
+          missingPlayer: '阵容包含无法读取的球员，请重新选择球员。',
+        },
         title: '梦幻对战',
         subtitle: '你可使用稳定、免费的内置规则引擎，也可主动选择已配置的 AI 模型。',
         retention: '云端战报仅保留 30 天，过期后立即不可查看，并在每天凌晨 3:00 自动清理。',
@@ -497,6 +508,17 @@ export const resources = {
         localPlay: 'Play with local engine →',
       },
       battle: {
+        validation: {
+          selection: '{{side}}: {{reason}}',
+          lineup: '{{side}} "{{name}}": {{reason}}',
+          missingLineup: 'Select an available roster.',
+          sameLineup: 'Select two different rosters.',
+          memberCount: 'A roster must contain 5–15 players to play.',
+          activeCount: 'A roster can have at most 13 active players.',
+          duplicatePlayers: 'Each player can appear only once in a roster.',
+          starterFormation: 'Five active starters must cover PG, SG, SF, PF, and C.',
+          missingPlayer: 'The roster contains unavailable players. Please replace them.',
+        },
         title: 'Dream Match',
         subtitle:
           'Use the stable, free built-in rules engine, or explicitly choose a configured AI model.',

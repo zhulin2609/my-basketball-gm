@@ -47,6 +47,28 @@ function dependencies() {
   };
 }
 describe('battle service', () => {
+  it.each(['home', 'away', 'both'])('does not persist a battle with empty %s', (side) => {
+    const deps = dependencies();
+    const service = createBattleService(deps);
+    service.runLocal(home(), away(), players);
+    const before = localStorage.getItem('dream-court.guest-workspace.v1');
+    expect(() =>
+      service.runLocal(
+        side === 'away' ? home() : { ...home(), members: [] },
+        side === 'home' ? away() : { ...away(), members: [] },
+        players,
+      ),
+    ).toThrow();
+    expect(localStorage.getItem('dream-court.guest-workspace.v1')).toBe(before);
+    const restored = createGuestRepositories({
+      storage: localStorage,
+      id: deps.id,
+      clock: deps.clock,
+    });
+    expect(restored.simulations.list()).toHaveLength(1);
+    expect(server.requests).toHaveLength(0);
+  });
+
   it('runs the shared engine on device, persists locally, never calls API', () => {
     const deps = dependencies();
     const report = createBattleService(deps).runLocal(home(), away(), players);

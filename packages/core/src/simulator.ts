@@ -1,4 +1,5 @@
 import type { Lineup, Player, PlayerStat, Simulation } from './types';
+import { assertValidMatchup } from './matchup-validation';
 
 // 线性同余随机数：相同 seed 会产生相同随机序列，因此战报可以被复现与分享。
 const seeded = (seed: number) => {
@@ -129,6 +130,7 @@ export function simulate(
   source: Player[],
   context: SimulationContext,
 ): Simulation {
+  assertValidMatchup(home, away, source);
   // playerMap 将多次按 ID 查找从数组扫描降为常数时间；两队共享同一随机序列。
   const map = new Map(source.map((p) => [p.id, p]));
   const rand = seeded(context.seed);

@@ -6,6 +6,31 @@
 
 ## Task
 
+当前任务：`local-battle-validation-20261101`。
+
+- Status：DONE。
+- Owner：codex；Instance：codex-local-battle-validation-20261101；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：fbdd5bcd83a389a04095928e6ca91c8ea5193b45。独立审查者已停止进程与写入并释放所有权，实施者接收。
+- Goal：阻止不合格阵容从任意 Web 入口进入本地对战或生成战报。
+- Acceptance Criteria：双方存在且不同，均符合人数、激活人数、首发位置、球员唯一性及引用完整性要求；界面解释不可参赛原因；引擎直接调用也拒绝非法输入；失败不新增或改变战报；合格阵容保持正常模拟和持久化。
+- Write Scope：Web、共享 core 及对应测试、client 对战测试、任务和架构文档；小程序页面及后端源码保持现状。用户授权先提交推送此前变更，该步骤已完成；2026-11-01 用户继续授权提交本次修复并推送 origin/develop。
+- Plan：补充失败回归 → 共享资格校验与 Web 提示 → 全量测试、typecheck、构建及本地运行验证 → 独立审查。
+- Current State：此前认证入口关闭变更已提交为 fbdd5bc，并核验 origin/develop 为同一 SHA；暂存及完整待推送提交 Gitleaks 扫描通过。本次对战修复未提交，业务源码保持已审快照；本地 8088 Web 已构建更新为当前修复。
+- Progress：调查与实现完成；共享 validateMatchup 校验双方资格，两个 Web 入口展示原因，simulate 在计算前拒绝非法输入。新增 46 项回归测试，覆盖人数、激活、首发、重复、球员引用、界面变化及失败不写战报。
+- Open Questions：无；历史 390 像素列表溢出及平台验收事项保留。
+- Decision Candidates：无。
+- Validation：最终独立审查运行 `npm test -- --maxWorkers=1` PASS（34 文件 / 226 项）；四包 typecheck、范围内格式和快照检查 PASS。Web 与小程序构建 PASS；浏览器真实操作确认主客队空阵容被阻止、合格对战保存且刷新保留历史、中英文原因正确。此前失败和对照运行证据均保留，未改动既有测试的等待或断言，详见 [validation.md](../reviews/local-battle-validation-20261101/validation.md)。
+- Completion：实现、验证及独立审查 PASS；无确认缺陷，见 [issues.md](../reviews/local-battle-validation-20261101/issues.md)。用户已授权提交并推送本次修复；执行回执保存于 `.cache/local-battle-validation/delivery/`。未部署云端。
+
+### 本次修复的本地服务验证
+
+- `docker compose build web`：PASS，包括四包 typecheck 和 Web 构建；日志 `.cache/local-battle-validation/docker-build-web.log`。
+- `docker compose up --detach --no-deps --force-recreate --wait --wait-timeout 120 web`：PASS；Web 容器 `c85412869edd` healthy。API `788e37edfc91` 与 PostgreSQL `e97a5c8d5ef6` 容器标识未变化，均 healthy。
+- 首页和 `/assets/index-CUqlKiix.js` HTTP 200；返回的 JS 包含双方入口提示标识、参赛人数文案及 `MatchupValidationError`。
+- 带 `Origin: http://localhost:8088` 的 `/api/v1/health` 返回 `status: ok`；`docker compose exec --no-TTY web nginx -t` PASS。
+- 地址：`http://localhost:8088/`。浏览器完整交互验收在相同源码的 production preview 上完成；8088 更新后验证了服务健康与静态资源，未修改用户已有数据。
+
+以下为历史任务记录。
+
 当前任务：`web-auth-entry-disabled-20261031`。
 
 - Status：DONE。
@@ -14,12 +39,12 @@
 - Acceptance Criteria：默认关闭顶部、游客进度和社区认证引导；直接访问、刷新、hash 变化和历史导航至认证地址均替换为球员库；不挂载认证页面或发起认证请求；中英文文案一致；游客存储与已有账号功能正常；退出或无效会话不能重新进入认证页。
 - Write Scope：Web 源码、Web 测试、Web 环境模板及相关任务、架构、决策和审查文档。小程序、后端、共享包与数据库结构保持现状。2026-11-01 用户追加授权重新构建并重启本地 Web/API，随后授权提交当前变更并推送 develop；云端部署未授权。
 - Plan：功能开关与界面、路由修改 → 真实 API 集成测试和游客回归 → typecheck、全量前端测试与构建 → 浏览器 DOM、键盘及网络验证 → 独立审查。
-- Current State：develop，HEAD 为上述基线；本轮修改未提交，暂存区为空。Web 默认关闭注册和登录入口，已有登录用户继续访问账号数据；后端认证接口和已经打开的旧版页面仍可使用既有能力。
+- Current State：认证入口修改已经于 2026-11-01 提交为 fbdd5bc 并推送 origin/develop。Web 默认关闭注册和登录入口，已有登录用户继续访问账号数据；后端认证接口和已经打开的旧版页面仍可使用既有能力。
 - Progress：实现、全量前端测试、typecheck、构建、格式、实际浏览器验证及独立审查完成。
 - Open Questions：390 像素宽度的球员列表实际右边界为 431.66 像素；导航和本轮游客提示均位于视口内。球员列表与样式未在本轮修改，未扩大范围处理。原计划中的部署结果及平台验收缺口保留于下文。
 - Decision Candidates：无；本次用户批准的范围记录为 D-009。
 - Validation：`npm test` PASS（32 文件、180 项）；`npm run typecheck` PASS；`npm run build` PASS（保留大于 500 kB 的 chunk 提示）；相关文件 Prettier 检查与 `git diff --check` PASS。Chrome DOM、键盘、真实本地模拟和网络观察 PASS，覆盖 1440×900 与 390×844。详细证据及 T01–T14 映射见 [validation.md](../reviews/web-auth-entry-disabled-20261031/validation.md)。独立审查 PASS，无确认缺陷；审查者实际运行 48 项定向测试、四包 typecheck、格式与前后快照校验，见 [issues.md](../reviews/web-auth-entry-disabled-20261031/issues.md)。
-- Completion：本地实现、验证与独立审查完成。审查后仅更新任务状态、审查入口与汇总文档，代码保持 `web-auth-disabled-01` 快照。2026-11-01 本地 Web/API 已重新构建并重启，访问地址为 `http://localhost:8088/`。尚未提交、推送或部署云端。
+- Completion：本地实现、验证与独立审查完成。认证功能代码通过 `web-auth-disabled-01` 快照审查；随后按用户授权提交并推送 develop。2026-11-01 本地 Web/API 已重新构建并重启，访问地址为 `http://localhost:8088/`。未部署云端。
 
 ### 本地服务重建验证（2026-11-01）
 

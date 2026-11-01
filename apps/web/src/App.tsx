@@ -11,6 +11,9 @@ import {
   STARTER_POSITIONS,
   USERNAME_PATTERN_SOURCE,
   validateLineup,
+  validateMatchup,
+  assertValidMatchup,
+  MatchupValidationError,
   type Lineup,
   type LineupMember,
   type Player,
@@ -31,6 +34,7 @@ import {
 } from '@/lib/runtime';
 import { communityWriteError } from '@/lib/errors';
 import { guestImportFailureMessage } from '@/lib/guest-import-errors';
+import { matchupErrorMessage } from '@/lib/matchup-errors';
 import { makeClassicLineup, makeStarterLineup } from '@/lib/presets';
 import { useHashRoute, type RouteView } from '@/lib/hash-route';
 import { isForumEnabled, isWebAuthEnabled } from '@/lib/features';
@@ -417,6 +421,7 @@ export function App() {
     setSimulationError(null);
 
     try {
+      assertValidMatchup(home, away, players);
       let next: Simulation;
       if (isAuthenticatedApi) {
         next = await battleService.runCloud(
@@ -434,7 +439,12 @@ export function App() {
       setGames((current) => [next, ...current.filter((report) => report.id !== next.id)]);
       setGame(next);
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('errors.unknown');
+      const message =
+        error instanceof MatchupValidationError
+          ? matchupErrorMessage(t, error.issue)
+          : error instanceof Error
+            ? error.message
+            : t('errors.unknown');
       setSimulationError(t('errors.simulation', { message }));
     } finally {
       setIsSimulating(false);
@@ -1731,8 +1741,10 @@ function LineupWorkbench({
   const update = (partial: Partial<Lineup>) => onSave({ ...selected, ...partial });
   const changeMember = (idx: number, partial: Partial<LineupMember>) =>
     update({ members: selected.members.map((m, i) => (i === idx ? { ...m, ...partial } : m)) });
-  // 这些规则同时控制“开始梦幻对战”按钮，后端接入时也应复用同样的校验。
+  // 当前阵容状态单独展示；参赛资格通过双方阵容共同校验。
   const valid = isEligibleForSimulation && missingPlayerIds.length === 0;
+  const opponent = lineups.find((lineup) => lineup.id === opponentId);
+  const matchupIssue = validateMatchup(selected, opponent, players);
   const rosterIsFull = selected.members.length >= 15;
 
   const toggleStarter = (index: number) => {
@@ -2001,7 +2013,11 @@ function LineupWorkbench({
                 ? t('common.saved')
                 : t('common.save')}
           </button>
-          <select value={opponentId} onChange={(e) => setOpponentId(e.target.value)}>
+          <select
+            aria-label={t('lineup.chooseOpponent')}
+            value={opponentId}
+            onChange={(e) => setOpponentId(e.target.value)}
+          >
             <option value="">{t('lineup.chooseOpponent')}</option>
             {lineups
               .filter((l) => l.id !== selected.id)
@@ -2013,15 +2029,20 @@ function LineupWorkbench({
           </select>
           <button
             className="primary"
-            disabled={!valid || !opponentId}
+            disabled={matchupIssue !== null}
+            aria-describedby={matchupIssue ? 'workbench-matchup-error' : undefined}
             onClick={() => {
-              const other = lineups.find((x) => x.id === opponentId);
-              if (other) void onPlay(selected, other);
+              if (opponent) void onPlay(selected, opponent);
             }}
           >
             {t('lineup.localPlay')}
           </button>
         </div>
+        {matchupIssue && (
+          <p id="workbench-matchup-error" className="editor-error" role="status">
+            {matchupErrorMessage(t, matchupIssue)}
+          </p>
+        )}
         {canShare && (
           <section aria-label={t('community.share')} className="share-panel">
             <div>
@@ -2089,8 +2110,7 @@ function Battle({
   const [credentialError, setCredentialError] = useState<string | null>(null);
   const home = lineups.find((x) => x.id === homeId);
   const away = lineups.find((x) => x.id === awayId);
-  const homeIsEligible = home ? validateLineup(home).isEligibleForSimulation : false;
-  const awayIsEligible = away ? validateLineup(away).isEligibleForSimulation : false;
+  const matchupIssue = validateMatchup(home, away, players);
   const aiIsAvailable = isCloudMode && credential?.configured === true;
 
   // 云端阵容异步到达后，挂载时占位阵容的 id 会失效；把失效的选择校正到真实阵容，
@@ -2189,7 +2209,11 @@ function Battle({
           )}
         </div>
         <div className="matchup-picker">
-          <select value={homeId} onChange={(e) => setHomeId(e.target.value)}>
+          <select
+            aria-label={t('battle.home')}
+            value={homeId}
+            onChange={(e) => setHomeId(e.target.value)}
+          >
             {lineups
               .filter((l) => l.id !== awayId)
               .map((l) => (
@@ -2199,7 +2223,11 @@ function Battle({
               ))}
           </select>
           <span>VS</span>
-          <select value={awayId} onChange={(e) => setAwayId(e.target.value)}>
+          <select
+            aria-label={t('battle.away')}
+            value={awayId}
+            onChange={(e) => setAwayId(e.target.value)}
+          >
             {lineups
               .filter((l) => l.id !== homeId)
               .map((l) => (
@@ -2210,14 +2238,8 @@ function Battle({
           </select>
           <button
             className="primary"
-            disabled={
-              !home ||
-              !away ||
-              homeId === awayId ||
-              !homeIsEligible ||
-              !awayIsEligible ||
-              isSimulating
-            }
+            disabled={matchupIssue !== null || isSimulating}
+            aria-describedby={matchupIssue ? 'battle-matchup-error' : undefined}
             onClick={() => {
               if (home && away) void onPlay(home, away, simulationMode);
             }}
@@ -2229,6 +2251,11 @@ function Battle({
                 : t('battle.simulateLocal')}
           </button>
         </div>
+        {matchupIssue && (
+          <p id="battle-matchup-error" className="editor-error" role="status">
+            {matchupErrorMessage(t, matchupIssue)}
+          </p>
+        )}
       </div>
       {simulationError && (
         <p className="editor-error battle-error" role="alert">
