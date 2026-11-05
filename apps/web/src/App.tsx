@@ -675,6 +675,15 @@ function SiteFooter() {
       <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
         沪ICP备2026051556号-1
       </a>
+      <a
+        className="public-security-record"
+        href="https://beian.mps.gov.cn/#/query/webSearch?code=31011002008289"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img src={`${import.meta.env.BASE_URL}public-security-record.png`} alt="" />
+        沪公网安备31011002008289号
+      </a>
     </footer>
   );
 }

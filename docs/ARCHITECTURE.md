@@ -28,7 +28,7 @@ HTTPS 部署源配置位于 `deploy/compose.https.yaml` 与 `deploy/nginx/https.
 
 页面状态以 URL hash 为准（`apps/web/src/lib/hash-route.ts` 的 `useHashRoute`）：格式为 `#/players`、`#/lineups`、`#/battle`、`#/community`、`#/community/<帖子id>`、`#/ai-settings`、`#/auth`。挂载时从 hash 恢复当前页面，`navigate` 同步更新状态并写 hash，`hashchange` 监听支持浏览器前进/后退。无法识别的 hash 回退到球员库；`ai-settings` 要求登录，条件不满足时回退到球员库且 URL 保持不变。社区要求 API 启用且 `VITE_FORUM_ENABLED=true`；否则首次打开、导航及 hash 变化均限制为球员库，并使用 `replaceState` 将社区地址替换为 `#/players`，不加载社区组件或请求社区数据。
 
-公共页脚在所有 Web 视图展示 link9.fun 的备案号 `沪ICP备2026051556号-1`，链接到工信部备案首页，中英文模式均使用同一备案原文。页脚随内容排列并支持窄屏换行。
+公共页脚在所有 Web 视图展示 link9.fun 的备案号 `沪ICP备2026051556号-1` 和 `沪公网安备31011002008289号`，分别链接到工信部备案首页和公安备案查询页面，公安备案编号前显示图标。中英文模式均使用同一备案原文，页脚随内容排列并支持窄屏换行。
 
 Web 认证入口默认关闭（D-009）。只有配置 API 地址且 `VITE_WEB_AUTH_ENABLED=true` 时显示顶部登录注册按钮、游客保存到账号入口及认证页面；单独开启社区不会恢复认证入口。关闭时认证路由在初始化、内部导航和 hash 变化时均限制为球员库，地址以 `replaceState` 替换为 `#/players`，不挂载认证页面或发起扫码票据请求。开关为构建配置，仅接受 true / false 字符串，缺省为 false；URL 与 localStorage 不影响它。改变配置需要重新构建 Web。中英文游客提示说明数据保存在当前浏览器以及清除网站数据的影响。
 

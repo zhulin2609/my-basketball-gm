@@ -72,7 +72,7 @@ docker compose down --volumes
 
 ### 社区关闭与备案页脚
 
-link9.fun 的 Web 公共页脚显示 `沪ICP备2026051556号-1`，链接到 `https://beian.miit.gov.cn/`。中英文界面使用同一备案号。
+link9.fun 的 Web 公共页脚显示 `沪ICP备2026051556号-1` 和 `沪公网安备31011002008289号`，分别链接到 `https://beian.miit.gov.cn/` 和 `https://beian.mps.gov.cn/#/query/webSearch?code=31011002008289`。公安备案编号前显示图标，中英文界面使用同一备案原文。
 
 社区默认关闭。部署机器的 `.env` 必须明确设置：
 

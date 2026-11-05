@@ -1,10 +1,27 @@
 # Current Plan
 
-更新时间：2026-11-01（Asia/Shanghai）
+更新时间：2026-11-04（Asia/Shanghai）
 
 本文件保存 session-independent Task State；字段与状态语义遵循 `AGENTS.md`。路径以仓库根目录为基准。
 
 ## Task
+
+当前任务：`public-security-record-20261104`。
+
+- Status：DONE。
+- Owner：codex；Instance：codex-public-security-record-20261104；Worktree：/Users/zhulin/Workspace/my-basketball-gm；Branch：develop；Base Commit：cf8a9cfbc228bfd4a46df3e135f9025d9113e020。
+- Goal：在 Web 公共页脚添加公安联网备案图标、编号和查询链接。
+- Acceptance Criteria：中英文及各 Web 视图展示准确的备案信息；窄屏支持换行；相关测试、typecheck、构建及浏览器验证通过。
+- Write Scope：Web 页脚、静态资源、相关测试与文档。
+- Plan：修改页脚与文档，添加图标，执行测试及浏览器验证。
+- Current State：页脚、图标、测试和文档已修改，定向测试及本地验证通过。
+- Progress：实施、定向测试、构建、typecheck 和浏览器检查完成。
+- Open Questions：无。
+- Decision Candidates：无。
+- Validation：`npm run build` PASS（包含四包 typecheck 和 Web 构建，图标与用户提供的文件一致）；`npm test -- apps/web/src/community-disabled.test.tsx --maxWorkers=1` PASS（1 文件、6 项，真实 API 与独立 PostgreSQL 数据库 `stage4_frontend_1793750611268`）；变更文件 Prettier 检查及 `git diff --check` PASS。Chrome 在 375、1280 像素下检查中英文球员库、阵容、对战和认证页面，图标加载、链接及页面范围 PASS；认证页面通过 Tab 检查链接焦点 PASS。正式环境验证 NOT RUN，部署需另行授权。
+- Completion：实施及本地验证完成，未部署。
+
+以下为历史任务记录。
 
 当前任务：`local-battle-validation-20261101`。
 

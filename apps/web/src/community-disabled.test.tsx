@@ -46,6 +46,20 @@ describe('关闭社区与备案页脚', () => {
           expect(link.getAttribute('target')).toBe('_blank');
           expect(link.getAttribute('rel')).toBe('noopener noreferrer');
           expect(link.closest('footer')).not.toBeNull();
+          const publicSecurityLink = screen.getByRole('link', {
+            name: '沪公网安备31011002008289号',
+          });
+          expect(publicSecurityLink.getAttribute('href')).toBe(
+            'https://beian.mps.gov.cn/#/query/webSearch?code=31011002008289',
+          );
+          expect(publicSecurityLink.getAttribute('target')).toBe('_blank');
+          expect(publicSecurityLink.getAttribute('rel')).toBe('noopener noreferrer');
+          expect(publicSecurityLink.closest('footer')).toBe(link.closest('footer'));
+          expect(publicSecurityLink.firstElementChild?.tagName).toBe('IMG');
+          expect(publicSecurityLink.querySelector('img')?.getAttribute('alt')).toBe('');
+          expect(publicSecurityLink.querySelector('img')?.getAttribute('src')).toBe(
+            `${import.meta.env.BASE_URL}public-security-record.png`,
+          );
           expect(screen.queryByRole('button', { name: /社区|Community/i })).toBeNull();
           expect(document.querySelector('.share-panel')).toBeNull();
         }
